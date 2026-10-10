@@ -1,0 +1,35 @@
+[project]
+name = "support-rag"
+version = "0.1.0"
+description = "Support assistant on the WixQA benchmark: when do retrieval, agentic search and long context pay off?"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Xiaohui Lu" }]
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=0.26",
+    "tiktoken>=0.8",
+]
+
+[project.scripts]
+srag = "support_rag.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
