@@ -2,7 +2,7 @@
 
 **Support assistant on WixQA: when do retrieval, agentic search and long context pay off?**
 
-Draft v0.1, written at Step 0. Numbers marked ≈ come from the Hugging Face dataset statistics; Step 1 re-measures them with a real tokenizer.
+Draft v0.2. Corpus numbers were measured in Step 1 ([reports/corpus_stats.md](../reports/corpus_stats.md)); token counts use tiktoken as an approximation.
 
 ## 1. Goal
 
@@ -32,13 +32,13 @@ Source: [`Wix/WixQA`](https://huggingface.co/datasets/Wix/WixQA) on Hugging Face
 | Simulated | 200 | Distilled from real support chats; short answers (mean ≈260 characters); 27 need 2–3 articles |
 | Synthetic | 6,221 | LLM-generated, one question per article |
 
-Article length: median ≈1,200 characters (≈300 tokens), mean ≈2,270 (≈570 tokens), longest ≈51,000 (≈13K tokens). 89% are under ≈5,100 characters. The whole KB is ≈14M characters, about 3.5M tokens.
+Article length: median 251 tokens, mean 470, p99 2,677, longest 10,614. Only 156 articles exceed 2,000 tokens. The whole KB is about 2.9M tokens.
 
 What this means for the design:
 
-- **Long context can't hold the whole KB.** About 3.5M tokens is beyond any context window, so the long-context strategy means many retrieved articles in one prompt, not the entire help center.
-- **Most articles are short.** A whole article may work as the retrieval unit; splitting into sections matters mainly for the ≈690 long ones. Step 4 tests both instead of assuming.
-- **A third of the KB is feature requests** ("not possible yet" pages). Some real questions are probably answered by them (for example, "How can I restore deleted products?" → not possible), so they stay in the index. Step 1 checks how often a gold article is a feature request.
+- **Long context can't hold the whole KB.** About 2.9M tokens is beyond any context window, so the long-context strategy means many retrieved articles in one prompt, not the entire help center.
+- **Most articles are short.** A whole article may work as the retrieval unit; splitting into sections matters mainly for the 156 articles over 2,000 tokens. Step 4 tests both instead of assuming. Nearly half the articles (2,892) have two or more HTML section headings to split on.
+- **A third of the KB is feature requests, but they rarely answer real questions.** Only 10 of the 400 real questions have one among their gold articles, so for real traffic they're mostly look-alike noise. They stay in the index, since those 10 questions need them, and Step 4 measures whether down-weighting them helps. They also make up a third of the synthetic questions: one more way synthetic differs from real traffic.
 - **Only 79 of the 400 real questions need more than one article.** That's where agentic search should help most, and it's a small group: results on it will have wide error bars (§8).
 - **Synthetic questions are easier than real ones.** They're generated from the article and reuse its wording, while real users describe symptoms ("my payout hasn't arrived"). Retrieval scores on synthetic will look better than on real tickets.
 
@@ -107,7 +107,7 @@ Every strategy uses the same generator model and the same output format: an answ
 ## 9. Context-rot test (RQ5)
 
 - 60 test questions, stratified by single/multi-article.
-- Context = the gold article(s) + N distractor articles, N ∈ {0, 10, 50, 200}, which is ≈1K to ≈115K tokens.
+- Context = the gold article(s) + N distractor articles, N ∈ {0, 10, 50, 200}, which is ≈1K to ≈95K tokens by tiktoken's count. Step 6 checks the count with Claude's tokenizer, because Claude Haiku 5.5 charges more per token above 100K.
 - Two distractor types: **hard** (top-ranked non-gold articles from the retriever, which look relevant but aren't) and **random** (any other articles).
 - Gold articles go at a random position, recorded per question, so position effects ("lost in the middle") can be checked.
 - Same model, prompt and judge as the main runs.
@@ -148,7 +148,7 @@ Rough input tokens for one full test run (350 questions), before caching and dis
 | **Total** | | **≈51M** |
 | Context-rot test (run once) | | ≈18M |
 
-Long context is about two-thirds of the bill. Step 3 turns these into dollars once the models are chosen.
+Long context is about two-thirds of the bill. These estimates assumed 570 tokens per article; Step 1 measured 470, so the long-context rows are roughly 20% high. Step 3 turns these into dollars once the models are chosen.
 
 ## 12. Roadmap
 
@@ -157,8 +157,8 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | Step | What gets built | Decisions to defend | Status |
 |---|---|---|---|
 | 0 | This design and the decision log | Benchmark, thesis, no framework, splits, judge, statistics | Done |
-| 1 | Repo, pinned data download, corpus stats, frozen splits | Python tooling, repo layout, data format | In progress |
-| 2 | Retrieval eval harness, BM25 baseline, run records, LLM call cache | Metric definitions, run-record schema | |
+| 1 | Repo, pinned data download, corpus stats, frozen splits | Python tooling, repo layout, data format | Done |
+| 2 | Retrieval eval harness, BM25 baseline, run records, LLM call cache | Metric definitions, run-record schema | Next |
 | 3 | Generation and judge: S0, S1 on BM25, S*; judge validated on hand labels | LLM provider and models, judge rubric, cost tracking | |
 | ✅ M1 | Public repo; README with S0/S1/S* results and confidence intervals | | |
 | 4 | Postgres + pgvector, embeddings, hybrid fusion, reranker, chunking (RQ2) | Postgres vs a vector DB, keyword engine, embedding model, reranker | |
