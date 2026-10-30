@@ -207,6 +207,74 @@ Each entry has the same parts: context, decision, alternatives, why, trade-offs,
 
 ---
 
+## D-012 · Measure before preprocessing: whole-article baseline, chunking in Step 4 (Step 2)
+
+**Context.** A typical RAG pipeline goes ingest → parse → clean → chunk → index → evaluate. WixQA ships the KB already extracted: plain text plus the original HTML for each article. The text has small artifacts: 5,066 of 6,221 articles have sentences glued together where HTML blocks were joined ("...to ADI.If you want..."), and 5,112 contain non-breaking spaces. The 33 articles with HTML-like tags in their text are embed-code examples, which are content, not noise.
+
+**Decision.**
+- Step 2 builds the retrieval harness and a BM25 baseline on whole articles, using the dataset's plain text as published.
+- No separate cleaning stage. The glued sentences are handled by the BM25 tokenizer, which splits on non-letters ("ADI.If" → "adi", "if").
+- Chunking moves to Step 4 as a measured variant (RQ2: whole articles or sections). The harness maps retrieved sections back to their article before scoring, so the same metrics apply to both.
+
+**Alternatives.**
+- Build the full pipeline first, with cleaning and fixed-size chunks: looks complete early, but chunk size, overlap and cleaning rules get chosen before they can be measured, and the baseline mixes two choices.
+- Clean the text into a preprocessed copy: hides a transformation outside the code, against D-011, and fixes a problem only for readers that have it.
+
+**Why.**
+- Change one thing at a time. If the baseline used chunks, a later "embeddings on whole articles" run would change the retriever and the retrieval unit together, and the gain couldn't be attributed to either.
+- The data allows it: the median article is 251 tokens, and only 156 exceed 2,000, so whole articles are a reasonable unit, and chunking mainly matters for the long tail.
+- Whether text is dirty depends on its reader: the tokenizer fixes the glued sentences for BM25, and an LLM reads them fine.
+
+**Trade-offs.** The first baseline may score a little below what chunking could give. And because WixQA is clean, this project doesn't demonstrate ingestion from messy sources (PDFs, wikis, ticket systems); it demonstrates measurement.
+
+**In short.** "WixQA ships a clean, pinned snapshot, so ingestion was just a download. I built the measuring harness and a whole-article baseline first, and treated chunking as a Step 4 experiment, so every preprocessing choice had a measured effect instead of a guess."
+
+---
+
+## D-013 · Other knowledge bases: a concrete WixQA loader behind plain records, no pluggable interface yet (Step 2)
+
+**Context.** The pipeline should be reusable on another knowledge base later (a company wiki, PDF manuals, another help center), but WixQA is the only one planned.
+
+**Decision.**
+- Keep `wixqa.py` concrete. The retrieval, evaluation and answering code takes plain `Article` and `Question` records and never imports the WixQA loader.
+- The record types currently live in `wixqa.py`; they move to a neutral module when Step 2's retriever first needs them.
+- Logic that depends on WixQA-specific fields, such as `article_type` (feature requests, known issues), stays optional.
+- Extract a loader interface when a second knowledge base is actually added.
+
+**Alternatives.** A generic knowledge-base interface now, with the source chosen by config: looks extensible, but an interface designed from one example is a guess about what the second source needs (PDF parsing, incremental sync, permissions), and it's code nothing calls.
+
+**Why.**
+- The boundary costs nothing and gives most of the portability.
+- What a new knowledge base really costs is a new loader, a new eval set and re-tuned parameters. No interface can provide those in advance.
+
+**Trade-offs.** Adding a second knowledge base means a small refactor to extract the interface. The boundary is a convention, kept by review rather than enforced by code.
+
+**In short.** "I kept the WixQA loader concrete, but everything downstream depends only on plain document and question records. I'd extract a loader interface when a second knowledge base actually shows up, because an interface designed from one example is a guess."
+
+---
+
+## D-014 · Stay on WixQA; add EnterpriseRAG-Bench as a second knowledge base after M3 (Step 2)
+
+**Context.** WixQA is clean, single-source data (D-012). EnterpriseRAG-Bench (Onyx and UC Berkeley, May 2026) simulates a fictional company's internal knowledge across nine sources (Slack, Gmail, Linear, Google Drive, HubSpot, meeting transcripts, GitHub, Jira, Confluence): about 512K documents and 500 questions with gold documents, gold answers and unanswerable cases.
+
+**Decision.** Continue on WixQA through M3. Then add EnterpriseRAG-Bench as a second knowledge base: a new loader behind the D-013 boundary, its own dev/test split, and choices re-measured on its data (chunking, router thresholds). HERB (Salesforce AI Research, about 39K artifacts) is the fallback if EnterpriseRAG-Bench's dataset license doesn't allow publishing results.
+
+**Alternatives.**
+- Switch now: redoes Steps 0–1 (D-001, D-004, D-011) and needs indexing infrastructure for 512K documents before the first retriever exists. Its questions and gold labels are synthetic, and the authors expect to revise the gold sets.
+- WixQA only: fastest, but leaves the single-source gap and gives no evidence that the findings transfer.
+
+**Why.**
+- WixQA's real tickets with expert answers give the most trustworthy measurements, so the harness and strategies are built and validated there first.
+- A second knowledge base is most informative once there are results to compare: the same harness on different data shows which findings transfer and which were properties of WixQA.
+- EnterpriseRAG-Bench adds what WixQA lacks: several source types, conflicting information, and unanswerable questions, which make the decline rate meaningful (on WixQA every decline is a miss). Its company is fictional, so models can't have memorized it.
+- The dataset is new; by then its license and versioned gold labels should be settled.
+
+**Trade-offs.** The multi-source work comes last, so it's the first thing cut if time runs short. Its documents are JSON exports, not live connectors, so it shows heterogeneous data rather than connector engineering.
+
+**In short.** "I built and validated the harness on WixQA because it has real support tickets with expert answers. Then I ported it to EnterpriseRAG-Bench, a multi-source enterprise corpus, to see which findings transferred and which were properties of the first dataset."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

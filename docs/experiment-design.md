@@ -179,7 +179,16 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | The judge is biased or drifts | Validate against hand labels; pin judge version and prompt |
 | Small subgroups give noisy results | Paired tests; directional wording; no claims from overlapping intervals |
 | API costs run over | Call cache, batch API, dev-first iteration, price check before every large run |
-| Scope creep | Every milestone ships on its own; ideas outside the roadmap go to a "later" list |
+| Scope creep | Every milestone ships on its own; ideas outside the roadmap go to the "Later" list (§14) |
+
+## 14. Later
+
+Ideas outside the roadmap. Each gets its own decision before it's scheduled.
+
+| Idea | Why | When | Notes |
+|---|---|---|---|
+| Second knowledge base: [EnterpriseRAG-Bench](https://github.com/onyx-dot-app/EnterpriseRAG-Bench) (D-014) | Multi-source, internal-style data with unanswerable questions; shows which findings transfer | After M3 | New loader behind the D-013 boundary; its own dev/test split; re-measure chunking and router thresholds. Confirm the dataset license first; [HERB](https://huggingface.co/datasets/Salesforce/HERB) is the fallback |
+| "Bring your own docs" loader | Point the service at a folder of PDFs or Markdown files | After M3 | No gold labels, so it's for demos, not results |
 
 ## References
 
