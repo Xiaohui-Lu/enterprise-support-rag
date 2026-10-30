@@ -13,7 +13,8 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 from support_rag import config
-from support_rag.wixqa import QA_SUBSETS, Article, Question, load_articles, load_questions
+from support_rag.records import Article, Question
+from support_rag.wixqa import QA_SUBSETS, load_articles, load_questions
 
 TokenCounter = Callable[[str], int]
 

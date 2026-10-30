@@ -1,5 +1,5 @@
 from support_rag.corpus_stats import build_report
-from support_rag.wixqa import Article, Question
+from support_rag.records import Article, Question
 
 
 def count_words(text: str) -> int:

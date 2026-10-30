@@ -11,7 +11,8 @@ import random
 from pathlib import Path
 
 from support_rag import config
-from support_rag.wixqa import Question, load_questions
+from support_rag.records import Question
+from support_rag.wixqa import load_questions
 
 SEED = 20261010
 DEV_REAL_PER_SUBSET = 25

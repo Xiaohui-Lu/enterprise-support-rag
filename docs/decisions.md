@@ -275,13 +275,62 @@ Each entry has the same parts: context, decision, alternatives, why, trade-offs,
 
 ---
 
+## D-015 · BM25 as the retrieval baseline (Step 2)
+
+**Context.** Every retrieval improvement in Step 4 (embeddings, hybrid fusion, a reranker, chunking) needs a reference point. Without one, "recall@5 is 0.7" says nothing about whether the extra cost bought anything.
+
+**Decision.** The first retriever is BM25 over whole articles (D-012): keyword matching that weights rare words more (IDF), gives diminishing credit for repeated words (TF saturation, `k1`) and discounts long articles (length normalization, `b`). It runs in memory, with no model, API or database.
+
+**Alternatives.**
+- Embeddings first: they handle paraphrases, but they mean choosing a model, paying for it and storing vectors before there's a harness to show whether they help. Those are Step 4 decisions, made by measurement (RQ2).
+- TF-IDF: simpler, but BM25 is essentially TF-IDF plus saturation and length normalization, at the same cost and usually better.
+- A random ranking: a true floor, but it tells you nothing useful.
+
+**Why.**
+- Cheap, fast and deterministic: indexing 6,221 articles takes seconds, and the same query always gives the same ranking.
+- A long-standing strong baseline: in the BEIR benchmark (2021), many neural retrievers failed to beat it on unfamiliar domains.
+- Its failure mode is easy to explain. BM25 matches exact words, so it misses paraphrases: a user who asks how to "rename web links" never uses the words in "Changing Your Page URL". The gap between BM25 and embeddings on real questions measures exactly that.
+
+**Trade-offs.** Expect a large gap between synthetic and real questions: synthetic questions reuse the article's wording, real users describe symptoms in their own words. Synthetic scores are optimistic; headline retrieval claims come from real dev questions.
+
+**In short.** "I started with BM25 because it's cheap, deterministic and a hard baseline to beat. Every later retriever had to beat it on real questions. Its blind spot is paraphrase, which is exactly what embeddings were meant to fix, so the gap between them measures what embeddings bought."
+
+---
+
+## D-016 · BM25 implementation: bm25s for scoring, our own tokenizer (Step 2)
+
+**Context.** D-015 chose BM25. It still needs a library, and a tokenizer that decides what counts as a word, which decides what can match what.
+
+**Decision.**
+- Scoring: `bm25s`, in memory, at its defaults (the Lucene variant, `k1 = 1.5`, `b = 0.75`), untuned.
+- Tokenizer: our own function, used for both articles and questions. Lowercase; split on anything that isn't a letter or digit (so error codes like "404" survive); drop Lucene's 33-word English stopword list (the one Elasticsearch's English analyzer uses); stem with Snowball (`PyStemmer`).
+- Stemming is on by default, and Step 2 measures it on and off on dev, everything else fixed (an ablation). The tokenizer settings go into every run record.
+- Index `contents` only: it already starts with the title.
+
+**Alternatives.**
+- `rank_bm25`: the classic small library, but no release since February 2022, and it scores each query by looping over every document in Python.
+- Our own BM25: about 40 lines, but easy to get subtly wrong (there are several IDF variants), and D-003 says to use libraries for well-defined pieces.
+- Elasticsearch or OpenSearch: the industry-standard engine, but a Java server for 6,221 documents, before there's a need for one.
+- Postgres full-text search: its ranking (`ts_rank`) isn't BM25. It's a Step 4 decision.
+- The library's built-in tokenizer: less code, but then tokens change if the library changes, and the tokenizer is harder to test and record.
+
+**Why.**
+- `bm25s` precomputes every (token, article) score at index time, so a query just adds up a few rows of a sparse matrix. That suits a frozen snapshot queried thousands of times. It's the read/write trade-off of a database index: reads get cheaper, changes get expensive, because adding one document shifts the document count, the IDF values and the average length for every stored score. A collection that changed constantly would be better served by an engine that scores at query time.
+- Owning the tokenizer means one tested function on both sides, recorded settings, and tokens that don't change when the library does.
+- Stemming catches word forms ("connecting" / "connect", "domains" / "domain"), which real users vary more than synthetic questions do. It can also merge unrelated words (Snowball maps "animation" and "animal" to `anim`), so it's measured rather than assumed.
+
+**Trade-offs.** No incremental updates: adding articles means rebuilding the index, which takes seconds and is fine for a help center adding a few articles a day. Default `k1` and `b` may leave a little recall on the table; tuning them is possible later, on dev only. Tokenization can't fix vocabulary mismatch ("discount" vs "promotion"); that's for embeddings in Step 4.
+
+**In short.** "I used bm25s, which precomputes scores at index time, because my corpus is a frozen snapshot queried thousands of times: the same trade-off as a database index. The tokenizer is my own function, shared by articles and queries and recorded in every run, and I measured stemming instead of assuming it helps."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
 
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
-| 2 | BM25 for the baseline | An in-memory library; no infrastructure yet | Simplicity |
 | 3 | LLM provider and models | Claude Haiku 5.5 as the generator, Claude Sonnet 5.5 as the judge; a second provider only if the judge disagrees with hand labels | Budget and dev results |
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
 | 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open. Postgres's built-in ranking isn't BM25 | Measured on dev (RQ2) |

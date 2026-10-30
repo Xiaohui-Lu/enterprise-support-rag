@@ -1,7 +1,7 @@
 import pytest
 
+from support_rag.records import Question
 from support_rag.splits import make_splits, write_splits
-from support_rag.wixqa import Question
 
 
 def make_questions(prefix: str, subset: str, n: int, n_multi: int) -> list[Question]:

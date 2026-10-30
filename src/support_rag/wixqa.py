@@ -7,39 +7,16 @@ anyone can re-download identical files from the revision pinned in config.py.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from pathlib import Path
 
 from support_rag import config
+from support_rag.records import Article, Question
 
 QA_SUBSETS = ("expertwritten", "simulated", "synthetic")
 
 # The dataset has no question IDs, so an ID is a prefix plus the row number in the
 # pinned file, e.g. "ew-017". Stable because the revision is pinned.
 _ID_FORMAT = {"expertwritten": ("ew", 3), "simulated": ("sim", 3), "synthetic": ("syn", 4)}
-
-
-@dataclass(frozen=True)
-class Article:
-    id: str
-    title: str
-    url: str
-    article_type: str  # "article", "feature_request" or "known_issue"
-    contents: str  # plain text
-    html: str  # original HTML; keeps the headings for section-aware chunking later
-
-
-@dataclass(frozen=True)
-class Question:
-    id: str
-    subset: str  # "expertwritten", "simulated" or "synthetic"
-    question: str
-    answer: str  # reference answer (Markdown)
-    gold_ids: tuple[str, ...]  # the KB articles needed to answer it
-
-    @property
-    def is_multi_article(self) -> bool:
-        return len(self.gold_ids) > 1
 
 
 def download(raw_dir: Path = config.RAW_DIR) -> list[Path]:
