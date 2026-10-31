@@ -325,6 +325,35 @@ Each entry has the same parts: context, decision, alternatives, why, trade-offs,
 
 ---
 
+## D-017 · Retrieval metrics: recall@k, all-gold@k and MRR@20, averaged per question (Step 2)
+
+**Context.** A retriever returns a ranked list; each question has one to three gold articles. Whether gold at rank 23 is good or bad depends on how many articles the generator will see, and multi-article questions need every gold article, not just one.
+
+**Decision.**
+- Recall@k: the share of a question's gold articles in the top k.
+- All-gold@k: 1 if every gold article is in the top k, else 0.
+- Reciprocal rank: 1 / the rank of the first gold article, 0 if none is retrieved. Averaged over questions, that's MRR.
+- k ∈ {1, 5, 10, 20}. Each question is retrieved once at depth 20, and every metric comes from that list, so MRR is MRR@20.
+- Every metric is computed per question and then averaged over questions (macro), never pooled over gold articles.
+
+**Alternatives.**
+- Pooling over gold articles (micro): gives a three-article question three times the weight of a one-article question.
+- Precision@k: with one to three gold articles, precision@20 can't exceed 0.15, so it says little.
+- nDCG: built for graded relevance ("very" vs "somewhat" relevant). WixQA's labels are binary, and recall plus MRR already cover coverage and rank.
+- MRR over the full list: a gold article at rank 23 would add 0.04 instead of 0, a negligible difference, and it's beyond what any strategy reads.
+- Mean rank of all gold articles: mixes "how high" and "how complete" into one number; recall and all-gold measure completeness separately.
+
+**Why.**
+- Each k is a context size a strategy actually uses: 1 asks whether the top hit is right, 5–10 is the range S1 would get, and 20 is where S3 starts.
+- All-gold@k is what multi-article answers need. Recall gives partial credit; all-gold doesn't.
+- Per-question scores match the user (one question at a time) and the statistics (D-006 bootstraps over questions).
+
+**Trade-offs.** MRR ignores everything after the first gold article, by design. Metrics only know the gold labels: another article that also answers the question counts as a miss, which is why answers get judged separately (D-005).
+
+**In short.** "I report recall@k at the context sizes my strategies actually use, all-gold@k because multi-article questions need every article, and MRR for how high the first useful article lands. Everything is scored per question and then averaged, so each question counts once and the bootstrap can resample questions."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
