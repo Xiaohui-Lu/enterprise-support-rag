@@ -526,6 +526,32 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-025 · The judge's rubric: three grades, reference-guided, blind, with JSON output (Step 3)
+
+**Context.** Expert answers are long procedures, and a correct answer can take a different but valid route. In the pilot, Haiku gave the expert's Editor method word for word but a different second method; without a rule, graders (the judge or a human) decide such cases inconsistently, and agreement drops for reasons unrelated to the judge.
+
+**Decision.**
+- Correctness, against the expert reference: **correct** (following the answer resolves the customer's issue, consistent with the reference; one complete valid method is enough, extra accurate detail is fine), **partially correct** (the right direction, but a needed step is missing or wrong), **incorrect** (wrong, contradicts the reference, or doesn't address the question).
+- Groundedness, in the same call: is every claim supported by the articles the answer cites (yes / partly / no; n/a when nothing is cited, as in S0)?
+- A `NOT_FOUND` decline isn't sent to the judge: it's incorrect for correctness (every WixQA question is answerable) and counted separately as a decline.
+- The judge is blind: it sees the question, the reference, the answer and the cited articles, never the strategy, model or run.
+- Output is JSON enforced by the API (`reasoning`, then `correctness`, then `grounded`). The reasoning comes first, and is kept for reading disagreements during validation.
+
+**Alternatives.**
+- Correct / incorrect only: easiest to agree on, but hides "almost right", which matters for support.
+- A 1–5 score: finer, but LLM judges and humans are poorly calibrated on fine scales, so agreement drops.
+- Free-text verdicts: readable, but parsing them is fragile. Unlike answers (D-023), a verdict is never streamed to a user, so guaranteed parsing wins.
+- Telling the judge the strategy: invites a bias that depends on the strategy, which doesn't cancel out of the comparisons (D-021).
+- Groundedness in a separate call: cleaner separation of the two grades, at twice the judge calls.
+
+**Why.** Three grades separate "fixes the problem" from "gets close" without the poor calibration of a fine scale. Rules for the hard cases make the judge and the hand labels consistent. Skipping declines saves money with no loss of information.
+
+**Trade-offs.** "Partially correct" remains the hardest grade to agree on. Blinding can't hide everything: citation markers reveal that an answer came from a strategy with articles, which is why agreement is checked per strategy. Groundedness adds the cited articles to every judge call (about +$0.003 each).
+
+**In short.** "The judge grades correct, partially correct or incorrect against the expert's answer, with written rules for hard cases like a valid alternative route, plus whether the answer's claims are supported by the articles it cites. It never sees which strategy wrote the answer, declines don't cost a judge call, and its verdict is JSON the API enforces, because nobody streams a verdict."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

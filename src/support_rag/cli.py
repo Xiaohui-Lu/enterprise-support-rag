@@ -40,6 +40,9 @@ def main(argv: list[str] | None = None) -> None:
     answer.add_argument("--effort", choices=["low", "medium", "high"], default="medium")
     answer.add_argument("--k", type=int, default=5, help="articles retrieved for S1")
     answer.add_argument("--limit", type=int, help="answer only this many questions (a pilot)")
+    judge = commands.add_parser("judge", help="grade an answer run with the judge (paid, cached)")
+    judge.add_argument("answers_run", type=Path, help="the answer run directory to grade")
+    judge.add_argument("--effort", choices=["low", "medium", "high"], required=True)
     args = parser.parse_args(argv)
 
     try:
@@ -91,6 +94,15 @@ def run(args: argparse.Namespace) -> None:
             run_dir = run_answers(
                 args.strategy, args.split, effort=args.effort, k=args.k, limit=args.limit
             )
+            print(f"wrote {run_dir}\n")
+            print(json.dumps(load_summary(run_dir), indent=2))
+        case "judge":
+            import json
+
+            from support_rag.judge_eval import run_judge
+            from support_rag.runs import load_summary
+
+            run_dir = run_judge(args.answers_run, effort=args.effort)
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))
 
