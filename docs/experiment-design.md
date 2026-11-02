@@ -158,7 +158,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 |---|---|---|---|
 | 0 | This design and the decision log | Benchmark, thesis, no framework, splits, judge, statistics | Done |
 | 1 | Repo, pinned data download, corpus stats, frozen splits | Python tooling, repo layout, data format | Done |
-| 2 | Retrieval eval harness, BM25 baseline, run records, LLM call cache | Metric definitions, run-record schema | In progress |
+| 2 | Retrieval eval harness, BM25 baseline, run records, LLM call cache | Metric definitions, run-record schema | Done |
 | 3 | Generation and judge: S0, S1 on BM25, S*; judge validated on hand labels | LLM provider and models, judge rubric, cost tracking | |
 | ✅ M1 | Public repo; README with S0/S1/S* results and confidence intervals | | |
 | 4 | Postgres + pgvector, embeddings, hybrid fusion, reranker, chunking (RQ2) | Postgres vs a vector DB, keyword engine, embedding model, reranker | |

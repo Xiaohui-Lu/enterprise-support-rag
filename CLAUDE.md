@@ -13,6 +13,8 @@ uv run ruff check .    # lint
 uv run ruff format .   # format
 uv run srag download   # WixQA at the pinned revision, into data/raw/
 uv run srag stats      # regenerate reports/corpus_stats.md
+uv run srag eval-retrieval --split dev           # BM25 on dev; add --no-stem for the ablation
+uv run srag report-retrieval runs/<a> runs/<b>   # reports/retrieval_bm25.md; first run is the baseline
 ```
 
 ## Layout
@@ -22,6 +24,8 @@ uv run srag stats      # regenerate reports/corpus_stats.md
 - `docs/`: `experiment-design.md` (questions, splits, strategies, metrics, roadmap) and `decisions.md` (decision log).
 - `reports/`: generated reports, committed.
 - `data/raw/`: the downloaded dataset, git-ignored. `data/splits/splits.json`: the frozen split, committed.
+- `runs/`: run records (config, per-question results, summary), git-ignored; reports cite run IDs (D-018).
+- `cache/`: the LLM response cache (SQLite), git-ignored (D-020).
 
 ## Rules
 
