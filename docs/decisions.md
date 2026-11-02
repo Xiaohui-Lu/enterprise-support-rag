@@ -503,6 +503,29 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-024 · Thinking and effort: the judge's effort chosen by agreement with hand labels; the generator starts at its default (Step 3)
+
+**Context.** Current Claude models think before answering. Thinking tokens are billed as output even when their text isn't returned, and they come before the first visible word. A thinking budget can't be set directly; `effort` (`low` to `max`) controls how much the model thinks. Defaults: `medium` on Haiku 5.5, `high` on Sonnet 5.5. Haiku can turn thinking off (at effort `high` or below); Sonnet can't. Sampling parameters such as `temperature` were removed from the API on 2026-10-21.
+
+**Decision.**
+- The judge's effort is chosen by measurement: grade the same hand-labeled answers at `medium` and `high`, and keep the cheaper setting unless its agreement with the labels (Cohen's kappa) is clearly worse.
+- The generator starts at Haiku's default, `medium`, recorded in every run. Its effort, and S1's k, are tuned on dev only after the judge is validated.
+- The effort is part of every request, so it's part of the cache key and the run record.
+
+**Alternatives.**
+- Judge at its default (`high`) without measuring: possibly paying for thinking that doesn't improve agreement.
+- Judge at `low` to save money: decided by measurement, not assumed either way.
+- Tune the generator's effort now: its answers can only be graded by the judge, which isn't validated yet, so this would tune against an unchecked instrument.
+- Generator with thinking off: the fastest first word and the cheapest, but possibly worse at answers that combine several articles. A candidate in the later tuning.
+
+**Why.** The judge has ground truth to measure against (the hand labels), so its setting can be chosen by evidence. The generator's quality can only be measured through the judge, so it waits for the judge. Any fixed generator setting keeps the strategy comparison fair, because it's the same for every strategy.
+
+**Trade-offs.** The generator runs at an untuned setting until the judge is validated. Thinking volume, and so output cost and time to first word, is unknown until the pilot measures it.
+
+**In short.** "Thinking tokens are billed as output and delay the first word, and effort is the only control. I chose the judge's effort by measuring its agreement with my own labels at two settings, and only tuned the generator after the judge was validated, because the generator's answers can only be graded by the judge."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

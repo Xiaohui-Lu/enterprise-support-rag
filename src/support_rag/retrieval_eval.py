@@ -28,6 +28,7 @@ DEPTH = max(KS)  # retrieved once per question; every metric comes from this lis
 # Split name on the command line -> lists in splits.json.
 SPLITS = {
     "dev": ("dev_real", "dev_synthetic"),
+    "dev_real": ("dev_real",),  # the 50 real dev questions, for answer runs
     "synthetic_reference": ("synthetic_reference",),
 }
 

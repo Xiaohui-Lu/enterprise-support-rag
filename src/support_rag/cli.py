@@ -30,6 +30,16 @@ def main(argv: list[str] | None = None) -> None:
     report.add_argument(
         "runs", nargs="+", type=Path, help="run directories; the first is the baseline"
     )
+    answer = commands.add_parser(
+        "answer", help="answer a split with one strategy (paid API calls, cached)"
+    )
+    answer.add_argument("--strategy", choices=["s0", "s1", "s_star"], required=True)
+    answer.add_argument(
+        "--split", choices=["dev_real"], default="dev_real", help="the test set runs only at M1"
+    )
+    answer.add_argument("--effort", choices=["low", "medium", "high"], default="medium")
+    answer.add_argument("--k", type=int, default=5, help="articles retrieved for S1")
+    answer.add_argument("--limit", type=int, help="answer only this many questions (a pilot)")
     args = parser.parse_args(argv)
 
     try:
@@ -72,6 +82,17 @@ def run(args: argparse.Namespace) -> None:
             from support_rag.retrieval_report import write_report
 
             print(f"wrote {write_report(args.runs)}")
+        case "answer":
+            import json
+
+            from support_rag.answer_eval import run_answers
+            from support_rag.runs import load_summary
+
+            run_dir = run_answers(
+                args.strategy, args.split, effort=args.effort, k=args.k, limit=args.limit
+            )
+            print(f"wrote {run_dir}\n")
+            print(json.dumps(load_summary(run_dir), indent=2))
 
 
 if __name__ == "__main__":
