@@ -411,6 +411,34 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-020 · LLM response cache: SQLite, keyed by a hash of the full request (Step 2)
+
+**Context.** From Step 3, every answer and every judge grade is a paid API call, and the same request can return different wording each time, even at temperature 0. Reports get re-run, metrics get recomputed, and the budget is $25.
+
+**Decision.**
+- A client-side cache of complete responses. The key is the SHA-256 of the request as canonical JSON (sorted keys): model, system prompt, messages and every parameter. Any change is a new key and a real call.
+- Each entry stores the response plus the original call's token usage and latency. Cost reports use the stored usage; latency is reported from real calls only.
+- Only successful, complete responses are stored. The first response for a key is kept, so replays are stable.
+- Storage: one SQLite file (`cache/llm_calls.sqlite`, git-ignored), through the standard library's `sqlite3`.
+
+**Alternatives.**
+- No cache: every re-run pays again, and results drift between runs.
+- Rely on the provider's prompt caching: a different thing. It reuses a processed prompt prefix on the provider's side, but the model still runs, produces a new answer and is billed (at a discount for the cached tokens). It's for Step 5's agent loop, not for replaying runs.
+- One JSON file per call: readable, but thousands of small files, in a folder OneDrive syncs.
+- `diskcache`: ready-made, but a dependency for about 40 lines of code.
+- Redis: fast, but a server just to run evals. Redis comes in Step 8, for the live service, where caching has different rules (expiry, per-user privacy).
+
+**Why.**
+- Re-running a report or recomputing a metric costs nothing, and gives identical results.
+- Dev iteration gets cheaper: only the requests that changed are paid for. The test set still runs only at milestones (D-004).
+- SQLite is in the standard library, writes safely if a run crashes, keeps everything in one file, and can be queried ("how many tokens went to the judge?").
+
+**Trade-offs.** A binary file that needs a tool to read. A cache hit replays an answer from the model as it was when first called; if the provider changes a model behind the same ID, only new calls see it. The cache must never be used to report latency.
+
+**In short.** "Every LLM call goes through a cache keyed by a hash of the full request, so re-running a report is free and gives the same answers, and changing a single word of a prompt makes a real call. It's different from the provider's prompt caching, which still runs the model. Each entry keeps the original tokens and latency, so a cache hit never looks like a free, instant call."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

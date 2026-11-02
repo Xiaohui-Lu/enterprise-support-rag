@@ -22,3 +22,4 @@ RAW_DIR = ROOT / "data" / "raw"
 SPLITS_PATH = ROOT / "data" / "splits" / "splits.json"
 REPORTS_DIR = ROOT / "reports"
 RUNS_DIR = ROOT / "runs"  # run records (D-018); git-ignored
+CACHE_DIR = ROOT / "cache"  # LLM response cache (D-020); git-ignored
