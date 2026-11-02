@@ -552,6 +552,22 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-026 · No automatic refusal fallback for the judge (Step 3)
+
+**Context.** Sonnet 5.5's safety classifiers can occasionally decline a request (`stop_reason: "refusal"`). The API can re-run a refused request on another model automatically, and Anthropic's guidance is to turn that on by default for Sonnet 5.5.
+
+**Decision.** The judge runs without the fallback. A refused or cut-off verdict is recorded as a judge failure, counted in every judge run's summary, and looked at by hand; it's never replaced by another model's grade. The production chatbot (Step 8) will use the fallback.
+
+**Alternatives.** Fallback on for the judge: no manual step, but some verdicts would silently come from a grader that was never validated against the hand labels.
+
+**Why.** The judge is a measuring instrument: pinned by model and prompt (D-005) so every verdict is comparable. A missing verdict is visible and countable; a verdict from a different grader is neither. For a customer waiting on an answer the trade-off flips: another model's answer beats no answer.
+
+**Trade-offs.** Refusals need manual handling. They're expected to be very rare for grading help-center answers, and the count in each summary shows whether that holds.
+
+**In short.** "The judge has no automatic fallback, because a verdict from an unvalidated model would silently change my measuring instrument; a refusal is counted and checked by hand instead. The chatbot does use the fallback, because there a customer is better served by another model's answer than by none."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
