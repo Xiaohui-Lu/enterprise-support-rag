@@ -23,3 +23,19 @@ SPLITS_PATH = ROOT / "data" / "splits" / "splits.json"
 REPORTS_DIR = ROOT / "reports"
 RUNS_DIR = ROOT / "runs"  # run records (D-018); git-ignored
 CACHE_DIR = ROOT / "cache"  # LLM response cache (D-020); git-ignored
+ENV_PATH = ROOT / ".env"  # secrets such as ANTHROPIC_API_KEY; git-ignored
+
+
+def load_env(path: Path = ENV_PATH) -> None:
+    """Copy KEY=VALUE lines from .env into the environment. Variables already set win.
+
+    Never prints or logs the values.
+    """
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("\"'"))

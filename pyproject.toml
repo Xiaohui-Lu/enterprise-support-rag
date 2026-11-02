@@ -7,6 +7,7 @@ license = "MIT"
 authors = [{ name = "Xiaohui Lu" }]
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=2.4.0",
     "bm25s>=0.3.16",
     "huggingface-hub>=0.26",
     "pystemmer>=3.1.0",

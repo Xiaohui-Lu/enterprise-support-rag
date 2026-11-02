@@ -439,13 +439,76 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-021 · Models: Claude Haiku 5.5 generates, Claude Sonnet 5.5 judges (Step 3)
+
+**Context.** The thesis holds the generator constant and compares strategies, so the generator has to be the same in every run and affordable for the most expensive strategy. The judge has to be stronger than the generator (D-005). The budget is $100 of API credit.
+
+**Decision.** `claude-haiku-5-5` ($0.10 / $0.50 per million input / output tokens) generates every answer. `claude-sonnet-5-5` ($2 / $10) judges every answer. Both are pinned by model ID and recorded in every run.
+
+**Alternatives.**
+- A stronger generator (Sonnet 5.5 or Opus 5.5): one long-context run at K = 100 (≈ 57K input tokens × 350 questions) would cost ≈ $40 or ≈ $80 in input alone, against ≈ $2 with Haiku.
+- Opus 5.5 as judge: the strongest, at twice Sonnet's price. Kept as the upgrade if Sonnet fails validation.
+- Haiku 5.5 as judge: very cheap, but a model grading its own answers with no extra capability.
+- A judge from another provider (D-005's ideal): avoids same-family bias, but needs a second SDK, key and bill. Kept as the fallback if validation fails.
+
+**Why.**
+- The thesis measures differences between strategies, which don't need the strongest generator, and a small, fast model is realistic for a high-volume support assistant.
+- Sonnet is clearly stronger than Haiku at a mid-range price.
+- Self-preference (judges favor answers from their own model family) is measured, not assumed: hand labels are compared with the judge per strategy (D-005). A bias that is the same for every strategy cancels out of the comparisons; one that depends on the strategy doesn't, which is why the check is per strategy.
+
+**Trade-offs.** Results describe a small model: a stronger one might know more without retrieval (S0) or cope better with long, noisy contexts (S3). Same-family judging stays a risk the validation can only bound. The judge is about 95% of the cost of a judged run.
+
+**In short.** "The generator is held constant, so I chose the cheapest capable model: Haiku 5.5 made a 100-article long-context run cost $2 instead of $40. The judge is Sonnet 5.5, stronger than the generator. It's the same model family, so I validated it against my own labels per strategy, because a bias that's the same for every strategy cancels out of the comparisons, and one that isn't doesn't."
+
+---
+
+## D-022 · Bulk runs go through the batch API; latency is measured on real-time calls (Step 3)
+
+**Context.** About 95% of a judged run's cost is the judge (Sonnet's price per token is 20× Haiku's, and two thirds of each judge call is output). Evaluation runs don't need answers within seconds.
+
+**Decision.** Large generation and judging runs use the Message Batches API (half price, results within hours). Latency is measured separately, on a small sample of real-time calls, because batch timings say nothing about the service. Batch results are written to the LLM cache (D-020) like any other successful call.
+
+**Alternatives.**
+- Real-time calls for everything: results in minutes, at twice the price.
+- Cut the judge's output (lower effort, a shorter verdict): possibly free, possibly at the cost of accuracy. It's an empirical question, answered by comparing the judge's agreement with the hand labels at each effort level, not assumed.
+
+**Why.** Half price with no effect on quality; the only cost is waiting, which doesn't matter for evaluation.
+
+**Trade-offs.** Slower iteration on large runs, so dev iteration stays small and real-time. Two code paths for calling the model (real-time and batch); both go through the same request builder and cache, so the requests are identical.
+
+**In short.** "The judge was about 95% of the cost, so bulk runs went through the batch API at half price, since nobody waits on an eval. Latency came from a separate sample of real-time calls, because batch timings mean nothing for a live service."
+
+---
+
+## D-023 · Answer format: numbered articles, inline [n] citations, an exact NOT_FOUND decline (Step 3)
+
+**Context.** Every strategy must return the same format: an answer that cites the articles it used, or a decline (design section 5). The citations feed the citation hit rate and the groundedness check; the declines feed the decline rate. WixQA article IDs are 64 hexadecimal characters.
+
+**Decision.**
+- Articles in the prompt are numbered [1] to [n]; the model cites by number, and the code maps numbers back to article IDs.
+- The answer is plain text with inline citations like [2] or [1, 3]. A decline is a reply of exactly `NOT_FOUND`.
+- Parse problems are measured, not assumed away: citations to numbers outside the prompt are counted as invalid, and every run reports them.
+- S0 (closed book) sees no articles, so any citation it makes is invalid, and groundedness doesn't apply to it.
+
+**Alternatives.**
+- Citing the real article IDs: a single wrong character in a 64-character ID makes a citation point nowhere.
+- Structured output (a JSON schema the API enforces): guaranteed to parse with an exact decline flag, but streaming the answer to a chat UI would mean extracting a JSON string as it arrives, so the service in Step 8 would want a different format and the eval would measure something nobody ships (D-008).
+- The API's citations feature: precise character spans, but only for articles attached as documents (not S0, not the agent's tool results), and it can't be combined with structured output.
+
+**Why.** Short numbers are copied reliably, and an out-of-range number is easy to detect. Inline markers stream to a chat UI with no extra machinery and become clickable citations as they arrive, so the format evaluated is the format shipped.
+
+**Trade-offs.** The format isn't enforced: the model may paraphrase a decline or cite oddly. Both are counted on dev, and if they're common the format is revisited. A reply that mentions `NOT_FOUND` inside other text counts as an answer, not a decline.
+
+**In short.** "Articles are numbered in the prompt and the model cites them as [2], because models mangle 64-character IDs and an out-of-range number is easy to catch. I chose inline citations over enforced JSON because the service streams answers to a chat UI, and I wanted the eval to measure the format I'd ship. The cost is that the format isn't guaranteed, so I count invalid citations in every run."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
 
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
-| 3 | LLM provider and models | Claude Haiku 5.5 as the generator, Claude Sonnet 5.5 as the judge; a second provider only if the judge disagrees with hand labels | Budget and dev results |
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
 | 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open. Postgres's built-in ranking isn't BM25 | Measured on dev (RQ2) |
 | 4 | Embedding model, reranker, chunking | Open | Measured on dev (RQ2) |
