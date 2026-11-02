@@ -383,6 +383,34 @@ Each entry has the same parts: context, decision, alternatives, why, trade-offs,
 
 ---
 
+## D-019 · Keep stemming on: no measurable effect on real questions, a loss on synthetic (Step 2)
+
+**Context.** D-016 made stemming the default and said Step 2 would measure it. The ablation ran BM25 on the dev split (50 real and 500 synthetic questions) with stemming on and off, everything else fixed. Results are in [reports/retrieval_bm25.md](../reports/retrieval_bm25.md).
+
+**What we measured.** Question by question, reciprocal rank with stemming on vs off:
+
+| Questions | Stemming helped | Stemming hurt | No change | Sign test |
+|---|---:|---:|---:|---|
+| Real (dev) | 8 | 11 | 31 | p ≈ 0.65: no detectable difference |
+| Synthetic (dev) | 38 | 79 | 383 | p < 0.001: a real loss |
+
+Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming: "locales" appears in 4 articles (IDF 7.2), but its stem `local` appears in 232 (IDF 3.3), so the question's most useful word lost more than half its weight.
+
+**Decision.** Keep stemming on for the BM25 baseline. Keep the `stem` option and record it in every run, so it can be re-tested.
+
+**Alternatives.** Turn stemming off: supported by the only significant result, and one dependency fewer.
+
+**Why.**
+- Synthetic questions copy the article's wording, so they reward exact word forms and aren't the traffic the service answers. Headline retrieval claims come from real questions (D-015).
+- On real questions there's no measurable difference either way, and real users do vary word forms ("connecting", "domains"), so the standard default stays.
+- The test set can't settle it: tuning on test is not allowed (D-004).
+
+**Trade-offs.** This keeps a setting that measurably hurts synthetic retrieval, so synthetic dev scores are lower than they could be (recall@5 0.900 vs 0.914, MRR@20 0.781 vs 0.807). With 50 real dev questions, a small real effect in either direction would go undetected. Revisit in Step 4, where hybrid search changes how much BM25's exact matching matters.
+
+**In short.** "I measured stemming on and off. It clearly hurt on synthetic questions, which copy the article's wording, and made no measurable difference on real ones. Since synthetic questions aren't the traffic I serve, I kept the standard default, kept the flag in every run record, and planned to re-test it with hybrid search."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

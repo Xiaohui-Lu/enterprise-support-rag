@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -23,6 +24,12 @@ def main(argv: list[str] | None = None) -> None:
         help="questions to evaluate (the test set runs only at milestones)",
     )
     evaluate.add_argument("--no-stem", action="store_true", help="turn off stemming")
+    report = commands.add_parser(
+        "report-retrieval", help="write reports/retrieval_bm25.md from run records"
+    )
+    report.add_argument(
+        "runs", nargs="+", type=Path, help="run directories; the first is the baseline"
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -61,6 +68,10 @@ def run(args: argparse.Namespace) -> None:
                 print(
                     "\nnote: uncommitted changes, so this run can't be reproduced from its commit"
                 )
+        case "report-retrieval":
+            from support_rag.retrieval_report import write_report
+
+            print(f"wrote {write_report(args.runs)}")
 
 
 if __name__ == "__main__":
