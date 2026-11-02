@@ -13,6 +13,16 @@ def main(argv: list[str] | None = None) -> None:
     commands.add_parser("stats", help="write corpus statistics to reports/corpus_stats.md")
     splits = commands.add_parser("splits", help="create the frozen dev/test splits (run once)")
     splits.add_argument("--force", action="store_true", help="overwrite existing splits")
+    evaluate = commands.add_parser(
+        "eval-retrieval", help="run BM25 over a split and save a run record in runs/"
+    )
+    evaluate.add_argument(
+        "--split",
+        choices=["dev", "synthetic_reference"],
+        default="dev",
+        help="questions to evaluate (the test set runs only at milestones)",
+    )
+    evaluate.add_argument("--no-stem", action="store_true", help="turn off stemming")
     args = parser.parse_args(argv)
 
     try:
@@ -40,6 +50,17 @@ def run(args: argparse.Namespace) -> None:
             print("wrote data/splits/splits.json")
             for name, value in counts.items():
                 print(f"  {name}: {value}")
+        case "eval-retrieval":
+            from support_rag.retrieval_eval import format_summary, run_bm25_eval
+            from support_rag.runs import load_config, load_summary
+
+            run_dir = run_bm25_eval(args.split, stem=not args.no_stem)
+            print(f"wrote {run_dir}\n")
+            print(format_summary(load_summary(run_dir)))
+            if load_config(run_dir)["git"]["dirty"]:
+                print(
+                    "\nnote: uncommitted changes, so this run can't be reproduced from its commit"
+                )
 
 
 if __name__ == "__main__":

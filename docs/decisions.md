@@ -354,6 +354,35 @@ Each entry has the same parts: context, decision, alternatives, why, trade-offs,
 
 ---
 
+## D-018 · Run records: plain files, per-question JSONL, git state recorded (Step 2)
+
+**Context.** A number like "recall@5 = 0.62" is only worth something if you can say what produced it, on which questions, and what happened question by question. Every strategy, from retrieval to agentic search, will need the same record.
+
+**Decision.** Each run writes a directory, `runs/<timestamp>_<name>/`, with:
+- `config.json`: what produced it (retriever and its settings, tokenizer settings, retrieval depth, split, dataset revision, git commit and whether the working tree had uncommitted changes, library versions).
+- `questions.jsonl`: one line per question (ID, subset, single or multi-article, gold IDs, the top 20 IDs and scores, its metrics, latency), appended as each question finishes.
+- `summary.json`: per-question averages, overall and by group.
+
+`runs/` is git-ignored. Committed reports name the run IDs and git commit they came from.
+
+**Alternatives.**
+- Averages only: enough to report a number, not to defend one. No paired tests, no confidence intervals, no failure analysis.
+- An experiment tracker (MLflow, Weights & Biases): the industry tools, with a comparison UI, but a server or account and a dependency for a few dozen runs, and another layer between the code and the numbers (D-003).
+- Postgres: queryable, but there's no database until Step 4. Runs can be loaded into it later.
+- One JSON file per run: simpler, but only valid once the run finishes.
+- Committing runs: a retrieval run is free to regenerate and a synthetic-reference run is a few MB, so the report is committed instead. Revisited in Step 3, when runs cost money.
+
+**Why.**
+- Per-question results make the statistics possible (D-006): a paired comparison of two runs on the same questions, bootstrap confidence intervals, and reading the questions that failed. They also allow new breakdowns and new metrics (recall@3 from the saved top 20) without re-running.
+- JSONL appends one finished question at a time, so a long LLM run that crashes keeps what it finished and can resume.
+- The git commit plus the uncommitted-changes flag says whether a run can be reproduced from its commit. Test-set runs will refuse to start with uncommitted changes.
+
+**Trade-offs.** No dashboard: comparisons are small reports we write. Run directories accumulate locally and need occasional cleanup.
+
+**In short.** "Every run saves its config, git commit and per-question results, not just averages. Averages are for reporting; per-question results are what let me run paired tests, put confidence intervals on differences and read the failures."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

@@ -21,3 +21,4 @@ ROOT = Path(os.environ.get("SRAG_ROOT", Path(__file__).resolve().parents[2]))
 RAW_DIR = ROOT / "data" / "raw"
 SPLITS_PATH = ROOT / "data" / "splits" / "splits.json"
 REPORTS_DIR = ROOT / "reports"
+RUNS_DIR = ROOT / "runs"  # run records (D-018); git-ignored

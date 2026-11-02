@@ -60,6 +60,11 @@ class BM25Retriever:
         corpus_tokens = [tokenizer(article.contents) for article in articles]
         self._index.index(corpus_tokens, show_progress=False)
 
+    @property
+    def params(self) -> dict[str, str | float]:
+        """The BM25 settings in use, for the run record."""
+        return {"method": self._index.method, "k1": self._index.k1, "b": self._index.b}
+
     def search(self, query: str, k: int = 10) -> list[Hit]:
         """The top k articles for a query, best first. Articles scoring 0 are left out."""
         k = min(k, len(self._ids))  # bm25s refuses a k larger than the corpus
