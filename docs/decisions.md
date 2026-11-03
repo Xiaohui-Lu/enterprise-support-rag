@@ -628,7 +628,7 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **Trade-offs.**
 - All the models involved are Claude, so the panel can share the judge's blind spots; the audit measures that, on a small sample.
-- It costs about $11 on the batch API (estimated before the pilot), where hand labels cost nothing.
+- It cost $11.29, where hand labels cost nothing: $1.39 for a 5-item pilot, $9.48 for the batch, and $0.42 for retrying in real time a call that Opus at max effort had cut off at its output limit. A batch result that comes back incomplete is retried in real time, which covers temporary errors but pays twice for a cut-off.
 - The final labels mix panel grades (easier items) and hand labels (harder items), so kappa is also reported on the hand-labeled items alone.
 
 **In short.** "Four Claude configurations, two models at two efforts each, pre-label the sample through the judge's own prompt, so they see exactly what the judge sees. Items they all agree on take the panel's grade; the items they split on are labeled by hand, blind, plus a random audit of the unanimous ones, because models from one family can share a blind spot with the judge, and only a human check measures that. The judge's own model stays off the panel, so it can't grade itself into the ground truth."
