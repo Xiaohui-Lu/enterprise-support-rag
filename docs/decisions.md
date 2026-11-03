@@ -633,6 +633,13 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "Four Claude configurations, two models at two efforts each, pre-label the sample through the judge's own prompt, so they see exactly what the judge sees. Items they all agree on take the panel's grade; the items they split on are labeled by hand, blind, plus a random audit of the unanimous ones, because models from one family can share a blind spot with the judge, and only a human check measures that. The judge's own model stays off the panel, so it can't grade itself into the ground truth."
 
+**Update (2026-11-02).**
+- The panel settled 65 of 80 items and didn't settle 15. One of the 15 is unsettled because Opus at max effort hit its output limit twice.
+- The rule is `panel.consensus`: an item gets a label only when all four members graded it and agreed. A failed call counts as a split. The votes and labels are committed in `data/labels/panel.json`.
+- The 15 are hand-labeled blind (`srag label --adjudicate`), with groundedness asked where the panel split on it too.
+- The random audit of unanimous items is deferred to the end of the project, by choice, together with the 2 groundedness splits outside the 15. Until then the 65 panel labels are unaudited, so the judge's agreement is reported separately on them and on the 15 hand labels.
+- Without audit items mixed in, the labeler knows every item shown is one the panel split on.
+
 ---
 
 ## D-029 · Real-time LLM calls stream (Step 3)

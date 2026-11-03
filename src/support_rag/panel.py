@@ -4,11 +4,13 @@ Each member grades every sample item through the judge's own request, with only 
 and effort changed, so it sees exactly what the judge sees and never the strategy. Each
 member's verdicts are a run record. The printed summary is aggregates only (how often the
 members agree), never an item's grade, so the items they split on can still be labeled
-blind (D-027).
+blind (D-027). `srag panel-labels` then commits the votes and the panel's labels to
+data/labels/panel.json; an item the members didn't all agree on goes to a person.
 """
 
 from __future__ import annotations
 
+import json
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict
@@ -32,13 +34,69 @@ PANEL = (
     ("claude-fable-5-1", "max"),
 )
 # Opus at max effort thought for up to 14,140 tokens per item in the pilot, close to the
-# judge's 16,000. 20,000 leaves room and stays under the SDK's non-streaming limit (about
-# 21,300), which matters when a batch miss is retried in real time.
+# judge's 16,000. 20,000 was chosen while calls didn't stream yet (the SDK's limit was about
+# 21,300); it stays, so the panel's cached calls stay valid.
 PANEL_MAX_TOKENS = 20_000
+PANEL_LABELS_PATH = config.LABELS_DIR / "panel.json"
 
 
 def member_name(model: str, effort: str) -> str:
     return f"{model.removeprefix('claude-')}-{effort}"
+
+
+def consensus(votes: Sequence[str | None]) -> str | None:
+    """The panel's label for one item: the grade every member gave, or None, which sends
+    the item to a person (D-028). A failed call (None) counts as a split. Unanimity, not a
+    majority: three votes from two models could outvote the one dissent that marks a hard
+    item."""
+    if not votes or None in votes or len(set(votes)) > 1:
+        return None
+    return votes[0]
+
+
+def write_panel_labels(run_dirs: Sequence[Path], path: Path = PANEL_LABELS_PATH) -> dict:
+    """Commit every member's votes and the panel's labels, from the four full panel runs."""
+    if path.exists():
+        raise FileExistsError(f"{path} already exists. The panel labels are written once.")
+    configs = [load_config(run_dir) for run_dir in run_dirs]
+    members = [member_name(c["model"], c["effort"]) for c in configs]
+    if sorted(members) != sorted(member_name(m, e) for m, e in PANEL) or any(
+        c.get("limit") is not None for c in configs
+    ):
+        raise ValueError("give the four full panel runs, one per member")
+    verdicts = [{r["item"]: r for r in load_results(run_dir)} for run_dir in run_dirs]
+    items = []
+    for item in sorted(set.intersection(*(set(v) for v in verdicts))):
+        votes = {m: {k: v[item][k] for k in ("correctness", "grounded")}
+                 for m, v in zip(members, verdicts, strict=True)}  # fmt: skip
+        items.append(
+            {
+                "item": item,
+                "correctness": consensus([vote["correctness"] for vote in votes.values()]),
+                "grounded": consensus([vote["grounded"] for vote in votes.values()]),
+                "votes": votes,
+            }
+        )
+    panel = {
+        "version": 1,
+        "rule": "a label only when all four members agree (D-028)",
+        "runs": {m: c["run_id"] for m, c in zip(members, configs, strict=True)},
+        "counts": {
+            "items": len(items),
+            "correctness_labeled": sum(i["correctness"] is not None for i in items),
+            "correctness_to_a_person": sum(i["correctness"] is None for i in items),
+        },
+        "items": items,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(panel, indent=2) + "\n", encoding="utf-8")
+    return panel
+
+
+def load_panel_labels(path: Path = PANEL_LABELS_PATH) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(f"{path} not found. Run `srag panel-labels` first.")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def panel_requests(

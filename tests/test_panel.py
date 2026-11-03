@@ -1,10 +1,14 @@
+import pytest
+
 from support_rag.judge_eval import judge_request
 from support_rag.panel import (
     PANEL,
     PANEL_MAX_TOKENS,
+    consensus,
     format_agreement,
     panel_agreement,
     panel_requests,
+    write_panel_labels,
 )
 from support_rag.records import Article, Question
 from support_rag.runs import append_result, start_run
@@ -81,3 +85,39 @@ def test_the_printed_summary_never_shows_a_grade(tmp_path):
     text = format_agreement(panel_agreement(_member_runs(tmp_path, VOTES), SAMPLE))
     for grade in ("correct", "partial", "incorrect"):
         assert f"'{grade}'" not in text and f" {grade}" not in text.replace("Correctness", "")
+
+
+# consensus() and the panel labels
+
+
+def test_the_panel_labels_an_item_only_when_all_four_agree():
+    assert consensus(["partial"] * 4) == "partial"
+    assert consensus(["correct", "correct", "correct", "partial"]) is None
+    assert consensus(["n/a"] * 4) == "n/a"
+
+
+def test_a_failed_call_sends_the_item_to_a_person():
+    assert consensus(["correct", "correct", None, "correct"]) is None
+    assert consensus([]) is None
+
+
+def test_panel_labels_hold_every_vote_and_are_written_once(tmp_path):
+    run_dirs = _member_runs(tmp_path, VOTES)
+    path = tmp_path / "panel.json"
+    panel = write_panel_labels(run_dirs, path)
+    by_item = {i["item"]: i for i in panel["items"]}
+    assert by_item[1]["correctness"] == "correct"
+    assert by_item[2]["correctness"] is None
+    assert by_item[2]["votes"]["fable-5-1-max"]["correctness"] == "partial"
+    assert panel["counts"]["correctness_to_a_person"] == 3
+    with pytest.raises(FileExistsError):
+        write_panel_labels(run_dirs, path)
+
+
+def test_pilot_runs_cannot_become_panel_labels(tmp_path):
+    run_dirs = []
+    for n, (model, effort) in enumerate(PANEL):
+        run_dir = start_run(f"m{n}", {"model": model, "effort": effort, "limit": 5}, tmp_path)
+        run_dirs.append(run_dir)
+    with pytest.raises(ValueError):
+        write_panel_labels(run_dirs, tmp_path / "panel.json")

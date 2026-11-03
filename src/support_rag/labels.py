@@ -161,8 +161,22 @@ def append_label(path: Path, label: Mapping[str, Any]) -> None:
         f.write(json.dumps(label, ensure_ascii=False) + "\n")
 
 
+def adjudication_items(sample: Mapping[str, Any], panel: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The sample items the panel didn't settle (D-028), in sample order. Groundedness is
+    asked only where the panel also split on it and the answer cites articles."""
+    by_item = {p["item"]: p for p in panel["items"]}
+    return [
+        {
+            **item,
+            "check_grounded": bool(item["cited_ids"]) and by_item[item["item"]]["grounded"] is None,
+        }
+        for item in sample["items"]
+        if by_item[item["item"]]["correctness"] is None
+    ]
+
+
 def label_session(
-    sample: Mapping[str, Any],
+    items: Sequence[Mapping[str, Any]],
     questions: Mapping[str, Question],
     articles_by_id: Mapping[str, Article],
     *,
@@ -170,8 +184,7 @@ def label_session(
     ask: Callable[[str], str] = input,
     show: Callable[[str], None] = print,
 ) -> int:
-    """Label the items not labeled yet, in sample order. Returns how many were labeled."""
-    items = sample["items"]
+    """Label the given items not labeled yet, in order. Returns how many were labeled."""
     done = load_labels(labels_path)
     queue = deque(item for item in items if item["item"] not in done)
     history: list[Mapping[str, Any]] = []
@@ -179,7 +192,8 @@ def label_session(
     labeled = 0
     while queue:
         item = queue[0]
-        show(_render(item, questions[item["question_id"]], total=len(items)))
+        position = len(items) - len(queue) + 1
+        show(_render(item, questions[item["question_id"]], position=position, total=len(items)))
         key, note = _ask(ask, "correctness [c/p/i + note, u, q]> ", {*CORRECTNESS_KEYS, "u", "q"})
         if key == "q":
             break
@@ -209,7 +223,8 @@ def label_session(
         )
         history.append(queue.popleft())
         labeled += 1
-    show(f"\n{len(load_labels(labels_path))} of {len(items)} items labeled.")
+    labels = load_labels(labels_path)
+    show(f"\n{sum(item['item'] in labels for item in items)} of {len(items)} items labeled.")
     return labeled
 
 
@@ -225,10 +240,10 @@ def _ask(ask: Callable[[str], str], prompt: str, keys: set[str]) -> tuple[str, s
             return key.lower(), note.strip()
 
 
-def _render(item: Mapping[str, Any], question: Question, *, total: int) -> str:
+def _render(item: Mapping[str, Any], question: Question, *, position: int, total: int) -> str:
     rule = "-" * 72
     return (
-        f"\n{rule}\nItem {item['item']} of {total}\n{rule}\n\n"
+        f"\n{rule}\nItem {position} of {total}\n{rule}\n\n"
         f"QUESTION\n{question.question}\n\n"
         f"REFERENCE ANSWER (support expert)\n{question.answer}\n\n"
         f"ANSWER TO GRADE\n{item['text']}\n"

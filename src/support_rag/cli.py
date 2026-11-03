@@ -49,7 +49,12 @@ def main(argv: list[str] | None = None) -> None:
     label_sample.add_argument(
         "runs", nargs="+", type=Path, help="one full dev_real answer run per strategy"
     )
-    commands.add_parser("label", help="hand-label the sample, blind to strategy (resumable)")
+    label = commands.add_parser(
+        "label", help="hand-label the sample, blind to strategy (resumable)"
+    )
+    label.add_argument(
+        "--adjudicate", action="store_true", help="only the items the panel didn't settle"
+    )
     panel = commands.add_parser(
         "panel", help="pre-label the sample with the four-model panel (paid, cached)"
     )
@@ -58,6 +63,10 @@ def main(argv: list[str] | None = None) -> None:
         "--batch", action="store_true", help="send uncached calls through the batch API"
     )
     panel.add_argument("--batch-id", help="collect a batch submitted earlier; never pays twice")
+    panel_labels = commands.add_parser(
+        "panel-labels", help="commit the panel's votes and labels from its four runs (once)"
+    )
+    panel_labels.add_argument("runs", nargs=4, type=Path, help="the four full panel runs")
     args = parser.parse_args(argv)
 
     try:
@@ -128,14 +137,28 @@ def run(args: argparse.Namespace) -> None:
             for name, value in counts.items():
                 print(f"  {name}: {value}")
         case "label":
-            from support_rag.labels import label_session, load_sample
+            from support_rag.labels import adjudication_items, label_session, load_sample
             from support_rag.wixqa import load_articles, load_questions
 
             sample = load_sample()
+            if args.adjudicate:
+                from support_rag.panel import load_panel_labels
+
+                items = adjudication_items(sample, load_panel_labels())
+            else:
+                items = sample["items"]
             questions = {
                 q.id: q for subset in ("expertwritten", "simulated") for q in load_questions(subset)
             }
-            label_session(sample, questions, {a.id: a for a in load_articles()})
+            label_session(items, questions, {a.id: a for a in load_articles()})
+        case "panel-labels":
+            from support_rag.panel import write_panel_labels
+
+            counts = write_panel_labels(args.runs)["counts"]
+            # Counts only; the file holds every vote, so don't open it before labeling.
+            print("wrote data/labels/panel.json")
+            for name, value in counts.items():
+                print(f"  {name}: {value}")
         case "panel":
             import json
 

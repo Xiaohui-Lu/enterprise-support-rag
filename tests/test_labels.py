@@ -1,6 +1,12 @@
 import pytest
 
-from support_rag.labels import draw_sample, label_session, load_labels, write_sample
+from support_rag.labels import (
+    adjudication_items,
+    draw_sample,
+    label_session,
+    load_labels,
+    write_sample,
+)
 from support_rag.records import Article, Question
 from support_rag.runs import append_result, start_run
 
@@ -47,7 +53,12 @@ class Replies:
 def _label(sample, path, *replies):
     shown = []
     labeled = label_session(
-        sample, QUESTIONS, ARTICLES, labels_path=path, ask=Replies(*replies), show=shown.append
+        sample["items"],
+        QUESTIONS,
+        ARTICLES,
+        labels_path=path,
+        ask=Replies(*replies),
+        show=shown.append,
     )
     return labeled, "\n".join(shown)
 
@@ -152,3 +163,34 @@ def test_the_labeler_never_sees_the_strategy(tmp_path):
     _, shown = _label(sample, path, *["c", "y"] * 20)
     for hint in ("s0", "s1", "s_star", "strategy", "closed book"):
         assert hint not in shown.lower()
+
+
+# adjudication_items()
+
+
+def test_only_items_the_panel_split_on_go_to_a_person():
+    sample = _sample(n_grounded=0)
+    first, second, third = sample["items"][:3]
+    panel = {
+        "items": [
+            {"item": first["item"], "correctness": "correct", "grounded": "yes"},
+            {"item": second["item"], "correctness": None, "grounded": "yes"},
+            {"item": third["item"], "correctness": None, "grounded": None},
+        ]
+        + [
+            {"item": i["item"], "correctness": "correct", "grounded": "yes"}
+            for i in sample["items"][3:]
+        ]
+    }
+    items = adjudication_items(sample, panel)
+    assert [i["item"] for i in items] == [second["item"], third["item"]]
+    # Groundedness is asked only where the panel split on it too, and the answer cites.
+    assert items[0]["check_grounded"] is False
+    assert items[1]["check_grounded"] is bool(third["cited_ids"])
+
+
+def test_progress_counts_only_the_items_being_labeled(tmp_path):
+    sample, path = _sample(n_grounded=0), tmp_path / "labels.jsonl"
+    _, shown = _label({"items": sample["items"][:2]}, path, "c", "c")
+    assert "Item 2 of 2" in shown
+    assert "2 of 2 items labeled." in shown
