@@ -53,6 +53,13 @@ def main(argv: list[str] | None = None) -> None:
     report_answers.add_argument(
         "runs", nargs="+", type=Path, help="one judge run per strategy, same judge settings"
     )
+    report_tuning = commands.add_parser(
+        "report-tuning", help="candidate settings vs the default on dev, to reports/"
+    )
+    report_tuning.add_argument("name", help="report name, e.g. effort or k")
+    report_tuning.add_argument(
+        "runs", nargs="+", type=Path, help="judge runs, including each strategy's default"
+    )
     validate = commands.add_parser(
         "validate-judge", help="judge vs labels: agreement and kappa, to reports/"
     )
@@ -151,6 +158,11 @@ def run(args: argparse.Namespace) -> None:
             from support_rag.answer_report import write_report
 
             path = write_report(args.runs)
+            print(path.read_text(encoding="utf-8"))
+        case "report-tuning":
+            from support_rag.tuning import write_report
+
+            path = write_report(args.name, args.runs)
             print(path.read_text(encoding="utf-8"))
         case "validate-judge":
             from support_rag.judge_validation import final_labels, validate_judge, write_report

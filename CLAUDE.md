@@ -19,6 +19,7 @@ uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, c
 uv run srag judge runs/<answers> --effort high --batch   # grade an answer run (paid, cached)
 uv run srag validate-judge runs/<judge runs>      # judge vs labels: kappa, to reports/judge_validation.md
 uv run srag report-answers runs/<judge runs>      # % correct with CIs and paired tests, to reports/
+uv run srag report-tuning <name> runs/<judge runs> # candidates vs the default on dev, to reports/
 uv run srag label-sample runs/<s0> runs/<s1> runs/<s_star>   # draw the hand-label sample, once
 uv run srag panel --limit 5                       # four-model panel pilot; --batch for the full run
 uv run srag panel-labels runs/<4 panel runs>      # commit the panel's votes and labels, once

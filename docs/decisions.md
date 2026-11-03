@@ -747,6 +747,31 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-033 · Tuning effort and k on dev: the default stays unless a candidate is clearly better (Step 3)
+
+**Context.** The generator has run at Haiku's default effort (`medium`), and S1 at k=5, until the judge was validated (D-024, D-031). Dev has 50 real questions. On that sample, one rate is uncertain by about ±14 points, so only large differences can be detected. Trying several settings makes the best one look better than it is: if three settings are truly equal, the one that measures highest is typically several points high by luck (the winner's curse).
+
+**Decision (written and committed before the tuning runs).**
+- Effort: `low` and `high` against `medium`, on all three strategies, since one effort applies to all of them and keeps the comparison fair (D-024). The decision uses the pooled paired difference: per question, the candidate's result minus the default's, averaged over the strategies, with a bootstrap interval over questions.
+- k for S1: 1, 3 and 10 against 5, at the effort chosen above.
+- A candidate replaces the default only if it's clearly better: its paired 95% interval lies entirely above zero. Otherwise the default stays. A cheaper setting that's within noise is noted for retesting on more questions; Step 4 re-tunes retrieval anyway.
+- The judge stays at judge-v1, `high` (D-031). Answers are generated in real time, so latency can be compared; judging goes through the batch API.
+- `srag report-tuning` writes `reports/tuning_<name>.md`.
+
+**Alternatives.**
+- Take the setting with the best number: simple, but on 50 questions that's partly picking luck, and the gain shrinks on the test set.
+- Tune on the 500 synthetic dev questions: ten times more questions, but easier ones, with wording taken from the articles, a distribution the judge wasn't validated on and the product won't see.
+- A full grid of effort × k (12 settings): catches interactions, but gives luck more chances to produce a false winner.
+- Tune on the test set: never (D-004).
+
+**Why.** With few questions and several candidates, the default needs protection against luck, and a rule written before seeing results can't be bent to fit them. Pooling over strategies uses all 150 answers for the effort decision while keeping the question as the unit, since three answers to one question aren't independent.
+
+**Trade-offs.** A real but small improvement, a few points, can't be detected on 50 questions and will be missed. Keeping the default when nothing wins is conservative, not a finding that the settings are equal. The runs cost about $2.
+
+**In short.** "I tuned the generator's effort and the number of retrieved articles on dev, with the rule fixed before any run: the default stays unless a candidate's paired 95% interval is entirely above zero. On 50 questions, picking the best-looking of several settings mostly picks luck, so a clear win was the only kind I'd accept."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
