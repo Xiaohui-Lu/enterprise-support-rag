@@ -31,6 +31,10 @@ PANEL = (
     ("claude-fable-5-1", "high"),
     ("claude-fable-5-1", "max"),
 )
+# Opus at max effort thought for up to 14,140 tokens per item in the pilot, close to the
+# judge's 16,000. 20,000 leaves room and stays under the SDK's non-streaming limit (about
+# 21,300), which matters when a batch miss is retried in real time.
+PANEL_MAX_TOKENS = 20_000
 
 
 def member_name(model: str, effort: str) -> str:
@@ -50,6 +54,7 @@ def panel_requests(
             articles_by_id,
             effort=effort,
             model=model,
+            max_tokens=PANEL_MAX_TOKENS,
         )
         for model, effort in PANEL
         for item in items
@@ -96,6 +101,7 @@ def run_panel(
                 "model": model,
                 "effort": effort,
                 "prompt_version": JUDGE_PROMPT_VERSION,
+                "max_tokens": PANEL_MAX_TOKENS,
                 "sample": "data/labels/sample.json",
                 "n_items": len(items),
                 "limit": limit,
@@ -106,7 +112,13 @@ def run_panel(
             for item in items:
                 question = questions[item["question_id"]]
                 result = judge_answer(
-                    llm, _as_answer(item), question, articles_by_id, effort=effort, model=model
+                    llm,
+                    _as_answer(item),
+                    question,
+                    articles_by_id,
+                    effort=effort,
+                    model=model,
+                    max_tokens=PANEL_MAX_TOKENS,
                 )
                 append_result(run_dir, {"item": item["item"], **asdict(result)})
                 results.append(result)

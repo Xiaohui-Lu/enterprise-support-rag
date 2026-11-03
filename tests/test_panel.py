@@ -1,5 +1,11 @@
 from support_rag.judge_eval import judge_request
-from support_rag.panel import PANEL, format_agreement, panel_agreement, panel_requests
+from support_rag.panel import (
+    PANEL,
+    PANEL_MAX_TOKENS,
+    format_agreement,
+    panel_agreement,
+    panel_requests,
+)
 from support_rag.records import Article, Question
 from support_rag.runs import append_result, start_run
 
@@ -24,7 +30,8 @@ def test_the_panel_sees_exactly_what_the_judge_sees():
         panel_requests(ITEMS, QUESTIONS, ARTICLES), PANEL, strict=True
     ):
         assert (request["model"], request["output_config"]["effort"]) == (model, effort)
-        same = {**request, "model": judge["model"]}
+        assert request["max_tokens"] == PANEL_MAX_TOKENS  # an output limit, not input
+        same = {**request, "model": judge["model"], "max_tokens": judge["max_tokens"]}
         same["output_config"] = {**request["output_config"], "effort": "x"}
         assert same == judge
 

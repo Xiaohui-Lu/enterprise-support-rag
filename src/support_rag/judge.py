@@ -19,6 +19,7 @@ from support_rag.records import Article
 JUDGE_PROMPT_VERSION = "judge-v1"  # bump on any change to the rubric or the schema
 CORRECTNESS = ("correct", "partial", "incorrect")
 GROUNDED = ("yes", "partly", "no", "n/a")
+JUDGE_MAX_TOKENS = 16_000  # thinking counts toward it
 
 # The rubric is also shown to the hand labeler (D-027), so both grade by the same words.
 CORRECTNESS_RUBRIC = """\
@@ -74,7 +75,7 @@ def build_judge_request(
     cited: Sequence[tuple[int, Article]],
     *,
     effort: str,
-    max_tokens: int = 16_000,
+    max_tokens: int = JUDGE_MAX_TOKENS,
     model: str = JUDGE_MODEL,
 ) -> dict[str, Any]:
     """`cited` pairs each cited article with the number the answer uses for it, so the

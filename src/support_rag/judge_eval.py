@@ -10,7 +10,12 @@ from typing import Any
 
 from support_rag import config
 from support_rag.answer_eval import LLM
-from support_rag.judge import JUDGE_PROMPT_VERSION, build_judge_request, parse_verdict
+from support_rag.judge import (
+    JUDGE_MAX_TOKENS,
+    JUDGE_PROMPT_VERSION,
+    build_judge_request,
+    parse_verdict,
+)
 from support_rag.llm import JUDGE_MODEL, cost_usd
 from support_rag.records import Article, Question
 from support_rag.runs import append_result, load_config, load_results, start_run, write_summary
@@ -40,13 +45,20 @@ def judge_request(
     *,
     effort: str,
     model: str = JUDGE_MODEL,
+    max_tokens: int = JUDGE_MAX_TOKENS,
 ) -> dict[str, Any]:
     """The judge's request for one saved answer (a line of an answer run's questions.jsonl)."""
     # The answer cites articles by their number in its own prompt: [1] is context_ids[0].
     numbers = {article_id: n for n, article_id in enumerate(answer["context_ids"], start=1)}
     cited = [(numbers[a], articles_by_id[a]) for a in answer["cited_ids"]]
     return build_judge_request(
-        question.question, question.answer, answer["text"], cited, effort=effort, model=model
+        question.question,
+        question.answer,
+        answer["text"],
+        cited,
+        effort=effort,
+        model=model,
+        max_tokens=max_tokens,
     )
 
 
@@ -58,6 +70,7 @@ def judge_answer(
     *,
     effort: str,
     model: str = JUDGE_MODEL,
+    max_tokens: int = JUDGE_MAX_TOKENS,
 ) -> JudgedAnswer:
     """Grade one saved answer (a line of an answer run's questions.jsonl)."""
     base = {
@@ -71,7 +84,9 @@ def judge_answer(
             judged=False, stop_reason=None, usage={}, cost_usd=0.0, cached=False,
         )  # fmt: skip
 
-    request = judge_request(answer, question, articles_by_id, effort=effort, model=model)
+    request = judge_request(
+        answer, question, articles_by_id, effort=effort, model=model, max_tokens=max_tokens
+    )
     result = llm.complete(request)
     cost = round(cost_usd(result.model, result.usage, batch=result.batch), 6)
     if not result.complete:

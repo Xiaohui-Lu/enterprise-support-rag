@@ -609,7 +609,7 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **Decision.**
 - Four configurations grade the 80 sample items: Claude Opus 5.5 at high and at max effort, and Claude Fable 5.1 at high and at max effort (`srag panel`).
-- They use the judge's own request (D-025) with only the model and effort changed, so they see exactly what the judge sees and never the strategy. Bulk calls go through the batch API (D-022). As with the judge, there's no refusal fallback (D-026).
+- They use the judge's own request (D-025) with only the model, the effort and the output limit changed, so they see exactly what the judge sees and never the strategy. The output limit is 20,000 tokens instead of 16,000, because Opus at max effort thought for up to 14,140 tokens on a pilot item. Bulk calls go through the batch API (D-022). As with the judge, there's no refusal fallback (D-026).
 - If all four agree on an item, it takes that grade. Items they split on are labeled by hand, blind to their votes. So is a random audit of about 12 unanimous items, which measures how often a unanimous panel is wrong.
 - The printed panel summary shows aggregates only: how many items are unanimous or split, and which members disagree. That way the split items can still be labeled blind. Whether and how much to hand-label is decided after seeing those aggregates.
 
