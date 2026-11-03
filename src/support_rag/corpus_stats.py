@@ -175,5 +175,5 @@ def write_report(
     report = build_report(articles, questions, count_tokens or tiktoken_counter())
     reports_dir.mkdir(parents=True, exist_ok=True)
     path = reports_dir / "corpus_stats.md"
-    path.write_text(report, encoding="utf-8")
+    path.write_text(report, encoding="utf-8", newline="\n")
     return path

@@ -185,5 +185,5 @@ def write_report(judge_runs: Sequence[Path], reports_dir: Path = config.REPORTS_
     split = next(iter(result["strategies"].values()))["split"]
     path = reports_dir / f"answers_{split}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(format_report(result), encoding="utf-8")
+    path.write_text(format_report(result), encoding="utf-8", newline="\n")
     return path

@@ -89,7 +89,7 @@ def write_panel_labels(run_dirs: Sequence[Path], path: Path = PANEL_LABELS_PATH)
         "items": items,
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(panel, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(panel, indent=2) + "\n", encoding="utf-8", newline="\n")
     return panel
 
 

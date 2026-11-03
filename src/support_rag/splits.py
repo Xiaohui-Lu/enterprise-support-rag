@@ -76,7 +76,7 @@ def write_splits(
         load_questions("synthetic", raw_dir),
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(splits, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(splits, indent=2) + "\n", encoding="utf-8", newline="\n")
     return splits
 
 

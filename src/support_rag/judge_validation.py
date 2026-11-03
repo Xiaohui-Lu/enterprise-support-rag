@@ -197,5 +197,5 @@ def write_report(
     path: Path = REPORT_PATH,
 ) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(format_report(results, labels), encoding="utf-8")
+    path.write_text(format_report(results, labels), encoding="utf-8", newline="\n")
     return path

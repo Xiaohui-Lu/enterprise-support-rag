@@ -251,5 +251,5 @@ def write_report(
     result = compare_to_default(arms, default_effort=default_effort, default_k=default_k)
     path = reports_dir / f"tuning_{name}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(format_report(name, result), encoding="utf-8")
+    path.write_text(format_report(name, result), encoding="utf-8", newline="\n")
     return path
