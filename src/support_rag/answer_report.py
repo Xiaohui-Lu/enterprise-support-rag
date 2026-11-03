@@ -58,6 +58,8 @@ def compare_strategies(
             "latency_p50_ms": answers["latency_p50_ms"],
             "answers_run": answers_config["run_id"],
             "split": answers_config["split"],
+            "milestone": answers_config.get("milestone"),
+            "commit": answers_config["git"]["commit"],
             "name": STRATEGY_NAMES[strategy]
             + (f" top {answers_config['k']}" if answers_config.get("k") else ""),
             "generator": (answers_config["model"], answers_config["effort"]),
@@ -103,6 +105,21 @@ def _p(value: float) -> str:
     return "<0.001" if value < 0.001 else f"{value:.3f}"
 
 
+def _provenance(strategies: Mapping[str, Mapping[str, Any]]) -> str:
+    """Dev results are for tuning; a test report says which milestone and commit it came from."""
+    if {s["split"] for s in strategies.values()} != {"test"}:
+        return (
+            "- These are dev results, used for tuning. Claims come from the test set at a "
+            "milestone (D-004)."
+        )
+    milestones = ", ".join(sorted({str(s["milestone"]) for s in strategies.values()}))
+    commits = ", ".join(sorted({str(s["commit"])[:7] for s in strategies.values()}))
+    return (
+        f"- Test set, milestone {milestones}, from commit {commits}: run once with the settings "
+        "tuned on dev (D-033). Nothing was changed after seeing these results (D-034)."
+    )
+
+
 def format_report(result: Mapping[str, Any]) -> str:
     judge = result["judge"]
     any_strategy = next(iter(result["strategies"].values()))
@@ -119,8 +136,7 @@ def format_report(result: Mapping[str, Any]) -> str:
         "are paired on the same questions: the difference has a paired-bootstrap interval, "
         "and McNemar's exact test uses only the questions where the two strategies differ. "
         "The Holm p-value accounts for making three comparisons (D-032).",
-        "- These are dev results, used for tuning. Claims come from the test set at a "
-        "milestone (D-004).",
+        _provenance(result["strategies"]),
         "",
         "## Strategies",
         "",

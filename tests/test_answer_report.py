@@ -6,14 +6,20 @@ from support_rag.runs import append_result, start_run, write_summary
 QUESTIONS = [f"q{i}" for i in range(10)]
 
 
-def _runs(tmp_path, right_by_strategy, effort="high", failed=()):
+def _runs(tmp_path, right_by_strategy, effort="high", failed=(), split="dev_real"):
     """An answer run and a judge run per strategy; right_by_strategy: how many of the 10
     questions each gets right (the first N)."""
     judge_runs = []
     for strategy, n_right in right_by_strategy.items():
         answers = start_run(
             f"answers-{strategy}",
-            {"strategy": strategy, "split": "dev_real", "model": "haiku", "effort": "medium"},
+            {
+                "strategy": strategy,
+                "split": split,
+                "model": "haiku",
+                "effort": "medium",
+                "milestone": "M1" if split == "test" else None,
+            },
             tmp_path,
         )
         write_summary(
@@ -71,3 +77,15 @@ def test_the_report_names_the_judge_and_every_comparison(tmp_path):
     report = format_report(compare_strategies(runs, runs_dir=tmp_path))
     assert "rubric judge-v1, effort high" in report
     assert report.count(" vs ") == 3
+
+
+def test_a_dev_report_says_it_is_for_tuning(tmp_path):
+    report = format_report(compare_strategies(_runs(tmp_path, {"s0": 2}), runs_dir=tmp_path))
+    assert "These are dev results" in report
+
+
+def test_a_test_report_names_its_milestone(tmp_path):
+    runs = _runs(tmp_path, {"s0": 2, "s1": 6}, split="test")
+    report = format_report(compare_strategies(runs, runs_dir=tmp_path))
+    assert "milestone M1" in report
+    assert "dev results" not in report
