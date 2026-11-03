@@ -1,0 +1,16 @@
+{"item": 4, "correctness": "incorrect", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:21:40"}
+{"item": 9, "correctness": "correct", "grounded": null, "note": "\"the direction is closed with the reference, but the operation detail is different\"", "labeled_at": "2026-11-02T22:26:08"}
+{"item": 11, "correctness": "partial", "grounded": null, "note": "\"I think the grade answer looks even better than the reference answer\"", "labeled_at": "2026-11-02T22:31:51"}
+{"item": 12, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:33:38"}
+{"item": 19, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:37:18"}
+{"item": 24, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:38:38"}
+{"item": 41, "correctness": "incorrect", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:39:41"}
+{"item": 42, "correctness": "correct", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:40:47"}
+{"item": 42, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:42:03"}
+{"item": 43, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:42:23"}
+{"item": 46, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:45:10"}
+{"item": 52, "correctness": "incorrect", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:46:33"}
+{"item": 62, "correctness": "partial", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:47:29"}
+{"item": 68, "correctness": "incorrect", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:49:35"}
+{"item": 71, "correctness": "incorrect", "grounded": null, "note": "", "labeled_at": "2026-11-02T22:51:59"}
+{"item": 74, "correctness": "incorrect", "grounded": "yes", "note": "", "labeled_at": "2026-11-02T22:56:01"}
