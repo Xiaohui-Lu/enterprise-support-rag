@@ -524,6 +524,8 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "Thinking tokens are billed as output and delay the first word, and effort is the only control. I chose the judge's effort by measuring its agreement with my own labels at two settings, and only tuned the generator after the judge was validated, because the generator's answers can only be graded by the judge."
 
+**Outcome (D-031).** The judge runs at `high`. `medium` was cheaper by only $0.0003 per call, but it agreed less with the labels and scored the closed-book strategy 11 points too high.
+
 ---
 
 ## D-025 · The judge's rubric: three grades, reference-guided, blind, with JSON output (Step 3)
@@ -598,6 +600,8 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 - The reserve is smaller than the sample (56 answers), so a second round would have wider error bars.
 
 **In short.** "Before seeing any judge grade, I hand-labeled 80 dev answers, blind to the strategy, and measured the judge against them. The sample was drawn by whole questions, and the other dev questions were held in reserve: if the rubric had to change, I'd validate it on fresh labels from the reserve, because a rubric fixed on my labels will always agree better with those same labels."
+
+**Outcome (D-031).** Judge-v1 passed, so the rubric wasn't revised and the reserve questions weren't needed.
 
 **Update (D-028).** A panel of four Claude configurations now pre-labels the 80 answers; hand labels go to the items the panel splits on, plus a random audit. The sample, the blinding and the reserve are unchanged.
 
@@ -683,6 +687,34 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 **Trade-offs.** Kappa depends on how often each grade occurs, so it isn't comparable across groups with very different grade mixes, and it's undefined when both raters use a single grade. Each strategy has only 25 to 28 items, so per-strategy kappas are rough until the statistics step adds confidence intervals (D-006).
 
 **In short.** "I measured the judge with Cohen's kappa, not raw agreement, because when most answers are correct, a judge that always says 'correct' agrees most of the time and has learned nothing. Kappa subtracts the agreement you'd get by chance. I report it on the three grades and on correct versus not, since that's the decision behind my headline metric, and per strategy, against a bar of 0.6."
+
+---
+
+## D-031 · The judge is validated: judge-v1 at high effort, trusted for % correct (Step 3)
+
+**Context.** Sonnet 5.5 graded all dev answers with rubric judge-v1, at `medium` and at `high` effort. On the 80 labeled sample items (15 hand labels, 65 unanimous panel labels; D-027, D-028), it was compared with the labels by agreement and Cohen's kappa (D-030). Results are in `reports/judge_validation.md`.
+
+| Judge effort | Agreement | Kappa, 3 grades | Kappa, correct vs not | Cost per call |
+|---|---:|---:|---:|---:|
+| medium | 85.0% | 0.73 | 0.85 | $0.0034 |
+| high | 90.0% | 0.82 | 0.92 | $0.0037 |
+
+**Decision.**
+- Judge-v1 at `high` effort is the judge from here on. It clears the 0.6 bar overall and on correct vs not for every strategy, so the rubric isn't revised and the reserve questions aren't used.
+- The headline metric is % correct. Splitting the rest into partial vs incorrect isn't reliable for S0 (kappa 0.58 on three grades at `high`), so S0's partial count isn't interpreted.
+
+**Alternatives.**
+- `medium` effort: $0.0003 cheaper per call, but it scored S0 at 25% correct where the labels say 14%, while leaving S1 about right. That's a strategy-dependent bias, which doesn't cancel out of comparisons (D-021). Its kappa on S0 was 0.49.
+- Revise the rubric for partial vs incorrect on closed-book answers: it would need fresh labels from the reserve (D-027), for a distinction the headline metric doesn't use.
+
+**Why.** D-024's rule keeps the cheaper effort unless it's clearly worse. `medium` was clearly worse where it matters: on the closed-book strategy, in a direction that would flatter it against the others.
+
+**Trade-offs and caveats.**
+- The overall kappa is carried by clear-cut items. On the panel's 65 unanimous items, kappa is 0.97. That's likely optimistic, because the labels come from the same model family and aren't audited yet (D-028).
+- On the 15 hand-labeled items, where the panel split, kappa is 0.22 (three grades) and 0.33 (correct vs not): close to chance. About 1 answer in 5 is borderline, and there the judge's grade is close to a coin flip.
+- At `high`, the judge's % correct on the sample is 4 points above the labels on S0, equal on S1, and 7 points above on S*. That's 1 to 2 items each, within noise, but small gaps between strategies need confidence intervals (D-006) before they mean anything.
+
+**In short.** "I validated the judge against 80 labels: kappa 0.82 on three grades and 0.92 on correct versus not, at high effort, well above my 0.6 bar. Medium effort was barely cheaper but scored the closed-book strategy 11 points too high, a bias that would have distorted the comparison, so I kept high. The honest caveat: on the hardest answers, where even four strong models disagreed, the judge is close to chance, so small differences between strategies need confidence intervals before they mean anything."
 
 ---
 
