@@ -790,6 +790,28 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-034 · The test set runs only at a named milestone, from a clean commit, enforced in code (Step 3)
+
+**Context.** Everything so far was tuned on dev: the judge's effort, the generator's effort and S1's k (D-031, D-033). The test set (350 real questions) gives the numbers the README reports. It's only trustworthy if no choice was made after seeing it (D-004), and if each reported number can be traced to the exact code that produced it.
+
+**Decision.**
+- `srag answer --split test` runs only with `--milestone M1` (or M2, M3), and only when the git working tree has no uncommitted changes. Otherwise it refuses. The milestone and the commit are recorded in the run.
+- M1 answers the test set once with the tuned settings: S0, S1 at k=10 and S*, at effort `medium`. The answers are generated in real time, so latency is measured (D-022), and judged by judge-v1 at `high` through the batch API.
+- The results are reported as they come out. No setting is changed in response to them; changes go through dev and wait for the next milestone.
+
+**Alternatives.**
+- The rule in CLAUDE.md only: it works until a debugging session runs `--split test` "just to check".
+- Locking the test data away (a separate file only the milestone job can read): the strongest guard, but more machinery than a one-person project needs.
+- Running the test set after every step: it would quietly become a second dev set, since every look tempts a change.
+
+**Why.** A guard in code turns "never by accident" into a property of the tool, and the clean-commit requirement means every reported number points to the code that produced it. Committed reports leave an audit trail: any later test run would show in the git history.
+
+**Trade-offs.** It can't stop a deliberate rerun after a change; it makes one visible. A milestone run is one sample of a nondeterministic generator, so rerunning it gives slightly different answers, and the intervals don't cover that (D-033).
+
+**In short.** "The test set only runs at a named milestone, from a clean commit, and the tool refuses otherwise. Every setting was tuned on dev first, the test numbers are reported as they came out, and each one traces back to the commit that produced it."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

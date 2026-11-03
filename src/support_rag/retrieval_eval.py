@@ -30,6 +30,7 @@ SPLITS = {
     "dev": ("dev_real", "dev_synthetic"),
     "dev_real": ("dev_real",),  # the 50 real dev questions, for answer runs
     "synthetic_reference": ("synthetic_reference",),
+    "test": ("test",),  # milestone runs only (D-004, D-034)
 }
 
 

@@ -2,6 +2,7 @@ import pytest
 
 from support_rag.answer_eval import (
     answer_question,
+    check_test_run,
     context_for,
     pick_evenly,
     summarize_answers,
@@ -78,3 +79,22 @@ def test_a_pilot_spreads_its_questions_over_the_list():
     questions = [Question(f"q{i}", "s", "", "", ("A",)) for i in range(50)]
     assert [q.id for q in pick_evenly(questions, 5)] == ["q0", "q10", "q20", "q30", "q40"]
     assert len(pick_evenly(questions, None)) == 50
+
+
+# check_test_run()
+
+
+def test_the_test_set_needs_a_named_milestone():
+    with pytest.raises(ValueError):
+        check_test_run(None, git={"commit": "abc", "dirty": False})
+
+
+def test_the_test_set_needs_a_clean_commit():
+    with pytest.raises(ValueError):
+        check_test_run("M1", git={"commit": "abc", "dirty": True})
+    with pytest.raises(ValueError):
+        check_test_run("M1", git={"commit": None, "dirty": None})  # outside git: can't tell
+
+
+def test_a_milestone_run_from_a_clean_commit_is_allowed():
+    check_test_run("M1", git={"commit": "abc", "dirty": False})

@@ -35,7 +35,10 @@ def main(argv: list[str] | None = None) -> None:
     )
     answer.add_argument("--strategy", choices=["s0", "s1", "s_star"], required=True)
     answer.add_argument(
-        "--split", choices=["dev_real"], default="dev_real", help="the test set runs only at M1"
+        "--split", choices=["dev_real", "test"], default="dev_real", help="test: milestones only"
+    )
+    answer.add_argument(
+        "--milestone", choices=["M1", "M2", "M3"], help="required for the test split (D-034)"
     )
     answer.add_argument(
         "--effort", choices=["low", "medium", "high"], help="default: the tuned value (D-033)"
@@ -150,6 +153,7 @@ def run(args: argparse.Namespace) -> None:
                 effort=args.effort or DEFAULT_EFFORT,
                 k=args.k or DEFAULT_K,
                 limit=args.limit,
+                milestone=args.milestone,
             )
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))

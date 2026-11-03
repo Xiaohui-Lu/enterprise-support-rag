@@ -1,7 +1,7 @@
 """Answer runs: one strategy over a split, every answer saved with its tokens, cost and latency.
 
-Answers are only generated here; grading them is the judge's job. The test set is not
-offered: it runs once, at milestone M1 (D-004).
+Answers are only generated here; grading them is the judge's job. The test set runs only at
+a named milestone, from a clean commit (D-004, D-034).
 """
 
 from __future__ import annotations
@@ -18,12 +18,13 @@ from support_rag.answer import PROMPT_VERSION, build_request, parse_answer
 from support_rag.llm import LLMResult, cost_usd
 from support_rag.records import Article, Question
 from support_rag.retrieval_eval import Retriever, questions_for_split
-from support_rag.runs import append_result, start_run, write_summary
+from support_rag.runs import append_result, git_state, start_run, write_summary
 
 # The generator's settings after tuning on dev (D-033): Haiku's default effort, and how
 # many BM25 articles S1 shows the model.
 DEFAULT_EFFORT = "medium"
 DEFAULT_K = 10
+MILESTONES = ("M1", "M2", "M3")
 
 
 class LLM(Protocol):
@@ -123,6 +124,15 @@ def _mean(values: Any) -> float:
     return round(statistics.fmean(values), 1) if values else 0.0
 
 
+def check_test_run(milestone: str | None, git: dict[str, Any] | None = None) -> None:
+    """The test set runs only at a named milestone, and only from a clean commit, so the run
+    can be reproduced from that commit and nothing is tuned on it (D-004, D-034)."""
+    if milestone not in MILESTONES:
+        raise ValueError(f"the test set runs only at a milestone: pass --milestone {MILESTONES[0]}")
+    if (git or git_state())["dirty"] is not False:
+        raise ValueError("commit everything first: a test run must be reproducible from its commit")
+
+
 def pick_evenly(questions: Sequence[Question], limit: int | None) -> list[Question]:
     """`limit` questions spread evenly over the list, so a pilot mixes the subsets."""
     if limit is None or limit >= len(questions):
@@ -138,9 +148,12 @@ def run_answers(
     effort: str = DEFAULT_EFFORT,
     k: int = DEFAULT_K,
     limit: int | None = None,
+    milestone: str | None = None,
     runs_dir: Path = config.RUNS_DIR,
 ) -> Path:
     """Answer a split with one strategy and save the run. Returns the run directory."""
+    if split == "test":
+        check_test_run(milestone)
     from support_rag.bm25 import STOPWORDS, BM25Retriever
     from support_rag.llm import GENERATOR_MODEL, LLMClient
     from support_rag.llm_cache import LLMCache
@@ -160,6 +173,7 @@ def run_answers(
         "split": split,
         "n_questions": len(questions),
         "limit": limit,
+        "milestone": milestone,
     }
     if retriever is not None:
         run_config["k"] = k
