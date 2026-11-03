@@ -1,0 +1,73 @@
+import pytest
+
+from support_rag.answer_report import compare_strategies, format_report
+from support_rag.runs import append_result, start_run, write_summary
+
+QUESTIONS = [f"q{i}" for i in range(10)]
+
+
+def _runs(tmp_path, right_by_strategy, effort="high", failed=()):
+    """An answer run and a judge run per strategy; right_by_strategy: how many of the 10
+    questions each gets right (the first N)."""
+    judge_runs = []
+    for strategy, n_right in right_by_strategy.items():
+        answers = start_run(
+            f"answers-{strategy}",
+            {"strategy": strategy, "split": "dev_real", "model": "haiku", "effort": "medium"},
+            tmp_path,
+        )
+        write_summary(
+            answers,
+            {"n": 10, "declined": 1, "mean_input_tokens": 100.0, "mean_output_tokens": 500.0,
+             "cost_of_answers_usd": 0.01, "latency_p50_ms": 3000.0},
+        )  # fmt: skip
+        judge = start_run(
+            f"judge-{strategy}",
+            {"kind": "judge", "strategy": strategy, "answers_run": answers.name,
+             "model": "sonnet", "effort": effort, "prompt_version": "judge-v1"},
+            tmp_path,
+        )  # fmt: skip
+        for i, question_id in enumerate(QUESTIONS):
+            grade = "correct" if i < n_right else "partial"
+            if (strategy, question_id) in failed:
+                grade = None
+            append_result(judge, {"question_id": question_id, "correctness": grade})
+        judge_runs.append(judge)
+    return judge_runs
+
+
+def test_each_strategy_gets_its_rate_and_an_interval(tmp_path):
+    result = compare_strategies(_runs(tmp_path, {"s0": 2, "s1": 6}), runs_dir=tmp_path)
+    s1 = result["strategies"]["s1"]
+    assert s1["pct_correct"] == 60.0
+    assert s1["ci"][0] < 60.0 < s1["ci"][1]
+    assert s1["cost_per_answer_usd"] == pytest.approx(0.001)
+
+
+def test_comparisons_are_paired_on_the_same_questions(tmp_path):
+    result = compare_strategies(_runs(tmp_path, {"s0": 2, "s1": 6}), runs_dir=tmp_path)
+    (comparison,) = result["comparisons"]  # only S1 vs S0 has both strategies
+    assert (comparison["better"], comparison["base"]) == ("s1", "s0")
+    assert comparison["difference"] == 40.0
+    assert (comparison["only_a"], comparison["only_b"]) == (4, 0)
+    assert comparison["p_holm"] == comparison["p_value"]  # one comparison: nothing to adjust
+
+
+def test_a_judge_failure_drops_the_question_from_its_comparisons(tmp_path):
+    runs = _runs(tmp_path, {"s0": 2, "s1": 6}, failed={("s1", "q0")})
+    result = compare_strategies(runs, runs_dir=tmp_path)
+    assert result["strategies"]["s1"]["judge_failed"] == 1
+    assert result["comparisons"][0]["n"] == 9
+
+
+def test_runs_with_different_judge_settings_are_rejected(tmp_path):
+    runs = _runs(tmp_path / "a", {"s0": 2}) + _runs(tmp_path / "b", {"s1": 6}, effort="medium")
+    with pytest.raises(ValueError):
+        compare_strategies(runs, runs_dir=tmp_path / "a")
+
+
+def test_the_report_names_the_judge_and_every_comparison(tmp_path):
+    runs = _runs(tmp_path, {"s0": 2, "s1": 6, "s_star": 8})
+    report = format_report(compare_strategies(runs, runs_dir=tmp_path))
+    assert "rubric judge-v1, effort high" in report
+    assert report.count(" vs ") == 3

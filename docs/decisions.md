@@ -718,6 +718,35 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-032 · Statistics: bootstrap intervals over questions, paired comparisons with McNemar's test, Holm across comparisons (Step 3)
+
+**Context.** Strategies are compared on 50 dev questions now and about 350 test questions at M1. At these sizes, one accuracy figure is uncertain by about ±14 points (dev) or ±5 (test), and every strategy answers the same questions, which a comparison should use (D-006).
+
+**Decision.**
+- Each strategy's % correct gets a 95% percentile bootstrap interval: resample the questions with replacement 10,000 times (seed fixed), recompute, and keep the middle 95%.
+- Two strategies are compared question by question. The difference gets a paired bootstrap interval (resampling questions, which is the same as resampling the per-question differences). It also gets McNemar's exact test: only the questions where exactly one strategy is right count, and under "no difference" each is a coin flip. That's the sign test used for stemming in Step 2 (D-019).
+- The three comparisons (S1 vs S0, S* vs S1, S* vs S0) get Holm-adjusted p-values.
+- Declines count as incorrect. A judge failure drops the question from that strategy's figures and from any comparison that includes it.
+- `srag report-answers` writes `reports/answers_<split>.md`.
+
+**Alternatives.**
+- Wilson or normal-approximation intervals: exact enough for a single proportion and needs no resampling. But the bootstrap treats every metric the same way (% correct, cost, MRR, a difference), so one method covers the whole project.
+- BCa bootstrap: better coverage for skewed statistics, but more complex, for little gain on proportions.
+- Unpaired comparisons (two separate intervals, or a two-proportion test): they ignore that both strategies saw the same questions, so they're wider. Easy and hard questions affect both strategies, and pairing cancels that out.
+- A t-test on the 0/1 results: it assumes roughly normal data, which per-question 0/1 results aren't.
+- No correction for multiple comparisons: with three tests, the chance of at least one false "significant" result is about three times higher than the stated level.
+
+**Why.** The question is the unit that varies, so it's what gets resampled. Pairing turns "is A's rate different from B's?" into "on the same questions, how often does A win where B loses?", which is the more sensitive question. McNemar's test is exact at any sample size and easy to explain.
+
+**Trade-offs.**
+- The percentile bootstrap is slightly too narrow on small samples with rates near 0% or 100%.
+- The intervals cover sampling noise only, not the judge's own errors (D-031). A difference within a few points of zero should still be read with the judge's caveats in mind.
+- Holm is conservative when the comparisons are related, as these are.
+
+**In short.** "Every rate has a 95% bootstrap interval over questions, and strategies are compared on the same questions: a paired bootstrap for the size of the difference, and McNemar's exact test, which only looks at questions where one strategy is right and the other wrong. With three comparisons I adjust the p-values with Holm. On 50 dev questions, retrieval beats closed book by 30 points, with an interval of 14 to 46."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

@@ -47,6 +47,12 @@ def main(argv: list[str] | None = None) -> None:
         "--batch", action="store_true", help="send uncached calls through the batch API"
     )
     judge.add_argument("--batch-id", help="collect a batch submitted earlier; never pays twice")
+    report_answers = commands.add_parser(
+        "report-answers", help="% correct per strategy with CIs and paired tests, to reports/"
+    )
+    report_answers.add_argument(
+        "runs", nargs="+", type=Path, help="one judge run per strategy, same judge settings"
+    )
     validate = commands.add_parser(
         "validate-judge", help="judge vs labels: agreement and kappa, to reports/"
     )
@@ -141,6 +147,11 @@ def run(args: argparse.Namespace) -> None:
             )
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))
+        case "report-answers":
+            from support_rag.answer_report import write_report
+
+            path = write_report(args.runs)
+            print(path.read_text(encoding="utf-8"))
         case "validate-judge":
             from support_rag.judge_validation import final_labels, validate_judge, write_report
             from support_rag.labels import load_labels, load_sample
