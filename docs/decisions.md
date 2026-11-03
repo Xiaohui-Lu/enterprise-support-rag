@@ -810,6 +810,16 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "The test set only runs at a named milestone, from a clean commit, and the tool refuses otherwise. Every setting was tuned on dev first, the test numbers are reported as they came out, and each one traces back to the commit that produced it."
 
+**Outcome (2026-11-03): M1.** The test run was made once, from commit `eadbd6a`, and cost about $4.60. Results are in `reports/answers_test.md` and the README.
+
+- **% correct on 350 test questions:** S0 33.4% [28.6, 38.3], S1 at k=10 64.0% [59.1, 68.9], S* 74.6% [69.7, 78.9].
+- **Paired:** S1 beats S0 by +30.6 [+23.7, +37.1]. S* beats S1 by +10.6 [+4.9, +16.3], with 73 questions only S* got right against 36 only S1 did. All three hold after Holm (p < 0.001).
+- **This revises D-033's reading of dev.** On dev, S1 looked level with S* (+2 [−14, +18]). That interval was wide enough to hide a 10-point gap, and the test set, 7 times larger, shows one.
+  - So better retrieval (Step 4) has an accuracy target, not only a token-saving one.
+  - A gold article is in BM25's top 10 for 57% of test questions, against 66% on dev, which explains part of S1's drop from 76% to 64%. Picking k=10 on dev flatters dev, too.
+- **The generator's ceiling:** with the gold articles, 89 of 350 answers aren't correct: 48 are partial, 34 are declines and 7 are wrong.
+- Nothing was changed in response. This entry and the README report the numbers as they came out.
+
 ---
 
 ## Coming up
