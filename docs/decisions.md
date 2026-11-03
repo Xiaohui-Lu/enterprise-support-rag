@@ -635,6 +635,25 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-029 · Real-time LLM calls stream (Step 3)
+
+**Context.** Calls were non-streaming: one request, one complete response. The Anthropic SDK refuses a non-streaming call whose `max_tokens` allows more than about 10 minutes of generation (above about 21,300 tokens), because a long silent HTTP request can time out. At max effort, the panel's Opus thought for up to its full 20,000-token limit on one item, so that ceiling was close to binding.
+
+**Decision.** `LLMClient` calls `messages.stream()` and collects the whole message with `get_final_message()`. Everything downstream is unchanged: the same response JSON, the same cache entry, and latency still measured end to end. Batch calls aren't affected (D-022). Output limits stay where they are, so cached calls stay valid; they can now be raised when a run needs it.
+
+**Alternatives.**
+- Stay non-streaming and keep `max_tokens` under the SDK's limit: the simplest code, but it caps how long a model may think, and long calls risk HTTP timeouts.
+- Stream only calls with a large `max_tokens`: two code paths for one job.
+- Stream and also record time to first token: that's the latency the chatbot's users will feel (Step 8), but it needs another field in the cache and the run records. It's added when latency becomes a result.
+
+**Why.** One code path, with no ceiling on output and no long silent HTTP wait. It's also the path the service will use, since the chatbot streams its answers (D-008: evaluate what you ship).
+
+**Trade-offs.** Slightly more involved client code and test fakes. Streaming doesn't change what the model generates or what it costs. Time to first token isn't recorded yet.
+
+**In short.** "Every real-time call streams, so a model that thinks for a long time never hits the SDK's non-streaming limit or an HTTP timeout, and evaluation uses the same path the chatbot will. The whole message is collected before it's scored, so outputs, the cache and costs don't change."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

@@ -14,6 +14,34 @@ class FakeResponse:
         return self.data
 
 
+def _message(model, stop_reason):
+    return FakeResponse(
+        {
+            "model": model,
+            "stop_reason": stop_reason,
+            "content": [
+                {"type": "thinking", "thinking": ""},
+                {"type": "text", "text": "Go to Settings [1]."},
+            ],
+            "usage": {"input_tokens": 4500, "output_tokens": 800, "service_tier": "standard"},
+        }
+    )
+
+
+class FakeStream:
+    def __init__(self, message):
+        self.message = message
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
+    def get_final_message(self):
+        return self.message
+
+
 class FakeMessages:
     """Stands in for the SDK's client.messages; counts calls, never touches the network."""
 
@@ -21,19 +49,9 @@ class FakeMessages:
         self.stop_reason = stop_reason
         self.calls = 0
 
-    def create(self, **request):
+    def stream(self, **request):
         self.calls += 1
-        return FakeResponse(
-            {
-                "model": request["model"],
-                "stop_reason": self.stop_reason,
-                "content": [
-                    {"type": "thinking", "thinking": ""},
-                    {"type": "text", "text": "Go to Settings [1]."},
-                ],
-                "usage": {"input_tokens": 4500, "output_tokens": 800, "service_tier": "standard"},
-            }
-        )
+        return FakeStream(_message(request["model"], self.stop_reason))
 
 
 @pytest.fixture
@@ -115,7 +133,7 @@ class FakeBatches:
 
     def results(self, batch_id):
         for r in self.requests:
-            message = FakeMessages(self.stop_reason).create(**r["params"])
+            message = _message(r["params"]["model"], self.stop_reason)
             yield Obj(custom_id=r["custom_id"], result=Obj(type="succeeded", message=message))
 
 

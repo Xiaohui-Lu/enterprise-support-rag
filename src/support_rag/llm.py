@@ -1,5 +1,5 @@
 """The one way this repo calls an LLM (D-003): through the cache, with tokens, cost and
-latency recorded for every call.
+latency recorded for every call. Real-time calls stream (D-029).
 
 Requests are plain dicts with the Messages API's own field names, so the cache key, the
 run record and the API call all see exactly the same thing.
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Iterable, Sequence
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -52,7 +53,7 @@ class LLMResult:
 
 
 class MessagesAPI(Protocol):
-    def create(self, **request: Any) -> Any: ...
+    def stream(self, **request: Any) -> AbstractContextManager[Any]: ...
 
 
 class LLMClient:
@@ -65,8 +66,12 @@ class LLMClient:
         if hit is not None:
             return _result(hit.response, hit.latency_ms, cached=True, batch=hit.batch)
 
+        # Streamed, so long thinking never meets the SDK's limit on non-streaming calls. The
+        # whole message is collected before returning, so latency stays end-to-end. The
+        # transport isn't part of the request, so cached calls stay valid.
         start = time.perf_counter()
-        response = self._api().create(**request).to_dict()
+        with self._api().stream(**request) as stream:
+            response = stream.get_final_message().to_dict()
         latency_ms = round((time.perf_counter() - start) * 1000, 1)
         result = _result(response, latency_ms, cached=False)
         if result.complete:
@@ -112,7 +117,8 @@ def run_batch(
 
     Pass `batch_id` to collect a batch submitted earlier, after an interruption, instead of
     paying for the same requests twice. Results that come back incomplete or errored aren't
-    cached, so the run that follows calls those again in real time.
+    cached, so the run that follows calls those again in real time (which pays twice for a
+    call cut off at its output limit).
     """
     pending = {cache_key(r): r for r in requests if cache.get(r) is None}
     if not pending and batch_id is None:
