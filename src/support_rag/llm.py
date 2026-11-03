@@ -8,11 +8,12 @@ run record and the API call all see exactly the same thing.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
 from support_rag import config
-from support_rag.llm_cache import LLMCache
+from support_rag.llm_cache import LLMCache, cache_key
 
 GENERATOR_MODEL = "claude-haiku-5-5"  # D-021
 JUDGE_MODEL = "claude-sonnet-5-5"  # D-021
@@ -23,6 +24,9 @@ PRICES: dict[str, dict[str, float]] = {
     "claude-haiku-5-5": {"input": 0.10, "output": 0.50},
     "claude-haiku-5-5>100k": {"input": 0.50, "output": 2.50},
     "claude-sonnet-5-5": {"input": 2.00, "output": 10.00, "cache_read": 0.20},
+    # The labeling panel (D-028).
+    "claude-opus-5-5": {"input": 4.00, "output": 20.00, "cache_read": 0.20},
+    "claude-fable-5-1": {"input": 10.00, "output": 50.00, "cache_read": 0.25},
 }
 LONG_PROMPT_TOKENS = 100_000
 BATCH_DISCOUNT = 0.5  # the Message Batches API is half price (D-022)
@@ -40,6 +44,7 @@ class LLMResult:
     latency_ms: float  # of the original call; never report a cache hit's latency
     cached: bool
     model: str
+    batch: bool = False  # answered by the Message Batches API: half price, no latency
 
     @property
     def complete(self) -> bool:
@@ -58,7 +63,7 @@ class LLMClient:
     def complete(self, request: dict[str, Any]) -> LLMResult:
         hit = self._cache.get(request)
         if hit is not None:
-            return _result(hit.response, hit.latency_ms, cached=True)
+            return _result(hit.response, hit.latency_ms, cached=True, batch=hit.batch)
 
         start = time.perf_counter()
         response = self._api().create(**request).to_dict()
@@ -77,10 +82,82 @@ class LLMClient:
         return self._messages
 
 
-def _result(response: dict[str, Any], latency_ms: float, *, cached: bool) -> LLMResult:
+def _result(
+    response: dict[str, Any], latency_ms: float, *, cached: bool, batch: bool = False
+) -> LLMResult:
     text = "".join(block["text"] for block in response["content"] if block["type"] == "text")
     usage = {k: v for k, v in response["usage"].items() if isinstance(v, int)}
-    return LLMResult(text, response["stop_reason"], usage, latency_ms, cached, response["model"])
+    return LLMResult(
+        text, response["stop_reason"], usage, latency_ms, cached, response["model"], batch
+    )
+
+
+class BatchesAPI(Protocol):
+    def create(self, **kwargs: Any) -> Any: ...
+    def retrieve(self, batch_id: str) -> Any: ...
+    def results(self, batch_id: str) -> Iterable[Any]: ...
+
+
+def run_batch(
+    requests: Sequence[dict[str, Any]],
+    cache: LLMCache,
+    *,
+    batch_id: str | None = None,
+    batches: BatchesAPI | None = None,
+    poll_seconds: float = 60,
+    log: Callable[[str], None] = print,
+) -> dict[str, Any]:
+    """Send the requests the cache doesn't have as one Message Batch, wait for it, and cache
+    the complete results at the batch price (D-022). A run then replays them from the cache.
+
+    Pass `batch_id` to collect a batch submitted earlier, after an interruption, instead of
+    paying for the same requests twice. Results that come back incomplete or errored aren't
+    cached, so the run that follows calls those again in real time.
+    """
+    pending = {cache_key(r): r for r in requests if cache.get(r) is None}
+    if not pending and batch_id is None:
+        return {"batch_id": None, "submitted": 0, "cached": 0, "not_cached": 0, "cost_usd": 0.0}
+    if batches is None:
+        import anthropic
+
+        config.load_env()
+        batches = anthropic.Anthropic().messages.batches
+    if batch_id is None:
+        # The cache key (64 hex characters) doubles as the batch's custom_id.
+        batch = batches.create(
+            requests=[{"custom_id": key, "params": r} for key, r in pending.items()]
+        )
+        batch_id = batch.id
+        log(f"submitted batch {batch_id} ({len(pending)} requests); if interrupted, rerun "
+            f"with --batch-id {batch_id}")  # fmt: skip
+    while (batch := batches.retrieve(batch_id)).processing_status != "ended":
+        log(f"batch {batch_id}: {batch.processing_status}")
+        time.sleep(poll_seconds)
+
+    cached = not_cached = 0
+    cost = 0.0
+    for entry in batches.results(batch_id):
+        request = pending.get(entry.custom_id)
+        if request is None:
+            continue  # already cached, or not one of these requests
+        if entry.result.type != "succeeded":
+            not_cached += 1
+            continue
+        response = entry.result.message.to_dict()
+        result = _result(response, 0.0, cached=False, batch=True)
+        cost += cost_usd(result.model, result.usage, batch=True)
+        if result.complete:
+            cache.put(request, response, result.usage, 0.0, batch=True)
+            cached += 1
+        else:
+            not_cached += 1
+    return {
+        "batch_id": batch_id,
+        "submitted": len(pending),
+        "cached": cached,
+        "not_cached": not_cached,
+        "cost_usd": round(cost, 4),
+    }
 
 
 def cost_usd(model: str, usage: dict[str, int], *, batch: bool = False) -> float:

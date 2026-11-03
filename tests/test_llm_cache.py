@@ -51,3 +51,30 @@ def test_the_first_response_is_kept(tmp_path):
         cache.put(REQUEST, {"text": "second"}, USAGE, latency_ms=2.0)
         assert cache.get(REQUEST).response == {"text": "first"}
         assert len(cache) == 1
+
+
+def test_a_batch_call_is_remembered_as_one(tmp_path):
+    with LLMCache(tmp_path / "cache.sqlite") as cache:
+        cache.put(REQUEST, {"text": "Go to Domains."}, USAGE, latency_ms=0.0, batch=True)
+        assert cache.get(REQUEST).batch is True
+
+
+def test_a_cache_from_before_batch_calls_is_upgraded_in_place(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "cache.sqlite"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE calls (key TEXT PRIMARY KEY, request TEXT NOT NULL, response TEXT NOT "
+        "NULL, usage TEXT NOT NULL, latency_ms REAL NOT NULL, created_at TEXT NOT NULL)"
+    )
+    db.execute(
+        "INSERT INTO calls VALUES (?, '{}', '{\"text\": \"old\"}', '{}', 1.0, 'then')",
+        (cache_key(REQUEST),),
+    )
+    db.commit()
+    db.close()
+    with LLMCache(path) as cache:
+        hit = cache.get(REQUEST)
+    assert hit.response == {"text": "old"}
+    assert hit.batch is False

@@ -33,6 +33,23 @@ class JudgedAnswer:
     cached: bool
 
 
+def judge_request(
+    answer: Mapping[str, Any],
+    question: Question,
+    articles_by_id: Mapping[str, Article],
+    *,
+    effort: str,
+    model: str = JUDGE_MODEL,
+) -> dict[str, Any]:
+    """The judge's request for one saved answer (a line of an answer run's questions.jsonl)."""
+    # The answer cites articles by their number in its own prompt: [1] is context_ids[0].
+    numbers = {article_id: n for n, article_id in enumerate(answer["context_ids"], start=1)}
+    cited = [(numbers[a], articles_by_id[a]) for a in answer["cited_ids"]]
+    return build_judge_request(
+        question.question, question.answer, answer["text"], cited, effort=effort, model=model
+    )
+
+
 def judge_answer(
     llm: LLM,
     answer: Mapping[str, Any],
@@ -40,6 +57,7 @@ def judge_answer(
     articles_by_id: Mapping[str, Article],
     *,
     effort: str,
+    model: str = JUDGE_MODEL,
 ) -> JudgedAnswer:
     """Grade one saved answer (a line of an answer run's questions.jsonl)."""
     base = {
@@ -53,14 +71,9 @@ def judge_answer(
             judged=False, stop_reason=None, usage={}, cost_usd=0.0, cached=False,
         )  # fmt: skip
 
-    # The answer cites articles by their number in its own prompt: [1] is context_ids[0].
-    numbers = {article_id: n for n, article_id in enumerate(answer["context_ids"], start=1)}
-    cited = [(numbers[a], articles_by_id[a]) for a in answer["cited_ids"]]
-    request = build_judge_request(
-        question.question, question.answer, answer["text"], cited, effort=effort
-    )
+    request = judge_request(answer, question, articles_by_id, effort=effort, model=model)
     result = llm.complete(request)
-    cost = round(cost_usd(result.model, result.usage), 6)
+    cost = round(cost_usd(result.model, result.usage, batch=result.batch), 6)
     if not result.complete:
         return JudgedAnswer(
             **base, correctness=None, grounded=None, reasoning="", judged=True,

@@ -50,6 +50,14 @@ def main(argv: list[str] | None = None) -> None:
         "runs", nargs="+", type=Path, help="one full dev_real answer run per strategy"
     )
     commands.add_parser("label", help="hand-label the sample, blind to strategy (resumable)")
+    panel = commands.add_parser(
+        "panel", help="pre-label the sample with the four-model panel (paid, cached)"
+    )
+    panel.add_argument("--limit", type=int, help="grade only the first N sample items (a pilot)")
+    panel.add_argument(
+        "--batch", action="store_true", help="send uncached calls through the batch API"
+    )
+    panel.add_argument("--batch-id", help="collect a batch submitted earlier; never pays twice")
     args = parser.parse_args(argv)
 
     try:
@@ -128,6 +136,22 @@ def run(args: argparse.Namespace) -> None:
                 q.id: q for subset in ("expertwritten", "simulated") for q in load_questions(subset)
             }
             label_session(sample, questions, {a.id: a for a in load_articles()})
+        case "panel":
+            import json
+
+            from support_rag.labels import load_sample
+            from support_rag.panel import format_agreement, panel_agreement, run_panel
+
+            run_dirs, batch_summary = run_panel(
+                limit=args.limit, batch=args.batch, batch_id=args.batch_id
+            )
+            if batch_summary:
+                print(json.dumps(batch_summary, indent=2))
+            for run_dir in run_dirs:
+                print(f"wrote {run_dir}")
+            # Aggregates only: the runs hold each item's grades, so the split items can
+            # still be labeled blind (D-027, D-028).
+            print(f"\n{format_agreement(panel_agreement(run_dirs, load_sample()))}")
 
 
 if __name__ == "__main__":

@@ -75,9 +75,11 @@ def build_judge_request(
     *,
     effort: str,
     max_tokens: int = 16_000,
+    model: str = JUDGE_MODEL,
 ) -> dict[str, Any]:
     """`cited` pairs each cited article with the number the answer uses for it, so the
-    judge can match "[2]" in the answer to the right article."""
+    judge can match "[2]" in the answer to the right article. Only the labeling panel
+    (D-028) changes `model`: it sees exactly what the judge sees."""
     if cited:
         articles = "\n\n".join(f"[{number}] {article.contents}" for number, article in cited)
     else:
@@ -89,7 +91,7 @@ def build_judge_request(
         f"<cited_articles>\n{articles}\n</cited_articles>"
     )
     return {
-        "model": JUDGE_MODEL,
+        "model": model,
         "max_tokens": max_tokens,
         "output_config": {
             "effort": effort,

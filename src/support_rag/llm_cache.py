@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS calls (
     response   TEXT NOT NULL,
     usage      TEXT NOT NULL,
     latency_ms REAL NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    batch      INTEGER NOT NULL DEFAULT 0
 )
 """
 
@@ -50,8 +51,9 @@ def cache_key(request: dict[str, Any]) -> str:
 class CachedCall:
     response: dict[str, Any]  # the provider's response, as JSON
     usage: dict[str, int]  # tokens of the original call (input, output, cached input, ...)
-    latency_ms: float  # of the original call; a cache hit takes ~0 ms
+    latency_ms: float  # of the original call; a cache hit takes ~0 ms. 0 for a batch call
     created_at: str
+    batch: bool = False  # answered by the Message Batches API, at half price (D-022)
 
 
 class LLMCache:
@@ -59,17 +61,22 @@ class LLMCache:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(path)
         self._db.execute(_SCHEMA)
+        columns = {row[1] for row in self._db.execute("PRAGMA table_info(calls)")}
+        if "batch" not in columns:  # caches created before batch calls existed
+            self._db.execute("ALTER TABLE calls ADD COLUMN batch INTEGER NOT NULL DEFAULT 0")
         self._db.commit()
 
     def get(self, request: dict[str, Any]) -> CachedCall | None:
         row = self._db.execute(
-            "SELECT response, usage, latency_ms, created_at FROM calls WHERE key = ?",
+            "SELECT response, usage, latency_ms, created_at, batch FROM calls WHERE key = ?",
             (cache_key(request),),
         ).fetchone()
         if row is None:
             return None
-        response, usage, latency_ms, created_at = row
-        return CachedCall(json.loads(response), json.loads(usage), latency_ms, created_at)
+        response, usage, latency_ms, created_at, batch = row
+        return CachedCall(
+            json.loads(response), json.loads(usage), latency_ms, created_at, bool(batch)
+        )
 
     def put(
         self,
@@ -77,11 +84,15 @@ class LLMCache:
         response: dict[str, Any],
         usage: dict[str, int],
         latency_ms: float,
+        *,
+        batch: bool = False,
     ) -> None:
         """Save a successful call. If the key is already saved, the first response stays,
         so a replay always returns the same answer."""
         self._db.execute(
-            "INSERT OR IGNORE INTO calls VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT OR IGNORE INTO calls "
+            "(key, request, response, usage, latency_ms, created_at, batch) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 cache_key(request),
                 json.dumps(request, ensure_ascii=False),
@@ -89,6 +100,7 @@ class LLMCache:
                 json.dumps(usage),
                 latency_ms,
                 datetime.now().astimezone().isoformat(timespec="seconds"),
+                int(batch),
             ),
         )
         self._db.commit()

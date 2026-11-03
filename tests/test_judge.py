@@ -104,3 +104,12 @@ def test_summary_counts_grades_and_judge_calls():
     assert (summary["correct"], summary["partial"], summary["incorrect"]) == (0, 1, 1)
     assert summary["judge_calls"] == 1
     assert summary["pct_correct"] == 0.0
+
+
+def test_another_model_can_be_asked_the_same_question():
+    judge = build_judge_request("Q?", "Ref.", "A [2].", [(2, ARTICLES["B"])], effort="high")
+    other = build_judge_request(
+        "Q?", "Ref.", "A [2].", [(2, ARTICLES["B"])], effort="high", model="claude-opus-5-5"
+    )
+    assert other["model"] == "claude-opus-5-5"
+    assert {**other, "model": judge["model"]} == judge

@@ -599,6 +599,40 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "Before seeing any judge grade, I hand-labeled 80 dev answers, blind to the strategy, and measured the judge against them. The sample was drawn by whole questions, and the other dev questions were held in reserve: if the rubric had to change, I'd validate it on fresh labels from the reserve, because a rubric fixed on my labels will always agree better with those same labels."
 
+**Update (D-028).** A panel of four Claude configurations now pre-labels the 80 answers; hand labels go to the items the panel splits on, plus a random audit. The sample, the blinding and the reserve are unchanged.
+
+---
+
+## D-028 · A panel of four Claude configurations pre-labels the sample; a person settles its splits (Step 3)
+
+**Context.** Hand-labeling all 80 sample answers (D-027) takes about two hours. Stronger models can pre-label them, but a panel's agreement isn't a person's: if the panel shares a blind spot with the judge, a unanimous vote raises the judge's kappa exactly where the judge is wrong. Example: an answer gives a plausible menu path that isn't in the reference. A person can't confirm the path exists, but Claude models that "remember" a similar menu from shared training data may all accept it as a valid alternative route.
+
+**Decision.**
+- Four configurations grade the 80 sample items: Claude Opus 5.5 at high and at max effort, and Claude Fable 5.1 at high and at max effort (`srag panel`).
+- They use the judge's own request (D-025) with only the model and effort changed, so they see exactly what the judge sees and never the strategy. Bulk calls go through the batch API (D-022). As with the judge, there's no refusal fallback (D-026).
+- If all four agree on an item, it takes that grade. Items they split on are labeled by hand, blind to their votes. So is a random audit of about 12 unanimous items, which measures how often a unanimous panel is wrong.
+- The printed panel summary shows aggregates only: how many items are unanimous or split, and which members disagree. That way the split items can still be labeled blind. Whether and how much to hand-label is decided after seeing those aggregates.
+
+**Alternatives.**
+- Hand-labeling all 80 (D-027 as first written): the strongest ground truth, at about two hours of labeling.
+- A panel with no hand labels: no labeling time, but the judge would then be validated against stronger Claude models, not a person, and blind spots shared by Claude models would go unmeasured.
+- Majority vote instead of unanimity: fewer items to label, but three votes from two models could outvote the one dissent that marks a hard item.
+- Sonnet 5.5 on the panel: cheap, but it's the judge, so its mistakes would become part of the ground truth it's measured against. Haiku 5.5 wrote the answers, so it stays off too.
+- A model from another provider: the most independent member, but outside the Anthropic-only setup (D-021).
+- Claude Code sessions or subagents as labelers: no API cost, but their input isn't exactly the judge's. Claude Code adds its own instructions, and subagents in this repo could read each item's strategy. They would also grade all 80 items in one context and leave no run record.
+
+**Why.**
+- Two models give two opinions. Running each at two efforts shows whether a grade holds when the model thinks longer, which flags borderline items.
+- Requiring unanimity sends every doubtful item to a person.
+- Reusing the judge's request makes "the panel saw what the judge saw" true by construction, not by instruction.
+
+**Trade-offs.**
+- All the models involved are Claude, so the panel can share the judge's blind spots; the audit measures that, on a small sample.
+- It costs about $11 on the batch API (estimated before the pilot), where hand labels cost nothing.
+- The final labels mix panel grades (easier items) and hand labels (harder items), so kappa is also reported on the hand-labeled items alone.
+
+**In short.** "Four Claude configurations, two models at two efforts each, pre-label the sample through the judge's own prompt, so they see exactly what the judge sees. Items they all agree on take the panel's grade; the items they split on are labeled by hand, blind, plus a random audit of the unanimous ones, because models from one family can share a blind spot with the judge, and only a human check measures that. The judge's own model stays off the panel, so it can't grade itself into the ground truth."
+
 ---
 
 ## Coming up

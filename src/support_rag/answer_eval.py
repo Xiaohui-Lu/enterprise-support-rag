@@ -87,7 +87,7 @@ def answer_question(
         invalid_citations=answer.invalid_citations,
         stop_reason=result.stop_reason,
         usage=result.usage,
-        cost_usd=round(cost_usd(result.model, result.usage), 6),
+        cost_usd=round(cost_usd(result.model, result.usage, batch=result.batch), 6),
         latency_ms=result.latency_ms,
         cached=result.cached,
     )

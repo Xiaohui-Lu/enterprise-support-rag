@@ -18,6 +18,7 @@ uv run srag report-retrieval runs/<a> runs/<b>   # reports/retrieval_bm25.md; fi
 uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, cached); s0, s1 or s_star
 uv run srag judge runs/<answers> --effort high    # grade an answer run (paid, cached)
 uv run srag label-sample runs/<s0> runs/<s1> runs/<s_star>   # draw the hand-label sample, once
+uv run srag panel --limit 5                       # four-model panel pilot; --batch for the full run
 uv run srag label                                 # hand-label the sample, blind; resumable
 ```
 

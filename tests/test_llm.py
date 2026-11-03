@@ -1,6 +1,6 @@
 import pytest
 
-from support_rag.llm import LLMClient, cost_usd
+from support_rag.llm import LLMClient, cost_usd, run_batch
 from support_rag.llm_cache import LLMCache
 
 REQUEST = {"model": "claude-haiku-5-5", "max_tokens": 100, "messages": []}
@@ -86,3 +86,73 @@ def test_the_batch_api_halves_the_cost():
 def test_haiku_prompts_over_100k_tokens_cost_more():
     usage = {"input_tokens": 200_000, "output_tokens": 0}
     assert cost_usd("claude-haiku-5-5", usage) == pytest.approx(200_000 * 0.50 / 1_000_000)
+
+
+# run_batch()
+
+SONNET = {"model": "claude-sonnet-5-5", "max_tokens": 100, "messages": []}
+
+
+class Obj:
+    def __init__(self, **fields):
+        self.__dict__.update(fields)
+
+
+class FakeBatches:
+    """Stands in for client.messages.batches: answers every request at once."""
+
+    def __init__(self, stop_reason="end_turn"):
+        self.stop_reason = stop_reason
+        self.created = []
+
+    def create(self, requests):
+        self.created.append(requests)
+        self.requests = requests
+        return Obj(id="msgbatch_1")
+
+    def retrieve(self, batch_id):
+        return Obj(processing_status="ended")
+
+    def results(self, batch_id):
+        for r in self.requests:
+            message = FakeMessages(self.stop_reason).create(**r["params"])
+            yield Obj(custom_id=r["custom_id"], result=Obj(type="succeeded", message=message))
+
+
+def _requests(n):
+    return [SONNET | {"messages": [{"role": "user", "content": f"Q{i}"}]} for i in range(n)]
+
+
+def test_a_batch_sends_only_uncached_requests(cache):
+    first, second = _requests(2)
+    LLMClient(cache, FakeMessages()).complete(first)
+    batches = FakeBatches()
+    summary = run_batch([first, second], cache, batches=batches, poll_seconds=0, log=print)
+    assert len(batches.created[0]) == 1
+    assert summary["cached"] == 1
+    assert cache.get(second).batch is True
+
+
+def test_a_replayed_batch_call_costs_half(cache):
+    (request,) = _requests(1)
+    run_batch([request], cache, batches=FakeBatches(), poll_seconds=0, log=print)
+    result = LLMClient(cache, FakeMessages()).complete(request)
+    assert result.cached and result.batch
+    full = cost_usd(result.model, result.usage)
+    assert cost_usd(result.model, result.usage, batch=result.batch) == pytest.approx(full / 2)
+
+
+def test_collecting_an_earlier_batch_never_submits_again(cache):
+    batches = FakeBatches()
+    requests = _requests(2)
+    run_batch(requests, cache, batches=batches, poll_seconds=0, log=print)
+    run_batch(requests, cache, batch_id="msgbatch_1", batches=batches, poll_seconds=0, log=print)
+    assert len(batches.created) == 1
+
+
+def test_an_incomplete_batch_result_is_not_cached(cache):
+    summary = run_batch(
+        _requests(2), cache, batches=FakeBatches("max_tokens"), poll_seconds=0, log=print
+    )
+    assert (summary["cached"], summary["not_cached"]) == (0, 2)
+    assert len(cache) == 0
