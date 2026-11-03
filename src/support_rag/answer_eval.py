@@ -20,6 +20,11 @@ from support_rag.records import Article, Question
 from support_rag.retrieval_eval import Retriever, questions_for_split
 from support_rag.runs import append_result, start_run, write_summary
 
+# The generator's settings after tuning on dev (D-033): Haiku's default effort, and how
+# many BM25 articles S1 shows the model.
+DEFAULT_EFFORT = "medium"
+DEFAULT_K = 10
+
 
 class LLM(Protocol):
     def complete(self, request: dict[str, Any]) -> LLMResult: ...
@@ -51,7 +56,7 @@ def context_for(
     *,
     articles_by_id: Mapping[str, Article],
     retriever: Retriever | None = None,
-    k: int = 5,
+    k: int = DEFAULT_K,
 ) -> list[Article]:
     """The articles a strategy shows the model: none (S0), BM25's top k (S1) or gold (S*)."""
     match strategy:
@@ -130,8 +135,8 @@ def run_answers(
     strategy: str,
     split: str,
     *,
-    effort: str = "medium",
-    k: int = 5,
+    effort: str = DEFAULT_EFFORT,
+    k: int = DEFAULT_K,
     limit: int | None = None,
     runs_dir: Path = config.RUNS_DIR,
 ) -> Path:

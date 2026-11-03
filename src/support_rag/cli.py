@@ -37,8 +37,12 @@ def main(argv: list[str] | None = None) -> None:
     answer.add_argument(
         "--split", choices=["dev_real"], default="dev_real", help="the test set runs only at M1"
     )
-    answer.add_argument("--effort", choices=["low", "medium", "high"], default="medium")
-    answer.add_argument("--k", type=int, default=5, help="articles retrieved for S1")
+    answer.add_argument(
+        "--effort", choices=["low", "medium", "high"], help="default: the tuned value (D-033)"
+    )
+    answer.add_argument(
+        "--k", type=int, help="articles retrieved for S1; default: the tuned value (D-033)"
+    )
     answer.add_argument("--limit", type=int, help="answer only this many questions (a pilot)")
     judge = commands.add_parser("judge", help="grade an answer run with the judge (paid, cached)")
     judge.add_argument("answers_run", type=Path, help="the answer run directory to grade")
@@ -57,6 +61,8 @@ def main(argv: list[str] | None = None) -> None:
         "report-tuning", help="candidate settings vs the default on dev, to reports/"
     )
     report_tuning.add_argument("name", help="report name, e.g. effort or k")
+    report_tuning.add_argument("--default-effort", help="the baseline's effort (default: tuned)")
+    report_tuning.add_argument("--default-k", type=int, help="the baseline's k (default: tuned)")
     report_tuning.add_argument(
         "runs", nargs="+", type=Path, help="judge runs, including each strategy's default"
     )
@@ -135,11 +141,15 @@ def run(args: argparse.Namespace) -> None:
         case "answer":
             import json
 
-            from support_rag.answer_eval import run_answers
+            from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K, run_answers
             from support_rag.runs import load_summary
 
             run_dir = run_answers(
-                args.strategy, args.split, effort=args.effort, k=args.k, limit=args.limit
+                args.strategy,
+                args.split,
+                effort=args.effort or DEFAULT_EFFORT,
+                k=args.k or DEFAULT_K,
+                limit=args.limit,
             )
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))
@@ -160,9 +170,15 @@ def run(args: argparse.Namespace) -> None:
             path = write_report(args.runs)
             print(path.read_text(encoding="utf-8"))
         case "report-tuning":
+            from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K
             from support_rag.tuning import write_report
 
-            path = write_report(args.name, args.runs)
+            path = write_report(
+                args.name,
+                args.runs,
+                default_effort=args.default_effort or DEFAULT_EFFORT,
+                default_k=args.default_k or DEFAULT_K,
+            )
             print(path.read_text(encoding="utf-8"))
         case "validate-judge":
             from support_rag.judge_validation import final_labels, validate_judge, write_report

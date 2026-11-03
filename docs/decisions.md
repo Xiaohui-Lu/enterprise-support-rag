@@ -743,7 +743,7 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 - The intervals cover sampling noise only, not the judge's own errors (D-031). A difference within a few points of zero should still be read with the judge's caveats in mind.
 - Holm is conservative when the comparisons are related, as these are.
 
-**In short.** "Every rate has a 95% bootstrap interval over questions, and strategies are compared on the same questions: a paired bootstrap for the size of the difference, and McNemar's exact test, which only looks at questions where one strategy is right and the other wrong. With three comparisons I adjust the p-values with Holm. On 50 dev questions, retrieval beats closed book by 30 points, with an interval of 14 to 46."
+**In short.** "Every rate has a 95% bootstrap interval over questions, and strategies are compared on the same questions: a paired bootstrap for the size of the difference, and McNemar's exact test, which only looks at questions where one strategy is right and the other wrong. With three comparisons I adjust the p-values with Holm. On 50 dev questions, after tuning, retrieval beats closed book by 52 points, with an interval of 36 to 68."
 
 ---
 
@@ -769,6 +769,24 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 **Trade-offs.** A real but small improvement, a few points, can't be detected on 50 questions and will be missed. Keeping the default when nothing wins is conservative, not a finding that the settings are equal. The runs cost about $2.
 
 **In short.** "I tuned the generator's effort and the number of retrieved articles on dev, with the rule fixed before any run: the default stays unless a candidate's paired 95% interval is entirely above zero. On 50 questions, picking the best-looking of several settings mostly picks luck, so a clear win was the only kind I'd accept."
+
+**Outcome (2026-11-03).** Results are in `reports/tuning_effort.md` and `reports/tuning_k.md`.
+
+- **Effort stays `medium`.** Pooled over the three strategies, `high` was +4.0 points [−0.7, +8.7] and `low` was +2.7 [−3.3, +9.3]; both intervals include zero.
+  - Both low and high measuring above medium is itself a sign of noise: if thinking helped, the order would be low < medium < high.
+  - `low` was about 28% cheaper and a second faster on S0, with no sign of being worse. It's the leading candidate for the chatbot (Step 8), where latency matters, and gets retested there.
+- **S1 moves to k=10** (`DEFAULT_K` in `answer_eval.py`).
+  - k=10 against k=5: +22 points [+10, +34], with 12 questions where only k=10 was right and 1 where only k=5 was (Holm p = 0.007).
+  - k=3 measured −8 [−16, −2] (0 against 4; Holm p = 0.125) and k=1 −26 [−40, −14].
+  - Cost per answer rises from $0.0010 to $0.0017.
+  - BM25's recall explains part of the gain: a gold article is in the top 10 for 66% of real dev questions, against 53% in the top 5. Declines also fell from 6 to 2.
+- **What it changes.**
+  - At k=10, S1 is level with S* on dev (76% against 78%, +2 [−14, +18]; each beats the other on 7 or 8 questions).
+  - The earlier reading that "retrieval is the bottleneck, about 24 points" came mostly from k=5 being too few articles.
+  - About 1 in 5 answers is wrong even with the gold articles, so the generator, the prompt and the reference answers set the ceiling.
+  - Step 4's better retrieval may pay off more as fewer tokens for the same accuracy than as higher accuracy.
+  - k of 20 and above is S3's question (Step 6), so the grid wasn't extended past 10.
+- **One more source of noise.** The generator isn't deterministic, so rerunning a setting changes some answers. The bootstrap covers which questions were drawn, not which answers the model happened to write. That's another reason not to read small gaps.
 
 ---
 

@@ -1,6 +1,7 @@
 import pytest
 
-from support_rag.tuning import Arm, compare_to_default, format_report
+from support_rag.tuning import Arm, format_report
+from support_rag.tuning import compare_to_default as _compare_to_default
 
 QUESTIONS = [f"q{i}" for i in range(10)]
 SUMMARY = {
@@ -11,6 +12,10 @@ SUMMARY = {
     "latency_p50_ms": 3000.0,
 }
 JUDGE = ("sonnet", "high", "judge-v1")
+
+
+def compare_to_default(arms):
+    return _compare_to_default(arms, default_effort="medium", default_k=5)
 
 
 def _arm(strategy, effort="medium", k=None, right=5, judge=JUDGE):

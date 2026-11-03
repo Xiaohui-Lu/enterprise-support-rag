@@ -16,7 +16,7 @@ from support_rag import config
 from support_rag.runs import load_config, load_results, load_summary
 from support_rag.stats import N_RESAMPLES, bootstrap_ci, holm, mcnemar_exact, paired_bootstrap_ci
 
-STRATEGY_NAMES = {"s0": "S0, closed book", "s1": "S1, BM25 top 5", "s_star": "S*, gold articles"}
+STRATEGY_NAMES = {"s0": "S0, closed book", "s1": "S1, BM25", "s_star": "S*, gold articles"}
 # (better-expected, baseline): what retrieval adds, what better retrieval would add, both.
 COMPARISONS = (("s1", "s0"), ("s_star", "s1"), ("s_star", "s0"))
 
@@ -58,6 +58,8 @@ def compare_strategies(
             "latency_p50_ms": answers["latency_p50_ms"],
             "answers_run": answers_config["run_id"],
             "split": answers_config["split"],
+            "name": STRATEGY_NAMES[strategy]
+            + (f" top {answers_config['k']}" if answers_config.get("k") else ""),
             "generator": (answers_config["model"], answers_config["effort"]),
         }
 
@@ -126,11 +128,11 @@ def format_report(result: Mapping[str, Any]) -> str:
         "| Cost per answer | Latency p50 |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
-    for strategy, row in result["strategies"].items():
+    for row in result["strategies"].values():
         low, high = row["ci"]
         latency = row["latency_p50_ms"]
         lines.append(
-            f"| {STRATEGY_NAMES[strategy]} | {row['n']} | {row['pct_correct']:.1f}% "
+            f"| {row['name']} | {row['n']} | {row['pct_correct']:.1f}% "
             f"[{low:.1f}, {high:.1f}] | {row['declined']} | {row['mean_input_tokens']:,.0f} "
             f"| {row['mean_output_tokens']:,.0f} | ${row['cost_per_answer_usd']:.5f} "
             f"| {'n/a' if latency is None else f'{latency / 1000:.1f} s'} |"
@@ -143,10 +145,11 @@ def format_report(result: Mapping[str, Any]) -> str:
         "| Only the second right | McNemar p | Holm p |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
+    names = {strategy: row["name"] for strategy, row in result["strategies"].items()}
     for c in result["comparisons"]:
         low, high = c["ci"]
         lines.append(
-            f"| {STRATEGY_NAMES[c['better']]} vs {STRATEGY_NAMES[c['base']]} | {c['n']} "
+            f"| {names[c['better']]} vs {names[c['base']]} | {c['n']} "
             f"| {c['difference']:+.1f} [{low:+.1f}, {high:+.1f}] | {c['only_a']} "
             f"| {c['only_b']} | {_p(c['p_value'])} | {_p(c['p_holm'])} |"
         )
