@@ -1,0 +1,1857 @@
+{
+  "version": 1,
+  "rule": "a label only when all four members agree (D-028)",
+  "runs": {
+    "opus-5-5-high": "20261102-214532_panel-opus-5-5-high",
+    "opus-5-5-max": "20261102-214532_panel-opus-5-5-max",
+    "fable-5-1-high": "20261102-214844_panel-fable-5-1-high",
+    "fable-5-1-max": "20261102-214844_panel-fable-5-1-max"
+  },
+  "counts": {
+    "items": 80,
+    "correctness_labeled": 65,
+    "correctness_to_a_person": 15
+  },
+  "items": [
+    {
+      "item": 1,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 2,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 3,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 4,
+      "correctness": null,
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "incorrect",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "incorrect",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 5,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 6,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 7,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 8,
+      "correctness": "correct",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 9,
+      "correctness": null,
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 10,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 11,
+      "correctness": null,
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 12,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 13,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 14,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 15,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 16,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 17,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 18,
+      "correctness": "correct",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 19,
+      "correctness": null,
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 20,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 21,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 22,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 23,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 24,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 25,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 26,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 27,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 28,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 29,
+      "correctness": "incorrect",
+      "grounded": null,
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "incorrect",
+          "grounded": "partly"
+        },
+        "opus-5-5-max": {
+          "correctness": "incorrect",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "incorrect",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "incorrect",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 30,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 31,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 32,
+      "correctness": "incorrect",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "incorrect",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "incorrect",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "incorrect",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "incorrect",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 33,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 34,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 35,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 36,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 37,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 38,
+      "correctness": "correct",
+      "grounded": null,
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "partly"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 39,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 40,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 41,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 42,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 43,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 44,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 45,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 46,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 47,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 48,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 49,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 50,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 51,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 52,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 53,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 54,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 55,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 56,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 57,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 58,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 59,
+      "correctness": "correct",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 60,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 61,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 62,
+      "correctness": null,
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "incorrect",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 63,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 64,
+      "correctness": "correct",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 65,
+      "correctness": "partial",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 66,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 67,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 68,
+      "correctness": null,
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 69,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 70,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 71,
+      "correctness": null,
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 72,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 73,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 74,
+      "correctness": null,
+      "grounded": null,
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": null,
+          "grounded": null
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 75,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 76,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 77,
+      "correctness": "partial",
+      "grounded": "n/a",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "opus-5-5-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-high": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        },
+        "fable-5-1-max": {
+          "correctness": "partial",
+          "grounded": "n/a"
+        }
+      }
+    },
+    {
+      "item": 78,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 79,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    },
+    {
+      "item": 80,
+      "correctness": "correct",
+      "grounded": "yes",
+      "votes": {
+        "opus-5-5-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "opus-5-5-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-high": {
+          "correctness": "correct",
+          "grounded": "yes"
+        },
+        "fable-5-1-max": {
+          "correctness": "correct",
+          "grounded": "yes"
+        }
+      }
+    }
+  ]
+}
