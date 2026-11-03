@@ -43,6 +43,16 @@ def main(argv: list[str] | None = None) -> None:
     judge = commands.add_parser("judge", help="grade an answer run with the judge (paid, cached)")
     judge.add_argument("answers_run", type=Path, help="the answer run directory to grade")
     judge.add_argument("--effort", choices=["low", "medium", "high"], required=True)
+    judge.add_argument(
+        "--batch", action="store_true", help="send uncached calls through the batch API"
+    )
+    judge.add_argument("--batch-id", help="collect a batch submitted earlier; never pays twice")
+    validate = commands.add_parser(
+        "validate-judge", help="judge vs labels: agreement and kappa, to reports/"
+    )
+    validate.add_argument(
+        "runs", nargs="+", type=Path, help="judge runs: one per strategy for each effort"
+    )
     label_sample = commands.add_parser(
         "label-sample", help="draw the hand-labeling sample from answer runs (run once)"
     )
@@ -126,9 +136,19 @@ def run(args: argparse.Namespace) -> None:
             from support_rag.judge_eval import run_judge
             from support_rag.runs import load_summary
 
-            run_dir = run_judge(args.answers_run, effort=args.effort)
+            run_dir = run_judge(
+                args.answers_run, effort=args.effort, batch=args.batch, batch_id=args.batch_id
+            )
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))
+        case "validate-judge":
+            from support_rag.judge_validation import final_labels, validate_judge, write_report
+            from support_rag.labels import load_labels, load_sample
+            from support_rag.panel import load_panel_labels
+
+            labels = final_labels(load_panel_labels(), load_labels())
+            path = write_report(validate_judge(args.runs, load_sample(), labels), labels)
+            print(path.read_text(encoding="utf-8"))
         case "label-sample":
             from support_rag.labels import write_sample
 

@@ -661,6 +661,31 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-030 · Judge agreement: unweighted Cohen's kappa, on the three grades and on correct vs not (Step 3)
+
+**Context.** The judge is trusted only if it agrees with the labels (D-005). Raw percent agreement flatters a judge when one grade dominates: if 70% of answers are correct, a judge that always says "correct" agrees 70% of the time and has learned nothing. The grades are also ordered (incorrect, partial, correct), and the headline metric only counts "correct".
+
+**Decision.**
+- Report percent agreement and Cohen's kappa: (p_o − p_e) / (1 − p_e), where p_o is observed agreement and p_e is the agreement expected by chance from each rater's own grade frequencies.
+- Two kappas: one on the three grades, and one on correct vs not correct (partial and incorrect merged), which is the decision behind % correct.
+- Both kappas unweighted: every disagreement counts the same.
+- Reported overall, per strategy, and per label source (hand labels on the panel's splits, panel labels on its unanimous items), with the judge failures counted separately. The bar is 0.6 (D-005).
+- Example: 10 answers labeled 7 correct, 2 partial, 1 incorrect. A judge that swaps one correct and one partial agrees on 8 of 10 (80%), but chance alone gives 54%, so kappa is (0.80 − 0.54) / (1 − 0.54) = 0.57, below the bar. A judge that always says "correct" agrees 70% and scores exactly 0.
+
+**Alternatives.**
+- Percent agreement only: easy to read, but it can't tell a judge from a rubber stamp.
+- Weighted kappa (linear or quadratic): gives partial credit when correct and partial are confused, since the grades are ordered. But the weights are a choice our three grades don't justify (they aren't evenly spaced), and they'd hide exactly the confusion that moves % correct.
+- Kappa on the three grades only: misses whether the judge gets the decision the headline metric uses right.
+- Krippendorff's alpha: handles many raters and missing labels. Here there are exactly two raters (the judge and the labels) on complete data, where it adds nothing over kappa.
+
+**Why.** Kappa is the standard chance-corrected agreement for two raters, and it's what D-005 committed to. The correct-vs-not kappa checks the decision the results actually depend on. Splitting by strategy and label source shows where agreement is weak: on closed-book answers, and on the hard items the panel split on.
+
+**Trade-offs.** Kappa depends on how often each grade occurs, so it isn't comparable across groups with very different grade mixes, and it's undefined when both raters use a single grade. Each strategy has only 25 to 28 items, so per-strategy kappas are rough until the statistics step adds confidence intervals (D-006).
+
+**In short.** "I measured the judge with Cohen's kappa, not raw agreement, because when most answers are correct, a judge that always says 'correct' agrees most of the time and has learned nothing. Kappa subtracts the agreement you'd get by chance. I report it on the three grades and on correct versus not, since that's the decision behind my headline metric, and per strategy, against a bar of 0.6."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

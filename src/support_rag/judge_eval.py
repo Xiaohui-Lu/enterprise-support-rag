@@ -127,31 +127,50 @@ def summarize_verdicts(results: Sequence[JudgedAnswer]) -> dict[str, Any]:
     }
 
 
-def run_judge(answers_run: Path, *, effort: str, runs_dir: Path = config.RUNS_DIR) -> Path:
-    from support_rag.llm import LLMClient
+def run_judge(
+    answers_run: Path,
+    *,
+    effort: str,
+    batch: bool = False,
+    batch_id: str | None = None,
+    runs_dir: Path = config.RUNS_DIR,
+) -> Path:
+    """Grade an answer run. With `batch` (or `batch_id`), the calls not cached yet go
+    through the batch API first (D-022), and the run then replays them from the cache."""
+    from support_rag.llm import LLMClient, run_batch
     from support_rag.llm_cache import LLMCache
     from support_rag.wixqa import QA_SUBSETS, load_articles, load_questions
 
     answers_config = load_config(answers_run)
+    answers = load_results(answers_run)
     questions = {q.id: q for subset in QA_SUBSETS for q in load_questions(subset)}
     articles_by_id = {article.id: article for article in load_articles()}
 
-    run_dir = start_run(
-        f"judge-{effort}_{answers_config['run_id']}",
-        {
-            "kind": "judge",
-            "answers_run": answers_config["run_id"],
-            "strategy": answers_config["strategy"],  # recorded here, never shown to the judge
-            "model": JUDGE_MODEL,
-            "effort": effort,
-            "prompt_version": JUDGE_PROMPT_VERSION,
-        },
-        runs_dir,
-    )
     results = []
     with LLMCache() as cache:
+        batch_summary = None
+        if batch or batch_id:
+            requests = [
+                judge_request(a, questions[a["question_id"]], articles_by_id, effort=effort)
+                for a in answers
+                if not a["declined"]
+            ]
+            batch_summary = run_batch(requests, cache, batch_id=batch_id)
+        run_dir = start_run(
+            f"judge-{effort}_{answers_config['run_id']}",
+            {
+                "kind": "judge",
+                "answers_run": answers_config["run_id"],
+                "strategy": answers_config["strategy"],  # recorded, never shown to the judge
+                "model": JUDGE_MODEL,
+                "effort": effort,
+                "prompt_version": JUDGE_PROMPT_VERSION,
+                "batch_id": batch_summary["batch_id"] if batch_summary else None,
+            },
+            runs_dir,
+        )
         llm = LLMClient(cache)
-        for answer in load_results(answers_run):
+        for answer in answers:
             question = questions[answer["question_id"]]
             result = judge_answer(llm, answer, question, articles_by_id, effort=effort)
             append_result(run_dir, asdict(result))
