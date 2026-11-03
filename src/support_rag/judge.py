@@ -20,24 +20,31 @@ JUDGE_PROMPT_VERSION = "judge-v1"  # bump on any change to the rubric or the sch
 CORRECTNESS = ("correct", "partial", "incorrect")
 GROUNDED = ("yes", "partly", "no", "n/a")
 
-SYSTEM = """\
-You grade answers written by a customer support assistant for Wix, the website builder. \
-You are given the customer's question, a reference answer written by a Wix support \
-expert, the answer to grade, and the help-center articles that answer cites.
-
+# The rubric is also shown to the hand labeler (D-027), so both grade by the same words.
+CORRECTNESS_RUBRIC = """\
 Grade correctness against the reference answer:
 - correct: following the answer resolves the customer's issue, consistent with the \
 reference. One complete, valid method is enough; it doesn't have to list every \
 alternative the reference gives. Extra accurate detail is fine.
 - partial: the right direction, but a step the customer needs is missing or wrong, or \
 they would need more help to finish.
-- incorrect: wrong, contradicts the reference, or doesn't address the question.
+- incorrect: wrong, contradicts the reference, or doesn't address the question."""
 
+GROUNDED_RUBRIC = """\
 Grade groundedness against the cited articles only:
 - yes: every claim in the answer is supported by the cited articles.
 - partly: some claims are supported and some are not.
 - no: the cited articles don't support the answer.
-- n/a: the answer cites no articles.
+- n/a: the answer cites no articles."""
+
+SYSTEM = f"""\
+You grade answers written by a customer support assistant for Wix, the website builder. \
+You are given the customer's question, a reference answer written by a Wix support \
+expert, the answer to grade, and the help-center articles that answer cites.
+
+{CORRECTNESS_RUBRIC}
+
+{GROUNDED_RUBRIC}
 
 Write your reasoning first, briefly, then the two grades."""
 

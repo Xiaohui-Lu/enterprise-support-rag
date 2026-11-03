@@ -15,6 +15,10 @@ uv run srag download   # WixQA at the pinned revision, into data/raw/
 uv run srag stats      # regenerate reports/corpus_stats.md
 uv run srag eval-retrieval --split dev           # BM25 on dev; add --no-stem for the ablation
 uv run srag report-retrieval runs/<a> runs/<b>   # reports/retrieval_bm25.md; first run is the baseline
+uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, cached); s0, s1 or s_star
+uv run srag judge runs/<answers> --effort high    # grade an answer run (paid, cached)
+uv run srag label-sample runs/<s0> runs/<s1> runs/<s_star>   # draw the hand-label sample, once
+uv run srag label                                 # hand-label the sample, blind; resumable
 ```
 
 ## Layout
@@ -24,12 +28,13 @@ uv run srag report-retrieval runs/<a> runs/<b>   # reports/retrieval_bm25.md; fi
 - `docs/`: `experiment-design.md` (questions, splits, strategies, metrics, roadmap) and `decisions.md` (decision log).
 - `reports/`: generated reports, committed.
 - `data/raw/`: the downloaded dataset, git-ignored. `data/splits/splits.json`: the frozen split, committed.
+- `data/labels/`: the hand-label sample and labels for validating the judge, committed (D-027).
 - `runs/`: run records (config, per-question results, summary), git-ignored; reports cite run IDs (D-018).
 - `cache/`: the LLM response cache (SQLite), git-ignored (D-020).
 
 ## Rules
 
-- Never regenerate or hand-edit `data/splits/splits.json`, and never tune prompts, thresholds or parameters on test-set results. Tune on dev; run on test only at milestones (D-004, D-011).
+- Never regenerate or hand-edit `data/splits/splits.json` or `data/labels/`, and never tune prompts, thresholds or parameters on test-set results. Tune on dev; run on test only at milestones (D-004, D-011).
 - Don't change `DATASET_REVISION` in `src/support_rag/config.py`. Every result depends on it.
 - No LangChain, LlamaIndex or similar frameworks. Call provider SDKs through this repo's own thin interfaces, so every token and call can be counted (D-003).
 - Evaluation calls the same code paths the service uses; there is no separate eval pipeline (D-008).

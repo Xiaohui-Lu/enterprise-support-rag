@@ -568,6 +568,39 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-027 · Hand labels: drawn by whole question, labeled blind before any judge grade, with a reserve for a revised rubric (Step 3)
+
+**Context.** The judge is trusted only if it agrees with hand labels (D-005: Cohen's kappa of about 0.6 or more). The labels are the ground truth for that check, so the way they're collected decides whether the check means anything. If the judge falls short, the rubric is revised by reading the disagreements, and the revised judge then needs a check of its own.
+
+**Decision.**
+- `srag label-sample` draws the sample once from the three full dev_real answer runs (S0, S1, S*) and commits it to `data/labels/sample.json` with the answer texts, like the frozen split.
+- The sample takes whole questions: questions are shuffled (seed 20261102) and taken until the sample holds 80 answers. That gives 28 questions and 80 answers (S0 28, S1 25, S* 27). The other 21 questions (56 answers) are a reserve that no label touches.
+- Declines aren't sampled, because they never reach the judge (D-025). Question ew-060 is excluded, because its pilot grade was discussed while writing the rubric.
+- `srag label` shows one answer at a time, in random order, with the question, the expert reference and the judge's own rubric text. It never shows the strategy, the run or any judge grade. Each label is appended to `data/labels/labels.jsonl` with a timestamp, so labeling can stop and resume.
+- Correctness is labeled for all 80 answers. Groundedness is labeled for 20 answers picked at random among those with citations, since it means reading the articles, and its agreement is reported as a small sample.
+- Labels come first: the judge's validation run starts only after the last label, which the timestamps show.
+- Judge-v1 is measured on these labels. If it falls short, the rubric is revised by reading the disagreements, and the revised judge is measured on fresh labels from the reserve, never re-measured on these.
+
+**Alternatives.**
+- Sampling single answers instead of whole questions: the same counts, but the reserve would share questions with the labeled set, so a rubric fix aimed at one answer to a question would also help on the reserve's answers to it.
+- Labeling test answers: the test set is for M1 results only (D-004).
+- Labeling with the judge's verdicts visible: faster, but every label would be anchored on the judge's grade, so agreement would be inflated.
+- Re-measuring a revised rubric on the same labels: it is sure to look better, because it was fitted to them.
+- Groundedness on all 80: about an hour more of reading articles, for a secondary metric.
+- Picking the groundedness items by hand: this tends to favor short, easy answers, which would bias the sample.
+
+**Why.** It's the dev/test principle (D-004) applied to the judge: what you tune on can't also be what you measure on. The first measurement of judge-v1 is honest because its rubric was committed before any label existed. Drawing whole questions keeps the reserve clean, for the same reason the dev/test split is drawn by question.
+
+**Trade-offs.**
+- The labeler sees all of a question's answers, so grading one can be colored by having read another; the judge sees each answer alone.
+- With 25 to 28 answers per strategy, kappa per strategy has wide error bars: it shows a strategy where the judge is clearly off, not small differences.
+- There's one labeler, so there's no human-to-human agreement to set a ceiling for the judge.
+- The reserve is smaller than the sample (56 answers), so a second round would have wider error bars.
+
+**In short.** "Before seeing any judge grade, I hand-labeled 80 dev answers, blind to the strategy, and measured the judge against them. The sample was drawn by whole questions, and the other dev questions were held in reserve: if the rubric had to change, I'd validate it on fresh labels from the reserve, because a rubric fixed on my labels will always agree better with those same labels."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

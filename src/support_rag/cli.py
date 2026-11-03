@@ -43,11 +43,18 @@ def main(argv: list[str] | None = None) -> None:
     judge = commands.add_parser("judge", help="grade an answer run with the judge (paid, cached)")
     judge.add_argument("answers_run", type=Path, help="the answer run directory to grade")
     judge.add_argument("--effort", choices=["low", "medium", "high"], required=True)
+    label_sample = commands.add_parser(
+        "label-sample", help="draw the hand-labeling sample from answer runs (run once)"
+    )
+    label_sample.add_argument(
+        "runs", nargs="+", type=Path, help="one full dev_real answer run per strategy"
+    )
+    commands.add_parser("label", help="hand-label the sample, blind to strategy (resumable)")
     args = parser.parse_args(argv)
 
     try:
         run(args)
-    except (FileExistsError, FileNotFoundError) as error:
+    except (FileExistsError, FileNotFoundError, ValueError) as error:
         sys.exit(f"error: {error}")
 
 
@@ -105,6 +112,22 @@ def run(args: argparse.Namespace) -> None:
             run_dir = run_judge(args.answers_run, effort=args.effort)
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))
+        case "label-sample":
+            from support_rag.labels import write_sample
+
+            counts = write_sample(args.runs)["counts"]
+            print("wrote data/labels/sample.json")
+            for name, value in counts.items():
+                print(f"  {name}: {value}")
+        case "label":
+            from support_rag.labels import label_session, load_sample
+            from support_rag.wixqa import load_articles, load_questions
+
+            sample = load_sample()
+            questions = {
+                q.id: q for subset in ("expertwritten", "simulated") for q in load_questions(subset)
+            }
+            label_session(sample, questions, {a.id: a for a in load_articles()})
 
 
 if __name__ == "__main__":

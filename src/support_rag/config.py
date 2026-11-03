@@ -20,6 +20,7 @@ DATASET_FILES = {
 ROOT = Path(os.environ.get("SRAG_ROOT", Path(__file__).resolve().parents[2]))
 RAW_DIR = ROOT / "data" / "raw"
 SPLITS_PATH = ROOT / "data" / "splits" / "splits.json"
+LABELS_DIR = ROOT / "data" / "labels"  # hand labels for validating the judge (D-027)
 REPORTS_DIR = ROOT / "reports"
 RUNS_DIR = ROOT / "runs"  # run records (D-018); git-ignored
 CACHE_DIR = ROOT / "cache"  # LLM response cache (D-020); git-ignored
