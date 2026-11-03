@@ -187,8 +187,8 @@ Ideas outside the roadmap. Each gets its own decision before it's scheduled.
 
 | Idea | Why | When | Notes |
 |---|---|---|---|
-| Second knowledge base: [EnterpriseRAG-Bench](https://github.com/onyx-dot-app/EnterpriseRAG-Bench) (D-014) | Multi-source, internal-style data with unanswerable questions; shows which findings transfer | After M3 | New loader behind the D-013 boundary; its own dev/test split; re-measure chunking and router thresholds. Confirm the dataset license first; [HERB](https://huggingface.co/datasets/Salesforce/HERB) is the fallback |
-| "Bring your own docs" loader | Point the service at a folder of PDFs or Markdown files | After M3 | No gold labels, so it's for demos, not results |
+| Second knowledge base: [EnterpriseRAG-Bench](https://github.com/onyx-dot-app/EnterpriseRAG-Bench) (D-014) | Multi-source, internal-style data with unanswerable questions; shows which findings transfer | After M3 | New loader behind the D-013 boundary; its own dev/test split; re-measure chunking and router thresholds, and validate the judge again (see `porting.md`). Confirm the dataset license first; [HERB](https://huggingface.co/datasets/Salesforce/HERB) is the fallback |
+| "Bring your own docs" loader | Point the service at a folder of PDFs or Markdown files | After M3 | No gold labels, so it's for demos, not results (see `porting.md`) |
 
 ## References
 

@@ -27,7 +27,7 @@ uv run srag label --adjudicate                    # hand-label only what the pan
 
 - `src/support_rag/`: the only package. Every step is an `srag` subcommand in `cli.py`; no notebooks or loose scripts (D-010).
 - `tests/`: pytest, run against the installed package. Tests never touch the network or `data/raw/`.
-- `docs/`: `experiment-design.md` (questions, splits, strategies, metrics, roadmap) and `decisions.md` (decision log).
+- `docs/`: `experiment-design.md` (questions, splits, strategies, metrics, roadmap), `decisions.md` (decision log) and `porting.md` (what to redo for a new dataset).
 - `reports/`: generated reports, committed.
 - `data/raw/`: the downloaded dataset, git-ignored. `data/splits/splits.json`: the frozen split, committed.
 - `data/labels/`: the hand-label sample and labels for validating the judge, committed (D-027).
