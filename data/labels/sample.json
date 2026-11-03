@@ -1,0 +1,1159 @@
+{
+  "version": 1,
+  "answer_runs": {
+    "s0": {
+      "run_id": "20261102-173621_s0-medium_dev_real",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "prompt_version": "answer-v1"
+    },
+    "s1": {
+      "run_id": "20261102-173409_s1-k5-medium_dev_real",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "prompt_version": "answer-v1"
+    },
+    "s_star": {
+      "run_id": "20261102-173943_s_star-medium_dev_real",
+      "model": "claude-haiku-5-5",
+      "effort": "medium",
+      "prompt_version": "answer-v1"
+    }
+  },
+  "seed": 20261102,
+  "excluded": [
+    "ew-060"
+  ],
+  "counts": {
+    "items": 80,
+    "items_s0": 28,
+    "items_s1": 25,
+    "items_s_star": 27,
+    "grounded_checks": 20,
+    "labeled_questions": 28,
+    "reserve_questions": 21
+  },
+  "labeled_questions": [
+    "ew-000",
+    "ew-007",
+    "ew-057",
+    "ew-061",
+    "ew-093",
+    "ew-108",
+    "ew-121",
+    "ew-127",
+    "ew-130",
+    "ew-141",
+    "ew-154",
+    "ew-155",
+    "ew-171",
+    "ew-180",
+    "ew-196",
+    "sim-018",
+    "sim-027",
+    "sim-041",
+    "sim-056",
+    "sim-078",
+    "sim-085",
+    "sim-097",
+    "sim-132",
+    "sim-161",
+    "sim-177",
+    "sim-183",
+    "sim-184",
+    "sim-194"
+  ],
+  "reserve_questions": [
+    "ew-050",
+    "ew-059",
+    "ew-070",
+    "ew-073",
+    "ew-109",
+    "ew-110",
+    "ew-118",
+    "ew-143",
+    "ew-160",
+    "sim-011",
+    "sim-016",
+    "sim-017",
+    "sim-019",
+    "sim-021",
+    "sim-064",
+    "sim-093",
+    "sim-111",
+    "sim-113",
+    "sim-114",
+    "sim-122",
+    "sim-165"
+  ],
+  "items": [
+    {
+      "item": 1,
+      "question_id": "ew-007",
+      "strategy": "s0",
+      "text": "To verify your domain with Google Workspace, add the TXT record Google gives you to your domain's DNS settings:\n\n1. **Get the TXT record from Google.** In the Google Admin console, go to **Domain verification** (or the setup step for your domain). Choose the TXT record method, then copy the **TXT value** (it starts with `google-site-verification=`). Leave that page open.\n\n2. **Find where your DNS is managed.** Because your domain is pointed to Wix, your DNS settings may be in one of two places:\n   - **In Wix:** In your Wix account, go to **Domains**, click your domain, and open **Manage DNS Records** (or **Advanced DNS Settings**). Use this if your domain uses Wix nameservers.\n   - **At your registrar or DNS provider:** If your domain uses external nameservers, log in to the site where you bought the domain (such as GoDaddy, Namecheap, or Google Domains) and find its DNS settings.\n\n3. **Add the TXT record.** Click **Add record** and set:\n   - **Type:** TXT\n   - **Host / Name:** `@` (or leave blank, depending on the provider)\n   - **Value / Content:** the `google-site-verification=...` string you copied\n   - **TTL:** the default is fine\n\n4. **Save the record.** Wait a few minutes to a few hours for the change to spread. It can take up to 48 hours.\n\n5. **Verify in Google.** Return to the Google Admin console and click **Verify**. If it fails, check that the value was copied exactly and that the host is `@` or blank, then try again after some time has passed.\n\nAdding the TXT record does not affect your Wix site or the pointing you already have set up.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 2,
+      "question_id": "sim-018",
+      "strategy": "s0",
+      "text": "You can cancel your site plan and your domain separately, both from your Wix account.\n\n**Cancel the site plan first:**\n1. Log in to your Wix account and go to **Billing & Payments**.\n2. Find the premium plan for the site you want to cancel.\n3. Click **Cancel Plan** (or **Manage Plan**, then **Cancel Plan**) and follow the prompts to confirm.\n\n**Then cancel the domain:**\n1. Go to **Domains** in your account dashboard.\n2. Click the domain you want to cancel.\n3. Select **Manage Domain**, then **Cancel Domain** (in some views this is under **Advanced** or the settings menu) and confirm.\n\nCancelling a domain can make your site's address stop working right away, so cancel the plan first if you want to keep the site live for a bit.\n\n**About a refund:** Wix's refund eligibility depends on when you purchased and what you bought. Premium plans and domains purchased recently are often eligible for a refund, but domain registration fees may not be. Check your refund eligibility under **Billing & Payments**, or contact Wix Support to request a refund for both items.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 3,
+      "question_id": "sim-027",
+      "strategy": "s0",
+      "text": "You can't remove only the hosting from a Wix plan. Website hosting and the domain are bundled in the same plan, so to keep the domain you need to cancel the plan and keep the domain separately.\n\n1. **Back up your site.** Once the plan is canceled, the site goes offline. Save any content you want to keep.\n2. **Cancel the premium plan.** Go to your account's **Billing & Payments** page (or **Plans & Pricing**), select the plan, and choose **Cancel plan**.\n3. **Keep the domain.** During cancellation, Wix may ask what to do with the domain. Choose the option to keep it, which moves it to a standalone domain subscription. If you aren't offered that option, contact Wix support before finishing the cancellation so they can keep the domain active.\n4. **Check the domain.** Under **Domains** in your account, confirm the domain is still listed and set to renew, and check the renewal date and price.\n\nCanceling the plan may trigger a refund or prorated credit depending on your billing terms. Check the cancellation confirmation for details.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 4,
+      "question_id": "ew-127",
+      "strategy": "s1",
+      "text": "When you share a page of your site on Facebook, Facebook uses your page title, description, and site thumbnail. If the thumbnail is out of date, you can update it and then preview the change with the debugger tool [5]. The articles I have don't include the exact steps for changing the thumbnail or explain why your update didn't appear, so you may need to contact our Experts for help with that.",
+      "context_ids": [
+        "fcd522936768f2f5d351b5b5331bf93cf9f9d3cd4d8f323abd8bcff639377813",
+        "8680e27e09753674a11d86a0d804d6a2026e89fb87f5d53f716f4c833f21812f",
+        "2a73ce56cfb6d899bd155abfa319d863360de062a21d82959a45463086aee274",
+        "4ea6e9b6862f349c8905cb2aac4474429e81fa7ab8cf71bd334ec56f9bce7237",
+        "6181c6402e7cdb08b8183bbcd1d0ca0c3db1a2c6bd81f01e1bfaee884facff62"
+      ],
+      "cited_ids": [
+        "6181c6402e7cdb08b8183bbcd1d0ca0c3db1a2c6bd81f01e1bfaee884facff62"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 5,
+      "question_id": "sim-056",
+      "strategy": "s0",
+      "text": "To show your booking hours publicly on your Wix site:\n\n1. **Set your availability.** In your Wix dashboard, open **Bookings**, select the service, and go to its **Availability** settings. Set the days and hours you're open for bookings.\n2. **Make sure the service is visible.** In the service's settings, confirm it's set to show on your site. Hidden services won't appear to visitors.\n3. **Add a booking element to your page.** In the Editor, click **Add (+)**, choose **Bookings**, and add a **Services** list or **Booking Calendar** to the page where you want visitors to see your hours and book.\n4. **Publish your site.** Changes only go live after you click **Publish**. Until then, visitors won't see them.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 6,
+      "question_id": "sim-194",
+      "strategy": "s0",
+      "text": "To go from two email accounts to one, you'll remove the extra mailbox. Wix bills email per mailbox, so your cost drops once one is removed.\n\n1. Log in to your Wix account and go to **Billing & Payments** from your account menu.\n2. Find your email subscription and open it.\n3. Select the mailbox you want to remove and choose the option to delete or cancel it.\n4. Confirm. Your billing will update to reflect one mailbox.\n\nBefore you delete a mailbox, back up any emails or contacts you need from it, because removing it also removes access to its messages. If you don't see the option, check your Wix Mailbox or email settings in your dashboard, since the menu names can vary. You can also contact Wix Support from the Help Center for help with the change.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 7,
+      "question_id": "sim-041",
+      "strategy": "s1",
+      "text": "To move a Premium plan to a different site:\n\n1. Go to **Premium Subscriptions** in your Wix account.\n2. Click the **More Actions** icon next to the relevant plan.\n3. Click **Assign to a Different Site** and choose the site you want.\n4. Click **Next**, then click **Assign** [4].\n\nIf the plan is still assigned to your original site, premium features such as connecting a domain and removing Wix ads are removed from that site once you reassign the plan [1]. If the plan is already unassigned, you can find it in the Unassigned Subscriptions section of your Wix account [1].\n\nTo assign a Premium plan to a Wix Studio site, you need to upgrade to a Studio plan. You must also be the owner of both sites, or have the relevant billing permissions, and the sites must be in the same workspace [2].",
+      "context_ids": [
+        "99499c14c12f12f30d6bde107d4ea5d26a273bfdd48c6166b2abdb03066b2061",
+        "edc57ef2ba749c69dabeb40fc69d61d78a606ba0ca146414383dd6d5db422ed5",
+        "1b883161f5f578e387f19e01581b12610da8c0785651bf83dc0c33e2df69631f",
+        "1dfafcce3c9b899357a7548d8989bd906a6e87441a7496abe5e5c21a81e4f356",
+        "e41feb3418f6fd5b21ab16d3fc80ed365f2a2e736b4c646da93e85aaa1bd2dbe"
+      ],
+      "cited_ids": [
+        "1dfafcce3c9b899357a7548d8989bd906a6e87441a7496abe5e5c21a81e4f356",
+        "99499c14c12f12f30d6bde107d4ea5d26a273bfdd48c6166b2abdb03066b2061",
+        "edc57ef2ba749c69dabeb40fc69d61d78a606ba0ca146414383dd6d5db422ed5"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 8,
+      "question_id": "ew-141",
+      "strategy": "s0",
+      "text": "To add an anchor to a page in the Wix Editor:\n\n1. Click the **Add** button (**+**) on the left side of the Editor.\n2. Select **Menu & Anchor**.\n3. Click **Anchor** and drag it onto the spot on the page where you want the link to jump to.\n4. Click the anchor to select it, then open its settings and give it a name so you can find it later.\n\nTo link to the anchor, select the text or button you want to use as the link, click **Link**, choose the **Anchor** option, and pick the anchor you named.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 9,
+      "question_id": "sim-183",
+      "strategy": "s1",
+      "text": "To update the payment method for your Wix plan renewals:\n\n1. Go to **Premium Subscriptions** in your Wix account.\n2. Click the **More Actions** icon next to the relevant subscription.\n3. Click **Update Payment Method**.\n4. Click **Use another payment method** and enter your card details.\n   If your card is already saved, you can select it from the list instead.\n5. Click **Update**. [2]",
+      "context_ids": [
+        "4061f5f31bef8b51a9529a1e003ea22e7e98422e7ada6c2d85823000c68262fa",
+        "05faa31b57e5221a3f3a1483fa5f146a56cf8546024841cfeae5d7c48c821793",
+        "01865a198b977030c5020de45ac495c0f6e7398efd5f4e0f707e61eebcbf828d",
+        "33c1701d797e829d2d850b1951a338a49554ba5d5a2cd18ec0979c9abf725a28",
+        "a6530824ab787a29dd01f6f111a0a4603a433e81d2248dc05f755ccc24149cab"
+      ],
+      "cited_ids": [
+        "05faa31b57e5221a3f3a1483fa5f146a56cf8546024841cfeae5d7c48c821793"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 10,
+      "question_id": "sim-161",
+      "strategy": "s1",
+      "text": "To remove a payment method, you need to be able to remove it without affecting an active subscription. Payment methods connected to an active subscription can't be removed [1].\n\n1. Go to **Payment Methods** in your Wix account [1].\n2. Click **Actions** next to the payment method [1].\n3. Click **Remove** [1].\n4. Click **Remove** again to confirm [1].\n\nAfter you remove a payment method, you, or anyone else with billing permissions, can no longer use it for future purchases [1].",
+      "context_ids": [
+        "09c5b027c3bc064fce040e3026d4c53857ea73d1044bbe51bcf3de0dfa08efbc",
+        "eaf11086c1b0760da88fdd08ba69f56ea894aacef5f7bd00b6cc6bd109452c4f",
+        "7757b3c1e65b09df05d0088f45a86ff8cf5681e4b6ba741b8c509ddf0e0ca7be",
+        "2c16d54305b3d49f4c9e889382f3d377d489eab65edbdcc7938378b5ea17c717",
+        "6e3375cfcf4b5b5f2f2f6ae34484776d8906646af57963d32bdd8007ee0de54f"
+      ],
+      "cited_ids": [
+        "09c5b027c3bc064fce040e3026d4c53857ea73d1044bbe51bcf3de0dfa08efbc"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 11,
+      "question_id": "ew-061",
+      "strategy": "s1",
+      "text": "To view your invoices, the steps depend on which kind you mean:\n\n**Invoices you sent to clients (Wix Studio):** Go to Marketplace Overview in your Wix Studio workspace and click the **Invoices** tab on the left. [2]\n\n**Invoices you sent to customers from a Wix site:** Go to **Invoices** in your site's dashboard. [5]\n\n**Invoices for payments you made to Wix (Hopp Pro plan):** Go to hopp.co, log in, click **Settings** on the left, click **Manage Plan**, then click **View invoices**. [3]\n\n**Invoices for Facebook & Instagram Ads with Wix:** Go to the **Billing History** page of your account. [4]\n\n**Payout invoices (money Wix paid you as a Studio partner):** Go to **Payouts** in your Wix Studio workspace, hover over a payout, and click **View Invoice**. [1]\n\nIf none of these matches what you need, let me know which service the invoices are for and I can give you more specific steps.",
+      "context_ids": [
+        "016169a98d1575f711476487eb5984555e1158d2e6b88b4ea8883e389a3b78c0",
+        "def9b44fc65350a652075cb6dc918f82ba4ce6ec67bb387224cc87c50d723472",
+        "6b525af2756942688ba20055f6adb1c58b3599f6844659c8f0ed8a011bef4314",
+        "2cb57e520d575ca7aa4c357b7786116661c4c783174dbd0590f5711fb8116910",
+        "28d1f0f8c2ac1b901fed7f0be600dcdf422d8d726a3b989bc927a05a8f5f92e3"
+      ],
+      "cited_ids": [
+        "def9b44fc65350a652075cb6dc918f82ba4ce6ec67bb387224cc87c50d723472",
+        "28d1f0f8c2ac1b901fed7f0be600dcdf422d8d726a3b989bc927a05a8f5f92e3",
+        "6b525af2756942688ba20055f6adb1c58b3599f6844659c8f0ed8a011bef4314",
+        "2cb57e520d575ca7aa4c357b7786116661c4c783174dbd0590f5711fb8116910",
+        "016169a98d1575f711476487eb5984555e1158d2e6b88b4ea8883e389a3b78c0"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 12,
+      "question_id": "sim-041",
+      "strategy": "s0",
+      "text": "You can move a Wix premium plan to another site you own, as long as the destination site doesn't already have a premium plan.\n\n1. Log in to your Wix account and go to **Billing & Payments**.\n2. Find the premium plan you want to move and open its options.\n3. Select the option to transfer or move the plan, then choose the site you want to move it to.\n4. Confirm the transfer.\n\nIf you don't see a transfer option, the plan may be tied to a site that doesn't allow it, or the destination site may already have a plan. In that case, contact Wix Support for help.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 13,
+      "question_id": "ew-196",
+      "strategy": "s0",
+      "text": "**Resizing the image:**\n1. Click the image to select it.\n2. Drag a corner handle to resize it. Hold **Shift** while dragging to keep its proportions.\n3. For exact dimensions, open the image's **Layout** options in the editor toolbar or settings panel and enter the width and height.\n\nIf the image sits behind other elements or doesn't show, right-click it and bring it forward, or use the Layers panel to reorder it.\n\n**Adding text to the new section:**\n1. Click the **Add** (+) button on the left side of the editor.\n2. Choose **Text**, then pick a text style such as a heading or paragraph.\n3. Drag the text box into your new section. Drop it inside the section's boundaries so it doesn't land in the section above or below.\n4. Type your text directly into the box, or double-click it to edit.\n\nIf you tell me which Wix Editor you're using (Wix Editor or Studio) and what the image or text is doing, such as not resizing, disappearing, or moving out of the section, I can give more specific steps.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 14,
+      "question_id": "ew-061",
+      "strategy": "s_star",
+      "text": "To view invoices you created for your customers, use one of these methods:\n\n**In your site's dashboard:**\n- To see a list of all your invoices, go to the **Invoices** tab in your site's dashboard. [1]\n- To view the invoice for a specific order, go to **Orders**, click the relevant order, click the **More Actions** button, and select **View Invoice**. [1]\n\n**In the Wix app:**\n1. Go to your site in the Wix app.\n2. Tap **Manage** at the bottom.\n3. Tap **Manage Invoices** under Getting Paid.\n4. Review your invoices in the **Invoices** tab. [2]\n\nIf you meant invoices for plans or services you paid for to Wix, go to your **Billing History** page. [3]",
+      "context_ids": [
+        "4c851bd1efd1009bb75a387d406fb7914e906fda9016127529184916bd23aaf9",
+        "8001def9f1cf8810f2685ae0f68ee4b4bca089212d77a99e0a129a1feb80370f",
+        "040613a5d53923efc2955eb8cfaf4573d7543dd0236bf90be63e40613359e4cf"
+      ],
+      "cited_ids": [
+        "4c851bd1efd1009bb75a387d406fb7914e906fda9016127529184916bd23aaf9",
+        "8001def9f1cf8810f2685ae0f68ee4b4bca089212d77a99e0a129a1feb80370f",
+        "040613a5d53923efc2955eb8cfaf4573d7543dd0236bf90be63e40613359e4cf"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 15,
+      "question_id": "sim-085",
+      "strategy": "s1",
+      "text": "If you want to cancel, the steps depend on which plan you have:\n\n**Wix Premium or Studio site plan:** If you purchased it within the last 14 days, canceling gives you a full refund, and the refund is returned automatically to your payment method. Allow up to 20 business days for it to appear on your statement. Your site plan is deactivated immediately after you cancel [2]. If you cancel after 14 days, no refund is issued. Your automatic renewal turns off, and the plan stays active until it expires [2].\n\n**Photo Albums storage plan:** Go to Premium Subscriptions in your Wix account. Click the More Actions icon next to the storage plan, then click Cancel plan. To get a refund within the first 14 days, select Cancel my subscription now and click Cancel Now. After 14 days, select Cancel auto-renewal of my subscription and click Cancel Now. The plan then expires at the end of the current period [3].\n\n**Hopp Pro plan:** Go to hopp.co and log in. Click Settings on the left, then click Manage on Wix under Manage Hopp Plan. Click the More Actions icon next to your Hopp plan, then click Cancel Hopp [4][5].\n\nWhich plan do you want to cancel? I can give you more specific steps.",
+      "context_ids": [
+        "d2bd45f4454bf4b5fd94477eaf442a72e46ac35a214191fef6be526cd20ec405",
+        "5641574289f2768293891471cfcc69b935623ef2723abd28fcb9dddf430ce5e8",
+        "e41feb3418f6fd5b21ab16d3fc80ed365f2a2e736b4c646da93e85aaa1bd2dbe",
+        "6b525af2756942688ba20055f6adb1c58b3599f6844659c8f0ed8a011bef4314",
+        "12f5398c4638fbd76907fc24a3caafb5454dd89bcf36d2c3686758485e8a51d3"
+      ],
+      "cited_ids": [
+        "5641574289f2768293891471cfcc69b935623ef2723abd28fcb9dddf430ce5e8",
+        "e41feb3418f6fd5b21ab16d3fc80ed365f2a2e736b4c646da93e85aaa1bd2dbe",
+        "6b525af2756942688ba20055f6adb1c58b3599f6844659c8f0ed8a011bef4314",
+        "12f5398c4638fbd76907fc24a3caafb5454dd89bcf36d2c3686758485e8a51d3"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 16,
+      "question_id": "sim-097",
+      "strategy": "s1",
+      "text": "To cancel your Wix Premium plan, turn off auto-renewal:\n\n1. Go to **Premium Subscriptions** in your Wix account.\n2. Click the **More Actions** icon next to the relevant plan.\n3. Click **Cancel Plan**.\n4. Provide your feedback, then click **Cancel Now** to confirm. [4]\n\nCancelling doesn't end the plan right away. It won't renew when the subscription period ends. [2] If you cancel during the first 14 days after an initial upgrade, the plan is canceled immediately. [4]\n\nYour domain is separate from your plan, so you'll need to cancel it separately. [5]",
+      "context_ids": [
+        "99499c14c12f12f30d6bde107d4ea5d26a273bfdd48c6166b2abdb03066b2061",
+        "8042894087a3deff2aa35f36922a9193fd5bbd2f6a52b63cf83043dd22e6550f",
+        "b9252e3bcfd33d8b842d88e9f3f2470786f76d5181a328a0c27d20b9e53cbc08",
+        "2d2313593a6d93ceed58105a0fdfd7e6f26d15274c36d51281940fe0de1d87ea",
+        "5ce85d608b0f1f8b3e9341a3773f0ff23e44485a21dd9f23ae9a49553e4176cf"
+      ],
+      "cited_ids": [
+        "2d2313593a6d93ceed58105a0fdfd7e6f26d15274c36d51281940fe0de1d87ea",
+        "8042894087a3deff2aa35f36922a9193fd5bbd2f6a52b63cf83043dd22e6550f",
+        "5ce85d608b0f1f8b3e9341a3773f0ff23e44485a21dd9f23ae9a49553e4176cf"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 17,
+      "question_id": "ew-130",
+      "strategy": "s1",
+      "text": "To change the name of a menu item in the Wix Editor:\n\n1. Click **Menus & Pages** on the left side of the Editor. [4]\n2. Hover over the relevant page or menu link. [4]\n3. Click the **Show More** icon. [4]\n4. Click **Rename**. [4]\n5. Type the new name and click **Done**. [4]\n\nMenu item text usually comes from the page name, so renaming the page also changes the menu item. [4]\n\nIf you're still having trouble, tell me what happens when you try these steps, such as whether the option is missing or the name doesn't update on your live site.",
+      "context_ids": [
+        "df782014ef78f93918d2f37cc399d20624360dd3e9892f23ec883181f10e1cc6",
+        "caa0f14d80c30bd7db450fe2f43c79a6d758c1abf104000027bcc4412135d5a4",
+        "355b85ced83b437926ae725adb60b0091e584575fd4be424c1a6f15444f9e2aa",
+        "afb7c53784f208dafc7c40cf5206776b38f6384a124cd0965e20b43479ace28a",
+        "02e5d32aeeac7ae9c8544f8bb9dfc4ebb96f62b48df0b8ae00dd129776805281"
+      ],
+      "cited_ids": [
+        "afb7c53784f208dafc7c40cf5206776b38f6384a124cd0965e20b43479ace28a"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 18,
+      "question_id": "ew-000",
+      "strategy": "s0",
+      "text": "Yes, you can usually start accepting payments while your Wix Payments account is under verification. However, Wix holds your payouts until verification is complete, so the money from those payments won't reach your bank account yet.\n\nTo check your status and finish verification:\n\n1. Go to your Wix dashboard and open **Payments**.\n2. Look for the verification status and any items marked as needing action.\n3. If Wix has requested documents or information, upload or provide it there.\n\nVerification timing varies. If your status hasn't changed after a while, contact Wix Support. Requirements can differ by country, so the exact steps may vary for your account.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 19,
+      "question_id": "ew-180",
+      "strategy": "s_star",
+      "text": "Here are a few things in the dataset settings to check:\n\n1. **Confirm the dataset mode.** The dataset must be in \"Read\" or \"Read & Write\" mode to apply sort conditions. A dataset in \"Write\" mode can't read collection content, so its sorts won't apply to your live page. [1]\n\n2. **Check the sort field and direction.** Make sure the sort is set on the field that holds the item names and that the direction is alphabetical. If you have multiple sort conditions, the first one is applied first, and later ones only order items that tie on the first. [1]\n\n3. **Check the field type.** If the field is a Text field that contains both letters and numbers, it's sorted alphabetically, which can produce unexpected results. [1]\n\n4. **Remember that dataset sorts override mirrored order.** If you use \"Mirror on Site,\" the dataset sort takes priority over the collection view's order. Changes you make to the sort in the collection view won't affect the live site. [1]\n\nChanges to dataset sorts don't affect your collection views, so the collection may look correct while the live site doesn't. Check the dataset settings on the live page, not just the collection. [1]",
+      "context_ids": [
+        "3e67c7354f82374d09126f1c6dbbd0cc6faf8b4f4ffda2f9dd8dd941a94900ce"
+      ],
+      "cited_ids": [
+        "3e67c7354f82374d09126f1c6dbbd0cc6faf8b4f4ffda2f9dd8dd941a94900ce"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 20,
+      "question_id": "ew-007",
+      "strategy": "s_star",
+      "text": "Because your domain is connected to Wix via pointing, your domain host controls your DNS records, so you'll need to ask them to add the TXT record.\n\n1. **Get the TXT record from Google.** Sign in to your Google Admin Console, click **Domains**, then **Manage Domains**. Click **Set up Admin Console** next to your domain. If your domain isn't listed, click **Add a Domain**, then **Next** and **Continue**, and choose TXT verification. Copy the TXT record. [1]\n2. **Ask your domain host to add it.** Contact your domain host and ask them to add the TXT record to your domain's DNS, in the TXT Value field. [1]\n3. **Verify.** Back in the Google Admin Console, click **Verify**. If Google says the domain couldn't be verified, wait at least 10 minutes and try again, since it may take a few attempts. [1]",
+      "context_ids": [
+        "65806b123ff355cef16c8abe4301f1df982e2c3bddcd33b81ed446b92a79e336",
+        "db6a6c4be5c11fae531b4fdd546601bab6d4a26b669a8a7ea6063c62a045e9d4"
+      ],
+      "cited_ids": [
+        "65806b123ff355cef16c8abe4301f1df982e2c3bddcd33b81ed446b92a79e336"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 21,
+      "question_id": "ew-121",
+      "strategy": "s1",
+      "text": "Ad credits for Google Ads with Wix are paid with a monthly subscription or a one-time payment, and these payments are non-refundable [2].\n\nIf you want to stop running the campaign, you can pause it at any time. Your ad will no longer show on Google, and your remaining ad credits stay in your account. You can resume the campaign later using those credits [2]. Note that any Google Ads credits with an expiry date may expire while the campaign is paused [2].",
+      "context_ids": [
+        "0e53b10cffbd6fc898458bcd5a45b17035fc8a6a1d5f47d3eed3a3045c2d0a11",
+        "01e329b27ef95b8d6da00ab4ef5edde1b08837190925fefaaa23a1cbbc5bf855",
+        "8a9a7356084b00022a088366df3b9760f6d4c58b972d1e3639ca8f47c522a2e4",
+        "7e10270b7ecd05d2573050a9ca7541e71edcb7b2b82220e5079404417d10d7dd",
+        "a7b434544e9a87614dc24f3c2facd3bdf530f76bc684b558e7ad0ef761ffbc87"
+      ],
+      "cited_ids": [
+        "01e329b27ef95b8d6da00ab4ef5edde1b08837190925fefaaa23a1cbbc5bf855"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 22,
+      "question_id": "ew-000",
+      "strategy": "s1",
+      "text": "Yes. If your Wix Payments account has the **Accepting Payments** status, you have connected your account and have not yet finished account setup or verification. You can still accept payments, so customers can complete their purchases, but you cannot receive payouts to your bank account until verification is complete [1].\n\nVerification must be finished within 30 days of your first transaction. If it isn't, your account will be suspended and you won't be able to accept payments [1]. To complete setup, go to Accept Payments in your site's dashboard, click Complete Setup under Accept Credit/Debit Cards with Wix, click Complete Account Setup, fill in the information, and click Submit [1].",
+      "context_ids": [
+        "b6c9353c04f2a5e3907ffad8c44109b18c32fbce3efd1a25a7ad0ea9897cb5e1",
+        "dde5fae855d84b3c52a8960bbd297ff4817a90c1d7cd7443d16b00f4ca204581",
+        "06718c2a2f649882cd45673fa3de2711036cb93c418858227a94aa40ef79c587",
+        "46015a37a462d32fa23cd8d81e9ff691a51b3617847647444a0b4603457ab655",
+        "3eb3cd6574026b01cc1d8381d5e2a6a425242518a8d3c6fbc4bdcaec2586b38e"
+      ],
+      "cited_ids": [
+        "b6c9353c04f2a5e3907ffad8c44109b18c32fbce3efd1a25a7ad0ea9897cb5e1"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 23,
+      "question_id": "sim-161",
+      "strategy": "s_star",
+      "text": "To remove a payment method, go to **Payment Methods** in your Wix account, click **Actions**, then click **Remove**. Confirm by clicking **Remove** again [1].\n\nYou can only remove a payment method that isn't connected to an active subscription [1].",
+      "context_ids": [
+        "09c5b027c3bc064fce040e3026d4c53857ea73d1044bbe51bcf3de0dfa08efbc"
+      ],
+      "cited_ids": [
+        "09c5b027c3bc064fce040e3026d4c53857ea73d1044bbe51bcf3de0dfa08efbc"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 24,
+      "question_id": "sim-078",
+      "strategy": "s0",
+      "text": "In the Wix Mobile Editor, you can shrink an image by dragging its edges:\n\n1. Open the Wix Editor and switch to the **Mobile** view using the device icon at the top.\n2. Tap the image to select it.\n3. Drag one of the corner handles inward to make the image smaller. Hold it near the center of the image to shrink it proportionally.\n4. Tap **Save** when you're done.\n\nMobile changes only affect your mobile site, so your desktop layout stays the same.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 25,
+      "question_id": "sim-177",
+      "strategy": "s1",
+      "text": "**Site sessions** count visits. A session starts when a visitor arrives on your site and ends after 30 minutes of inactivity. One session can include several page views and actions, and the same visitor can have multiple sessions [1][2].\n\n**Unique visitors** count people. A unique visitor is a person who visited your site, identified by device and browser. If the same person visits from two devices, they count as two unique visitors [1].\n\nSo one visitor can generate several sessions, and session counts are usually higher than unique visitor counts [1][2].",
+      "context_ids": [
+        "97534def842c827007f03f8d88409da2cc9612d0f87af413f40540bbc15251fc",
+        "6f3c841d4efe8c1f6b5484c751892cc2b0968077eaf79ae147a0941ec20ab72e",
+        "39ccce2332f88449626e11f71d87ea72272168119f5f211c57bddb573939221a",
+        "5c41751d9da90ce7455922f25f4501b0705ac3b084d9fdc58245c0ce25fc8f61",
+        "a357aa4ac0a8c3aebc6ebc43ae287e2a407e08df0b4888a6be8b7ff864a71dd8"
+      ],
+      "cited_ids": [
+        "97534def842c827007f03f8d88409da2cc9612d0f87af413f40540bbc15251fc",
+        "6f3c841d4efe8c1f6b5484c751892cc2b0968077eaf79ae147a0941ec20ab72e"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 26,
+      "question_id": "ew-000",
+      "strategy": "s_star",
+      "text": "Yes. You can start accepting payments on your site with Wix Payments almost immediately, but your identity must be verified before your account is fully activated [1]. Verification can take up to 7 business days [1].\n\nTo avoid interruptions, complete your account setup within 30 days. If you don't, Wix Payments will suspend your account. If setup isn't completed within 60 days, payments processed through Wix Payments will be refunded to your customers [1].",
+      "context_ids": [
+        "49d9e88fadbf11fa4e685c847590078ff9394c2fe7566094f504f53ca4aca465"
+      ],
+      "cited_ids": [
+        "49d9e88fadbf11fa4e685c847590078ff9394c2fe7566094f504f53ca4aca465"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 27,
+      "question_id": "sim-177",
+      "strategy": "s_star",
+      "text": "A **session** is a single web visit to your site. It starts when a visitor arrives and ends after 30 minutes of inactivity. One session can include several page views and actions, and the same visitor can have multiple sessions [1].\n\nA **unique visitor** is a person who visited your site, counted separately for each device and browser. If the same person visits from two devices, they count as two unique visitors [1].",
+      "context_ids": [
+        "97534def842c827007f03f8d88409da2cc9612d0f87af413f40540bbc15251fc"
+      ],
+      "cited_ids": [
+        "97534def842c827007f03f8d88409da2cc9612d0f87af413f40540bbc15251fc"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 28,
+      "question_id": "ew-108",
+      "strategy": "s0",
+      "text": "When Wix Payments denies company details, the usual cause is a mismatch between what you entered and what your document shows. To fix it:\n\n1. **Check the denial reason.** Open your Wix dashboard, go to the Wix Payments section, and look for the verification notice or message. It often says which detail was rejected.\n2. **Compare your entries with your document.** The legal business name, registered address, and registration or tax ID must match your official document exactly, including punctuation, abbreviations (such as \"Ltd\" vs. \"Limited\"), and suite numbers.\n3. **Use an accepted document.** Typically this is a business registration certificate, incorporation document, or business license that shows your company name, address, and registration number. Make sure it isn't expired.\n4. **Upload a clear file.** Use a full-color scan or photo with all four corners visible and no glare, blur, or cropping.\n5. **Update the details and resubmit.** Correct any mismatched fields in the verification form, upload the new document, and submit again.\n\nIf it's denied a second time, contact Wix Support through the Help Center and include the denial message so they can tell you exactly what's missing.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 29,
+      "question_id": "ew-093",
+      "strategy": "s1",
+      "text": "The articles don't explain how to move a domain from one site to another within the same Wix account. They do cover one related case: if the domain is connected in a different Wix account, you need to remove it from that account before you can connect it in the account you're logged into [4]. Once it's removed there, you can connect it to your intended site from the Domains page in your account, using Add an Existing Domain, then Connect a domain you already own, then selecting the correct site [3].\n\nIf the domain is attached to another site in your own account, contact Wix Support for help reassigning it.",
+      "context_ids": [
+        "a338afcdc4dee2ad9d409d569e44b78ec960ff9251856cb739eca0d8cca170a1",
+        "8c15bae2a13933c475930374dba8b633f777a69f37fe7588c6da1fa6ee45bc5d",
+        "f5c9f44a576976e96ae75ac06e549213af0178daa4bdfd6c89e1bd4fce5fbc95",
+        "cf6bab02097f612b9037212b4466a5e775f50962fa391e0882e1cc7dbdab1dfb",
+        "5e838cb78bf05ad692386f050723007eeef87481d54903791ef1d5631f1a4074"
+      ],
+      "cited_ids": [
+        "cf6bab02097f612b9037212b4466a5e775f50962fa391e0882e1cc7dbdab1dfb",
+        "f5c9f44a576976e96ae75ac06e549213af0178daa4bdfd6c89e1bd4fce5fbc95"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 30,
+      "question_id": "ew-141",
+      "strategy": "s1",
+      "text": "To add an anchor to a page in the Wix Editor:\n\n1. Go to your Editor.\n2. Click **Add Elements** on the left side of the Editor.\n3. Click **Menu & Anchor**.\n4. Click **Anchor** under In-Page Navigation, or drag it to the relevant location on your page. [3]\n\nAnchors can't be added to your page's footer. [3]",
+      "context_ids": [
+        "3cb377a4879f667eb577abe602f29a66b27187c71b634aea567bf75b9f36137c",
+        "76147b1471d71f9d7cc7234cfe6bddfc17482da894bcf074ef70cc6c1d7090cd",
+        "7702378a3ae3fe2d928d1610769855c7f506efa705b43039177cfcd85e93766a",
+        "ac4b4823dae4a792be85310f06facafd4b37842f9ce518c9f09978c647cfd18c",
+        "5955dce28d0cbf1af1bb0c6accbae9f4ee5b61d9603b8188d82e2a533d71c3a0"
+      ],
+      "cited_ids": [
+        "7702378a3ae3fe2d928d1610769855c7f506efa705b43039177cfcd85e93766a"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 31,
+      "question_id": "sim-132",
+      "strategy": "s1",
+      "text": "To reorder products in Wix Stores, change the order within each category:\n\n1. Go to **Categories** in your site's dashboard.\n2. Select the relevant category.\n3. Click and drag the products into your preferred order.\n4. Click **Save**. [5]\n\nThe new order applies wherever that category appears on your site. [5]\n\nIf you use the Category Page, you can override this order in the editor. Click the Category Page, click **Settings**, select the **Sorting** tab, and choose an option from the **Order products by** drop-down. [5]",
+      "context_ids": [
+        "54b7de62c3b202abfe2d14462107f8646ede4a9b7d619cc38ab33bf1a154cd92",
+        "ea60c76723b47f6a7bb8251d0d00504ad0ef8293b6e943c48dd026eca0c41523",
+        "a6bb8f04429a79345f9a716d3f3b98d3f87f5492c1040645ac70769e9d56e541",
+        "eda3f66dace3ae9470cde867bf285723d81c5deed9afa30a9bf8cbdd9a9a450c",
+        "b254fcee6b0ae875da5b74071a0d306ab6eabd8ec17634d257638716fb529809"
+      ],
+      "cited_ids": [
+        "b254fcee6b0ae875da5b74071a0d306ab6eabd8ec17634d257638716fb529809"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 32,
+      "question_id": "ew-121",
+      "strategy": "s0",
+      "text": "I'm sorry the campaign didn't meet your expectations. To request a refund:\n\n1. **Gather your details:** Have your Wix account email, the order or invoice number, and the date of purchase ready.\n2. **Check the refund window:** Refund eligibility depends on the product and when you bought it. Review Wix's refund policy in the Help Center, and check the terms shown at purchase.\n3. **Contact Wix Support:** Go to the Wix Help Center, select **Contact Us**, and choose the option for billing or refunds. Explain that you want a refund for your Google Ads campaign and why it didn't meet your needs.\n4. **Wait for a response:** The support team will review your request and tell you whether you qualify and how the refund will be issued.\n\nIf you're past the refund window or the campaign has already spent its budget, support can explain your options.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 33,
+      "question_id": "ew-171",
+      "strategy": "s0",
+      "text": "I don't know of a checklist item called \"Connect site to Google Chrome Console.\" Google Chrome's developer console is a browser tool, not a Wix connection, so that item may be named differently than I'd expect. You might be looking at a related step, such as one for Google Search Console or another SEO task.\n\nHere's what to try:\n\n1. **Refresh the checklist.** Checklist statuses can take a little while to update after you finish a step, so reload your dashboard and check again.\n2. **Confirm the verification went through.** In Google Search Console, check that your site shows as verified. If it doesn't, repeat the verification steps, making sure you're signed in with the Google account you used.\n3. **Check the exact wording of the item.** If the item still shows as incomplete, look at what it asks you to do. If it's asking for something different from Search Console verification, tell me the exact text and I can help you work out the next step.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 34,
+      "question_id": "sim-056",
+      "strategy": "s_star",
+      "text": "To make your booking hours available to clients on your site, set your default work hours. These hours determine when clients can book appointments online [1].\n\n1. Go to **Default Hours** in your site's dashboard.\n2. Select the checkboxes next to the days your business is open.\n3. Enter a start and end time for the first day (for example, 9:00 AM to 1:00 PM).\n4. (Optional) For a second time period on the same day, click the add hours icon, then enter a start and end time (for example, 4:00 PM to 7:00 PM).\n5. Repeat for all other work days.\n6. Click **Save** [1].",
+      "context_ids": [
+        "eb89aff474f99df5060003e2ed1fac7d5e1d45b13f8fdd1cba21f01c395810b5"
+      ],
+      "cited_ids": [
+        "eb89aff474f99df5060003e2ed1fac7d5e1d45b13f8fdd1cba21f01c395810b5"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 35,
+      "question_id": "ew-171",
+      "strategy": "s1",
+      "text": "Since you verified your site manually, you can ignore that step. Your site is already connected to Google Search Console, so the checklist doesn't need to connect it again [1][3].\n\nThe checklist may still show the step as incomplete, and it won't let you finish the checklist until every step is done [1]. The articles I have don't say how to clear that status for a step you've already handled manually.",
+      "context_ids": [
+        "c104d7065faf024029b59ab7eebe751d7c7b4a7a4b613d377a90ee7bf266a12d",
+        "b4b4bf7ed850d1f35b2e6bc5fe5b82e98cf5a1c8d42034b2d605c51f4a479495",
+        "37cb430372ab6f7343a726511cd84bb5657e8e536267aeaa653735240c20dd45",
+        "165e60ea0d6079910372ce17ae22665e3e03649f517d864a0244510c973d431c",
+        "19c646352aff99a496a337e57ec2609112a136102d1246d92cfd823b6c0ef460"
+      ],
+      "cited_ids": [
+        "c104d7065faf024029b59ab7eebe751d7c7b4a7a4b613d377a90ee7bf266a12d",
+        "37cb430372ab6f7343a726511cd84bb5657e8e536267aeaa653735240c20dd45"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 36,
+      "question_id": "ew-180",
+      "strategy": "s1",
+      "text": "Dataset sorts should control the order on your live site, so check these things:\n\n1. **Publish your site.** Changes made in the editor don't appear on the live site until you publish. If you added the dynamic page recently, make sure the site was published after you did. [4]\n2. **Sync your sandbox collection.** If sandbox is enabled, the editor shows the sandbox collection, but the live site shows the live collection. If they're out of sync, the live order can differ from what you see in the editor. Sync the sandbox to the live collection, then publish again. [4]\n3. **Confirm the sort is saved and set correctly.** In the dataset settings, check that the sort appears in the Sort section, with the correct field selected and the Order set to alphabetical (A-Z). If you have multiple sorts, the first one is applied first, so a later sort won't change the order of items that the first sort already separated. [1][2]\n4. **Check the dataset mode.** The dataset must be in \"Read\" or \"Read & Write\" mode to apply sort conditions. [1]\n\nIf the items still aren't alphabetical after these steps, check the field type. Text fields that mix letters and numbers are sorted alphabetically, so values like \"P1200\" can appear before \"P123\". [1]",
+      "context_ids": [
+        "3e67c7354f82374d09126f1c6dbbd0cc6faf8b4f4ffda2f9dd8dd941a94900ce",
+        "76ed3ff1d66d859e6d38c1e1edef0f2fdd046f805d03564eff79642d0294c793",
+        "163d579af227160c8072dc465c81d8edea4b507d7e8789078b680f88633aefab",
+        "0585250f004dcd17b373021e5e3b007fe355250034fe47d554a98b3c448a5f06",
+        "c8fee1be04325395109bb487220e1821264f6f55bcff5a68fa11d29539b6c59a"
+      ],
+      "cited_ids": [
+        "0585250f004dcd17b373021e5e3b007fe355250034fe47d554a98b3c448a5f06",
+        "3e67c7354f82374d09126f1c6dbbd0cc6faf8b4f4ffda2f9dd8dd941a94900ce",
+        "76ed3ff1d66d859e6d38c1e1edef0f2fdd046f805d03564eff79642d0294c793"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 37,
+      "question_id": "ew-108",
+      "strategy": "s_star",
+      "text": "Your company document may have been denied because it didn't meet one or more of these requirements:\n\n- **Issuing country:** The document must be issued in the country you selected as your business location. Documents from another country may be rejected. [1]\n- **Visible details:** The tax ID or registration number and the company name must be clear and visible. [1]\n- **Name match:** The company name must match the business details in your Wix Payments account. [1]\n- **Recent:** The document must have been issued within the last 12 months. [1]\n- **File format and size:** Upload a HEIC, JPEG, JPG, PDF, or PNG file. The maximum size is 10 MB, and the minimum is 1 KB for PDF or 100 KB for other formats. [1]\n\nIf Wix requested a company director document, it must list the legal entity name and all registered directors, and it must be up to date. For Canadian corporations, any of these works:\n\n- A current, valid government-issued document that shows the entity name and directors\n- A corporate profile report\n- Articles of Incorporation or Association\n- A Notice of Articles\n- A Notice of Change of Directors (for example, Form 6, Form 4006, or Form 3006)\n- Board meeting minutes or a resolution dated within the last 12 months [1]\n\n**If your business name has changed:** Upload the business registration document you currently have. Wix may also ask for an official name change document that shows both the original and new legal business names. If you need help, contact Customer Care. [1]",
+      "context_ids": [
+        "c8783e7cee11b09c015c396cebcd60a7c1c93a4be6d73383d41d11369527cde3"
+      ],
+      "cited_ids": [
+        "c8783e7cee11b09c015c396cebcd60a7c1c93a4be6d73383d41d11369527cde3"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 38,
+      "question_id": "ew-057",
+      "strategy": "s1",
+      "text": "To add a policy agreement checkbox to your Wix Stores checkout:\n\n1. Go to **Checkout settings** in your site's dashboard. Click **Customize your checkout**, then click **Policies**. [2]\n2. Select the checkbox next to each policy you want to display, and enter the policy text. [1]\n3. Click the **Policy agreement checkbox** toggle to enable it. This makes agreement mandatory for customers to complete checkout. [1]\n4. (Optional) Select the **Checked by default** checkbox if you want the agreement pre-checked. Customers can still deselect it. [1][2]\n\nCustom policies (for example, a Shipping Policy) don't appear next to the agreement checkbox. [2]",
+      "context_ids": [
+        "2dc662f80a2af9aa209981a6aba1962f140573cba262184f4240b67a1d26772a",
+        "fee90bfe3add5c0b9da4bf8c8c34b2d0ef79e802d7b8410b961c46df370ce336",
+        "a442cb7836f76810d0dacde700d29de164eadd924c91904115ac42c784aa807e",
+        "e4f470ab5ff53a6e861dd5f9fa95a15c38aee6ecbfddfc09cf84ef8f98be6e92",
+        "88374b1a9db46ecf82e45829121d84d5dfc024a46a2600097de95b44b43d43ae"
+      ],
+      "cited_ids": [
+        "fee90bfe3add5c0b9da4bf8c8c34b2d0ef79e802d7b8410b961c46df370ce336",
+        "2dc662f80a2af9aa209981a6aba1962f140573cba262184f4240b67a1d26772a"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 39,
+      "question_id": "sim-041",
+      "strategy": "s_star",
+      "text": "To reassign a Premium plan to a different site, follow these steps:\n\n1. Go to Premium Subscriptions in your Wix account. Click the More Actions icon next to the plan you want to reassign. [1]\n2. Click Assign to a Different Site. [1]\n3. Select the checkbox next to the relevant site, then click Next. [1]\n4. Click Assign to confirm. [1]\n\nKeep in mind that the premium features (such as connecting a domain and removing Wix ads) are removed from the original site. Site-specific data, such as apps, SEO settings, tracking tools, and analytics, does not transfer. If you're assigning the plan to a Wix Studio or Editor X site, you'll need to upgrade to a Wix Studio plan. [1]",
+      "context_ids": [
+        "89e39fdcca5874eb36d1ac6e359aad2cd93b601cac1cf7b8743449ff7893ead8"
+      ],
+      "cited_ids": [
+        "89e39fdcca5874eb36d1ac6e359aad2cd93b601cac1cf7b8743449ff7893ead8"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 40,
+      "question_id": "sim-085",
+      "strategy": "s_star",
+      "text": "To cancel your plan:\n\n1. Go to **Premium Subscriptions** in your Wix account.\n2. Click the **More Actions** icon next to the plan you want to cancel.\n3. Click **Cancel Plan**.\n4. Click **Cancel Now** to confirm.\n\nYour plan stays active until the end of the current subscription period and then won't renew [1]. If you cancel within the first 14 days of purchase, the plan ends immediately and you receive a full refund within 20 business days [1].",
+      "context_ids": [
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "cited_ids": [
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 41,
+      "question_id": "ew-061",
+      "strategy": "s0",
+      "text": "To view your invoices on Wix:\n\n1. Log in to your Wix account at wix.com.\n2. Click your profile icon or name in the top-right corner, then select **Account**.\n3. In the left-hand menu, click **Billing & Payments**.\n4. Select **Invoices** (you may see it as **Billing history** or **Payment history**, depending on your account).\n5. Click any invoice to view or download it as a PDF.\n\nIf you manage a specific site, you can also open the site's dashboard, go to **Settings**, and look under **Billing** or **Payments** to find invoices for that site.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 42,
+      "question_id": "sim-085",
+      "strategy": "s0",
+      "text": "I can help with that. To cancel a Wix plan:\n\n1. Log in to your Wix account at wix.com and go to your account dashboard.\n2. Select **Billing & Payments** (you may find it under **Account Settings** or your profile menu, depending on your view).\n3. Find the plan you want to cancel and click **Cancel Plan** (or **Manage Plan**, then **Cancel Plan**).\n4. Choose a reason if prompted, then confirm the cancellation.\n\nIf you'd like to keep your site but stop the renewal, you can also turn off auto-renewal in the same section. Your plan will stay active until the end of the period you've already paid for. Refunds depend on when you cancel and the plan type, so check the refund policy shown during cancellation if you're expecting one.\n\nIf you're having trouble finding the option, let me know which page you're on and I can help you locate it.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 43,
+      "question_id": "sim-097",
+      "strategy": "s0",
+      "text": "To cancel your Wix Premium plan:\n\n1. Log in to your Wix account at wix.com.\n2. Go to **My Account** and select **Billing & Payments**.\n3. Find the Premium plan you want to cancel, then click **Cancel Premium Plan** (or the **Manage** / **...** menu next to it, then **Cancel**).\n4. Follow the prompts. You may be asked for a reason for cancelling, and Wix may offer a discount to keep your plan. Skip the offer if you still want to cancel.\n5. Confirm the cancellation.\n\nYou'll get a confirmation email. Your Premium features stay active until the end of your current billing period. If you cancel within 14 days of purchase, you may be eligible for a refund, so check the cancellation screen or contact Wix Support if that applies.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 44,
+      "question_id": "sim-018",
+      "strategy": "s1",
+      "text": "You can cancel your Premium plan yourself, but these articles don't explain how to cancel a domain.\n\n**To cancel your Premium plan:**\n1. Go to Premium Subscriptions in your Wix account.\n2. Click the More Actions icon next to the plan.\n3. Click Cancel plan.\n4. Click Cancel Now. [1]\n\nUnassigning a plan from your site doesn't cancel it, so your subscription stays active until you cancel it. [4]\n\nIf you paid for the plan by SEPA and it's still Pending Payment, canceling it cancels the payment, and you won't be charged. Once the plan is paid, you can cancel within the 14-day period for a full refund. [2]\n\nFor your domain, I can't find cancellation steps in the provided articles. For help with that, contact Wix Customer Care. Note that SEPA payments for domains can't be canceled. [2]",
+      "context_ids": [
+        "1dfafcce3c9b899357a7548d8989bd906a6e87441a7496abe5e5c21a81e4f356",
+        "10742dec0501159c5cc9495140dcb1caa3fe6d98b13f3e92967c9a80e70937e6",
+        "d2bd45f4454bf4b5fd94477eaf442a72e46ac35a214191fef6be526cd20ec405",
+        "99499c14c12f12f30d6bde107d4ea5d26a273bfdd48c6166b2abdb03066b2061",
+        "97282c7c34f69da255d53de75f6ab455935538a1f3b487d6e12839768aa7e123"
+      ],
+      "cited_ids": [
+        "1dfafcce3c9b899357a7548d8989bd906a6e87441a7496abe5e5c21a81e4f356",
+        "99499c14c12f12f30d6bde107d4ea5d26a273bfdd48c6166b2abdb03066b2061",
+        "10742dec0501159c5cc9495140dcb1caa3fe6d98b13f3e92967c9a80e70937e6"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 45,
+      "question_id": "ew-154",
+      "strategy": "s_star",
+      "text": "To adjust the height of a page without a footer:\n\n1. Click your page.\n2. Click and drag the Adjust Page Height handle at the bottom of the page to the desired position. [1]\n\nThis handle is only available if your page uses the No Header & Footer layout. [1]\n\nIf the handle doesn't move, an element is likely in the way. For example, you can't make the page shorter if that would cut off an element at the bottom. Move or delete the element first, then resize the page. If you can't find the element, use the Layers panel to locate it. [1]",
+      "context_ids": [
+        "869eb0229f712d95946eba23a8eb9aa28569a8c0122194b342135ced4d59c1fb"
+      ],
+      "cited_ids": [
+        "869eb0229f712d95946eba23a8eb9aa28569a8c0122194b342135ced4d59c1fb"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 46,
+      "question_id": "ew-093",
+      "strategy": "s0",
+      "text": "To move your domain to the correct site, you'll first disconnect it from the current site, then connect it to the right one.\n\n1. Log in to your Wix account and go to **Domains** in the account dashboard.\n2. Find your domain in the list, click the **three dots (...)** next to it, and select **Disconnect**. Confirm if prompted.\n3. Once it's disconnected, click the **three dots (...)** next to the domain again and select **Connect to site**.\n4. Choose the correct website from the list and confirm.\n\nMenu labels may vary slightly depending on your dashboard version. If the domain is still attached to the wrong site after these steps, or if that site is under a different Wix account, contact Wix Support so they can help you transfer it.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 47,
+      "question_id": "sim-027",
+      "strategy": "s_star",
+      "text": "You can cancel the site plan without canceling your domain. Canceling your site plan doesn't cancel any domain, business email, or app subscriptions, so you must cancel those separately if you want to stop them [1].\n\nTo cancel your site plan:\n1. Go to Premium Subscriptions in your Wix account.\n2. Click the More Actions icon next to the relevant plan.\n3. Click Cancel Plan.\n4. Click Cancel Now to confirm [1].\n\nThe plan stays active until the end of the current subscription period, and then it won't renew [1]. If you cancel within the first 14 days, the plan ends immediately and you get a full refund within 20 business days [1].\n\nAfter the plan ends, your site address reverts to the free Wix URL and Wix ads appear on your site [1]. Your domain stays on your account as long as its own subscription remains active.",
+      "context_ids": [
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "cited_ids": [
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 48,
+      "question_id": "sim-194",
+      "strategy": "s_star",
+      "text": "You can reduce your yearly Google Workspace subscription from two business emails to one by removing one user, then asking Wix to update your billing. These steps apply only to yearly subscriptions. [2]\n\n1. **Delete the user's business email.** Go to Business email in your Wix account and click **Manage** at Google beside the relevant subscription. Sign in to your Google Workspace account, go to **Directory** and then **Users** in the Admin console menu, and click **Remove user** or **Delete user** for the user you want to remove. Follow any on-screen prompts to confirm. If that user has Workspace Admin status, revoke their Admin status before deleting the account. [2]\n2. **Contact Wix Customer Care.** After the user is deleted, contact Wix Customer Care. They will update your billing so you're charged only for the remaining business email. [2]",
+      "context_ids": [
+        "bef3f28eee94edd10f02f6fec491e4fe6795234a49ba975db9870dd0ac8b942a",
+        "5af9f8d065ffc9499873f23f912e41b1e3adcbb03ad072cc7f7f1ee4eb011b76"
+      ],
+      "cited_ids": [
+        "5af9f8d065ffc9499873f23f912e41b1e3adcbb03ad072cc7f7f1ee4eb011b76"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 49,
+      "question_id": "ew-057",
+      "strategy": "s_star",
+      "text": "To add a policy agreement checkbox that customers must select before checking out:\n\n1. Go to **Checkout Settings** in your site's dashboard.\n2. Click **Customize your checkout**.\n3. Click **Policies**.\n4. Select the policy you want to create, and enter the policy text. [1]\n5. Click the **Policy agreement checkbox** toggle to enable it. [1]\n6. Select a **Checked by default** setting:\n   - **Selected:** The checkbox is already checked on the Checkout Page.\n   - **Deselected:** Customers need to select the checkbox to agree to your policy and check out. [1]",
+      "context_ids": [
+        "fee90bfe3add5c0b9da4bf8c8c34b2d0ef79e802d7b8410b961c46df370ce336"
+      ],
+      "cited_ids": [
+        "fee90bfe3add5c0b9da4bf8c8c34b2d0ef79e802d7b8410b961c46df370ce336"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 50,
+      "question_id": "ew-155",
+      "strategy": "s0",
+      "text": "A repeater displays a set of items from a data collection, and you add content to its item template. Here's how:\n\n1. **Make sure the repeater is connected to data.** Click the repeater, then open its settings and choose a data source, such as a collection in your Content Manager. Without one, the repeater has nothing to display and may look empty.\n2. **Open the repeater item.** Double-click the repeater or select its item area to edit the layout of a single item. Everything you place here repeats for each item in the collection.\n3. **Add elements to the item.** Use the **Add** panel (the + icon) to add text, images, buttons, or other elements inside the repeater item. Drag them where you want them.\n4. **Bind elements to fields.** To show data from your collection, select an element, open its settings, and connect it to a field, such as a title or image field. Static elements that aren't connected will show the same content in every item.\n5. **Preview the page.** Use **Preview** to confirm the items display correctly. If they don't, check that the collection has items and that the fields are connected.\n\nIf you tell me what kind of content you're trying to add and what you see when you try, I can narrow down the problem.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 51,
+      "question_id": "ew-154",
+      "strategy": "s1",
+      "text": "To adjust a page without a footer, click the page, then drag the **Adjust Page Height** handle at the bottom of the page to the desired position [1]. This handle is only available if the page uses the **No Header & Footer** layout [1].\n\nIf the page still won't resize, an element may be blocking it. For example, you can't make a page shorter if that would cut off an element at the bottom. Move or delete the element first. If you can't find it, use the Layers panel to locate it [1].",
+      "context_ids": [
+        "869eb0229f712d95946eba23a8eb9aa28569a8c0122194b342135ced4d59c1fb",
+        "21c80886fc0ad5a0111af4ff34c8ceb490538aaad0023beefe9febe5a623ca37",
+        "4494029b263aeea9e7a67a7f44021d89e82f4adafda59a94085cba4bb3ee9535",
+        "afc4b826173af032692fc8cb7aa7d6d9c1bcbddb03173708ac8abf606c83f348",
+        "119362145b96efefc2e6b5f315ca62ba8ab8a14dcf7a154bf046da9bb084a744"
+      ],
+      "cited_ids": [
+        "869eb0229f712d95946eba23a8eb9aa28569a8c0122194b342135ced4d59c1fb"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 52,
+      "question_id": "sim-183",
+      "strategy": "s0",
+      "text": "To update your payment information on Wix:\n\n1. Log in to your account at wix.com.\n2. Click your profile icon in the top right corner and select **Account Settings**. (You can also go to wix.com/account/billing directly.)\n3. Click **Billing & Payments** in the left-hand menu.\n4. Find the payment method you want to change and click **Edit** or **Update**. To add a new card, select **Add Payment Method**.\n5. Enter your new card or billing details and save.\n\nIf the payment method is tied to a specific site's plan, you can also change it from the site's dashboard under **Upgrade** or **Billing**, depending on how your plan was purchased.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 53,
+      "question_id": "ew-155",
+      "strategy": "s_star",
+      "text": "To add content to a repeater in the Wix Editor:\n\n1. Select the repeater in your editor and click **Manage Items** [1].\n2. To add more items, click **Duplicate Item** at the bottom. Then edit the new item as you wish [1].\n3. To customize text or images, edit the elements inside each item. You can change the text or image for each item individually, but the design stays the same across all items [1].\n4. To add a new element, drag and drop it onto one item. It's automatically added to every item [1].\n\nSome elements can't be added to repeaters, including Video Box, Wix Video, Google Maps, the HTML component, and most photo galleries [2]. If you're trying to add one of these, you'll need a different approach.\n\nIf you want the repeater to display content from your site's database, first connect the repeater to the relevant collection, then connect each item to the matching field in that collection [1].",
+      "context_ids": [
+        "c1e76a9137405f2f62ea51a52f42bbf9fea7cb9b16938168117fd534a5ebb314",
+        "dd1291f6b0918036ef572c2420931b0f24a2936fcdad9b187567cac915b00b33"
+      ],
+      "cited_ids": [
+        "c1e76a9137405f2f62ea51a52f42bbf9fea7cb9b16938168117fd534a5ebb314",
+        "dd1291f6b0918036ef572c2420931b0f24a2936fcdad9b187567cac915b00b33"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 54,
+      "question_id": "sim-018",
+      "strategy": "s_star",
+      "text": "You cancel your site plan and your domain separately, both from the Premium Subscriptions page in your Wix account [1].\n\n**To cancel your site plan:**\n1. Go to **Premium Subscriptions** in your Wix account.\n2. Click the **More Actions** icon next to the plan.\n3. Click **Cancel Plan**, then click **Cancel Now** to confirm [3].\n\n**To cancel your domain:**\n1. Go to **Premium Subscriptions** in your Wix account.\n2. Click the **More Actions** icon next to the domain.\n3. Click **Cancel domain**.\n4. Select **Cancel auto renew** and click **Submit** [2].\n\n**What to expect after paying:**\n- **Site plan:** If you cancel within the first 14 days, the plan ends immediately and you receive a full refund within 20 business days. If you cancel after 14 days, the plan stays active until the end of the current subscription period and then won't renew [3].\n- **Domain:** Domain purchases are non-refundable and don't include a trial period. Canceling turns off auto-renew, so you keep the domain until the end of its subscription period [2].\n- **Your site:** Canceling the plan doesn't delete your site or its content. Afterward, the site moves to the free Wix URL and shows Wix ads. To take it offline, unpublish it or hide it from search results [3].",
+      "context_ids": [
+        "5ce85d608b0f1f8b3e9341a3773f0ff23e44485a21dd9f23ae9a49553e4176cf",
+        "30e947f31d1aa3cce6c8a56a558ad7b26c8b832019ad1fc43a77c968948bc543",
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "cited_ids": [
+        "5ce85d608b0f1f8b3e9341a3773f0ff23e44485a21dd9f23ae9a49553e4176cf",
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be",
+        "30e947f31d1aa3cce6c8a56a558ad7b26c8b832019ad1fc43a77c968948bc543"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 55,
+      "question_id": "ew-130",
+      "strategy": "s_star",
+      "text": "To rename a menu item in the Wix Editor:\n\n1. Click the advanced menu in your editor. [1]\n2. Click Manage Menu. [1]\n3. Click the More Actions icon next to the item you want to rename. [1]\n4. Click Rename / Rename page. [1]\n5. Enter the new name in the field. [1]\n6. Click Done. [1]\n\nIf you rename a site page in the menu panel, the name changes across your entire site. [1]",
+      "context_ids": [
+        "908476ad8eae76bfa335531628978f33cf5967b3943a7d0898d94aa1bdea1f26"
+      ],
+      "cited_ids": [
+        "908476ad8eae76bfa335531628978f33cf5967b3943a7d0898d94aa1bdea1f26"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 56,
+      "question_id": "ew-196",
+      "strategy": "s_star",
+      "text": "**Resizing the image:** Click the image, then drag the handles on its edges to the size you want. To keep the original proportions, drag the handles at the corners instead. [1]\n\n**Adding text on the image:** The article covers placing text or other elements on an image using a transparent container box. [1]\n\n1. Click **Add Elements** on the left side of the Editor.\n2. Click **Box** and select the box you want.\n3. Drag the box onto the image. It must be the same size as or larger than the image. [1]\n4. Make the box transparent: click the box, click **Change Design**, then **Customize Design**. Click **Fill Color & Opacity** and drag the **Background** slider to 0%. [1]\n5. Drag your text onto the container box. [1]\n\nMy articles don't cover adding text to a new section, only to an image, so if you're trying to place text in the section itself, I can't give you steps for that. If you can tell me which part isn't working, such as the image not resizing or the text not attaching, I can help narrow it down.",
+      "context_ids": [
+        "cb6b0342764eae6b79f220a5c257bd78c798cf2d3bb048b30f513593a44cd99c"
+      ],
+      "cited_ids": [
+        "cb6b0342764eae6b79f220a5c257bd78c798cf2d3bb048b30f513593a44cd99c"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 57,
+      "question_id": "sim-132",
+      "strategy": "s0",
+      "text": "To change the order of products in your Wix store, you sort them within a collection:\n\n1. From your site dashboard, go to **Store Products**.\n2. Click the **Collections** tab, then select the collection you want to reorder.\n3. Drag and drop the products into the order you want. Customers will see them in that order on the collection page.\n\nIf you want the order to follow a rule instead, such as price or name, use the sorting options on the collection page or in your store's product list settings.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 58,
+      "question_id": "sim-184",
+      "strategy": "s_star",
+      "text": "No, guests can't post on a Wix Forum. As a guest, you can only read, like, and share posts. To post, comment, or report content, you need to be a member [1]. The article doesn't cover uploading content outside the forum, so I can't say whether guests can upload anywhere else on a site.",
+      "context_ids": [
+        "b06d44237139bd878d9e8958dee2369cb0b0ea9f98ac0d6eaa40cba38a92088a"
+      ],
+      "cited_ids": [
+        "b06d44237139bd878d9e8958dee2369cb0b0ea9f98ac0d6eaa40cba38a92088a"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 59,
+      "question_id": "sim-177",
+      "strategy": "s0",
+      "text": "**Sessions** count each visit to your site. A session starts when someone arrives and ends after a period of inactivity, so one person who leaves and comes back later creates a second session.\n\n**Unique visitors** count each distinct person (or, more precisely, each distinct browser or device) once for the date range you're viewing, no matter how many times they visited.\n\nFor example, if one person visits your site three times in a week, that's 3 sessions but only 1 unique visitor.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 60,
+      "question_id": "ew-196",
+      "strategy": "s1",
+      "text": "To resize an image, click it and drag the handles on its edges to the size you want. Dragging a corner handle keeps the image's original proportions [1].\n\nTo add text on top of an image, attach a transparent container box to it and place the text inside the box:\n\n1. Click **Add Elements** on the left side of the Editor, then click **Box** and select the box you want. Drag it onto the image to attach it. Make sure the box is the same size as or bigger than the image [1].\n2. Make the box transparent. Click **Change Design**, then **Customize Design**, then **Fill Color & Opacity**, and drag the **Background** slider to 0% [1].\n3. Drag your text element onto the container box to attach it [1].\n\nTo move the text and box together, click the transparent container box and drag it to the position you want [1].",
+      "context_ids": [
+        "cb6b0342764eae6b79f220a5c257bd78c798cf2d3bb048b30f513593a44cd99c",
+        "8eec001dd7d045e7db14f1a777c4a1fb12b84cfe00ad32c01a451849f47aa4f3",
+        "ed6f4a935e007cb2d75e885784ed117954061747390ced5f4c654f6c3afd4ab1",
+        "d43e89aeb2f79d5105520f40f84f47ad11f15dcf092e5fe3376bc368dd152b80",
+        "803c3bad18a4ee431d5db8bd09e02b8e78dc28b3365a4728b9e5e028c5b4bad7"
+      ],
+      "cited_ids": [
+        "cb6b0342764eae6b79f220a5c257bd78c798cf2d3bb048b30f513593a44cd99c"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 61,
+      "question_id": "ew-121",
+      "strategy": "s_star",
+      "text": "Unfortunately, Google Ads with Wix payments are non-refundable, whether they're a monthly subscription or a one-time payment for ad credit [1].\n\nIf you want to stop your campaign, you can pause it at any time. Your remaining Google ad credits stay in your account, and you can resume the campaign later using those credits [1]. Any credits with an expiry date may expire while the campaign is paused [1].",
+      "context_ids": [
+        "01e329b27ef95b8d6da00ab4ef5edde1b08837190925fefaaa23a1cbbc5bf855"
+      ],
+      "cited_ids": [
+        "01e329b27ef95b8d6da00ab4ef5edde1b08837190925fefaaa23a1cbbc5bf855"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 62,
+      "question_id": "sim-194",
+      "strategy": "s1",
+      "text": "You can't downgrade your Google Workspace plan to a lower tier, since Wix only supports upgrades to higher-tier plans [4]. You can, however, cancel one of your business email subscriptions so you pay for only one:\n\n1. Go to Premium Subscriptions in your Wix account.\n2. Click the More Actions icon next to the business email you want to remove.\n3. Click Cancel business email.\n4. Select the I still want to cancel checkbox.\n5. Click Cancel business email [1].\n\nYou'll keep access to that email until the end of its subscription period. Auto renewal is turned off, so it won't renew after that [1].",
+      "context_ids": [
+        "964f4190b53b1be8c7430bd644c09828f1d3388a565971c233bcba06e041bb2c",
+        "1dfafcce3c9b899357a7548d8989bd906a6e87441a7496abe5e5c21a81e4f356",
+        "94bbf6903c538d739f6f7a5a73d040f59876a6d639b687e141139a84366bdde9",
+        "e7a4a0d9f1cbd76a257ffb4226fbd5aeab995dbdfac1d619f7e9d10fd432c244",
+        "85e75399cab9d0cec60a94b243b1bef1f041894769206e10cce730ab9ae5cbcd"
+      ],
+      "cited_ids": [
+        "e7a4a0d9f1cbd76a257ffb4226fbd5aeab995dbdfac1d619f7e9d10fd432c244",
+        "964f4190b53b1be8c7430bd644c09828f1d3388a565971c233bcba06e041bb2c"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 63,
+      "question_id": "sim-184",
+      "strategy": "s0",
+      "text": "Yes, in some cases. It depends on the feature:\n\n- **Blog comments:** Guests can comment if you allow it. In your dashboard, go to **Blog > Settings > Comments** and choose who can comment (for example, everyone, or members only).\n- **Contact and form submissions:** Visitors can submit Wix forms without logging in, including file upload fields if your form includes one.\n- **Forum posts:** Wix Forum posting generally requires a member account. Guests can usually browse but not post.\n\nSettings and menu names can change, so check the Wix Help Center if you don't see these options in your dashboard.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 64,
+      "question_id": "sim-161",
+      "strategy": "s0",
+      "text": "To remove a saved payment method from your Wix account:\n\n1. Log in to your Wix account at wix.com.\n2. Click your profile icon in the top right, then select **Account Settings**.\n3. Click **Billing & Payments**.\n4. Find the card you want to remove under **Payment Methods**.\n5. Click the **three dots (⋯)** next to that card, then select **Remove**.\n6. Confirm the removal when prompted.\n\nIf Wix won't let you remove a card, it's usually because an active paid plan or domain subscription is billed to it. Add a new payment method and set it as the default for those subscriptions first, then remove the old one.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 65,
+      "question_id": "sim-056",
+      "strategy": "s1",
+      "text": "To make your booking hours appear on your live site, set your hours in Wix Bookings, then publish your site.\n\n1. **Set your default business hours.** These determine when your staff can take appointments. [5]\n2. **Check each staff member's working hours.** Staff hours are based on your default business hours, but you can customize them for each staff member. [5]\n3. **Publish your site.** Click **Publish** at the top right of the editor. Clicking Save won't make your changes live. [1]",
+      "context_ids": [
+        "2a73ce56cfb6d899bd155abfa319d863360de062a21d82959a45463086aee274",
+        "c0340e1f21ef28e1ce5b34e4bf226ddfea24371366f8471ce93e8c406f847f83",
+        "fcd522936768f2f5d351b5b5331bf93cf9f9d3cd4d8f323abd8bcff639377813",
+        "2fb81af133068089c4eb597587aa6bd7f97718bcd3abe0063f460cae08ef55cc",
+        "c5f127d6a699704b9f74647150321c4dc85c5381cc4913f0582e975f42d595f9"
+      ],
+      "cited_ids": [
+        "c5f127d6a699704b9f74647150321c4dc85c5381cc4913f0582e975f42d595f9",
+        "2a73ce56cfb6d899bd155abfa319d863360de062a21d82959a45463086aee274"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 66,
+      "question_id": "ew-130",
+      "strategy": "s0",
+      "text": "To rename a menu item in the Wix Editor:\n\n1. Open your site in the Wix Editor.\n2. Click the menu on your page.\n3. Click **Manage Menu**.\n4. Click the menu item you want to rename.\n5. Edit the label text, then click **Done** or **Save**.\n\nIf you want to rename the page itself, which can also change its name in the menu, go to **Pages** in the left menu, hover over the page, click the three dots, and choose **Settings**. Then edit the page name.\n\nIf the change doesn't appear, or the menu item reverts to the old name, tell me what you see and I can help narrow it down.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 67,
+      "question_id": "sim-097",
+      "strategy": "s_star",
+      "text": "To cancel your Wix Premium plan:\n\n1. Go to **Premium Subscriptions** in your Wix account. [1]\n2. Click the **More Actions** icon next to the relevant plan. [1]\n3. Click **Cancel Plan**. [1]\n4. Click **Cancel Now** to confirm. [1]\n\nYour plan stays active until the end of the current billing period and then won't renew. [1] If you cancel within the first 14 days, your plan ends immediately and you get a full refund within 20 business days. [1]",
+      "context_ids": [
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "cited_ids": [
+        "ac52db95f0cfec00e71b43d37c7428fb694f9bc262cd7f2770fe661de581c8be"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 68,
+      "question_id": "ew-127",
+      "strategy": "s_star",
+      "text": "If your image didn't update when you shared your link, check the image settings in your Social Share section. Each social network has its own image setting, so update the ones you use.\n\n1. Go to **Search Engine Optimization (SEO)** in your site's dashboard.\n2. Scroll down to **Tools and settings**.\n3. Click **Go to SEO Settings** under SEO Settings.\n4. Select the page type you want to edit. [1]\n5. Click **Edit** next to **Basics & social share**.\n6. Scroll down to **Social share** and update **og:image**, which is the image used for Facebook, Instagram, and similar networks. To use one image for all your pages, add an image URL. [1]\n7. To change the image for X (Twitter), update **x:image** in the X (Twitter) section. [1]\n8. Click **Save**. [1]\n\nTo copy the URL of an image in your site's media files, click **Get an Image URL from Site Files**. Then hover over the image, click the **More Actions** icon, and select **Copy URL**. [1]\n\nSocial networks choose their own images when people share pages, so your Social Share settings are likely to be used but aren't guaranteed. [1]",
+      "context_ids": [
+        "a64cacf41053234604e05d45255bae13d63974acbfe808ee003ee480107d14d8"
+      ],
+      "cited_ids": [
+        "a64cacf41053234604e05d45255bae13d63974acbfe808ee003ee480107d14d8"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 69,
+      "question_id": "ew-154",
+      "strategy": "s0",
+      "text": "To change the height of a page without a footer, resize the section that's making the page longer or shorter:\n\n1. In the Wix Editor, click the section you want to resize. Its outline and handles will appear.\n2. Drag the handle at the bottom edge of the section up or down. The page height adjusts to fit the sections on it.\n3. If you want to shorten the page, make sure no elements are still in the empty space. Wix keeps the page as tall as its lowest element.\n\nIf the section still won't move:\n\n- **The section is locked or pinned.** Open the Layers panel (or right-click the section), and check whether it's locked. If it is, unlock it, then try again.\n- **An element is blocking the resize.** Move any elements that extend into the space below the section, or delete them if you don't need them.\n- **You're editing the wrong view.** Mobile and desktop heights are set separately. Switch to the view you want (Desktop or Mobile) and adjust the section there.\n\nIf none of these work, tell me whether the section is a strip or a box, and whether the extra space is above or below your content, and I can narrow it down.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 70,
+      "question_id": "ew-141",
+      "strategy": "s_star",
+      "text": "To add an anchor to your page in the Wix Editor [1]:\n\n1. Go to your editor.\n2. Click **Add Elements** on the left side of the editor.\n3. Click **Menu & Anchor**.\n4. Click **Anchor** under In-Page Navigation, or drag it to the relevant location on your page.\n\nNote that you can't add an anchor to your page's footer [1].",
+      "context_ids": [
+        "7702378a3ae3fe2d928d1610769855c7f506efa705b43039177cfcd85e93766a"
+      ],
+      "cited_ids": [
+        "7702378a3ae3fe2d928d1610769855c7f506efa705b43039177cfcd85e93766a"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 71,
+      "question_id": "ew-057",
+      "strategy": "s0",
+      "text": "You can require customers to agree to your policies at checkout from your store's checkout settings. Menu names can vary slightly depending on your Wix editor version, but the steps are generally:\n\n1. **Create your policy pages.** In your site dashboard, go to **Store > Settings > Policies** (or **Store policies**). Add or edit your Terms and Conditions, Privacy Policy, and Refund Policy text, then save.\n2. **Open checkout settings.** Go to **Store > Settings > Checkout**.\n3. **Turn on the agreement checkbox.** In the Terms and Conditions or Policies section, enable the option that requires customers to agree before placing an order. Link it to the policy pages you created.\n4. **Save your changes.**\n5. **Test it.** Add an item to your cart in the preview or on your live site, go to checkout, and confirm the checkbox appears and must be ticked before the order can be placed.\n\nIf you don't see these options, check that you're in the Wix Stores section of your dashboard, since the checkout settings are specific to your store.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 72,
+      "question_id": "sim-132",
+      "strategy": "s_star",
+      "text": "To reorder products in your Wix Stores catalogue, go to the Categories tab in your site's dashboard and select the relevant category. Then click and drag the products into the order you want and click Save. This order applies wherever that category is displayed on your site [1].\n\nIf you use the Category Page, you can override this order in the editor. Click the Category Page, click Settings, and select the Sorting tab. Then choose an option from the \"Order products by\" drop-down [1].",
+      "context_ids": [
+        "b254fcee6b0ae875da5b74071a0d306ab6eabd8ec17634d257638716fb529809"
+      ],
+      "cited_ids": [
+        "b254fcee6b0ae875da5b74071a0d306ab6eabd8ec17634d257638716fb529809"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 73,
+      "question_id": "sim-183",
+      "strategy": "s_star",
+      "text": "To update a saved payment method, go to Payment Methods in your Wix account. Click Actions, then click Update [1]. Click Next, update your card or payment method details, and click Update [1]. Any changes are automatically applied to the subscriptions connected to that payment method [1].",
+      "context_ids": [
+        "09c5b027c3bc064fce040e3026d4c53857ea73d1044bbe51bcf3de0dfa08efbc"
+      ],
+      "cited_ids": [
+        "09c5b027c3bc064fce040e3026d4c53857ea73d1044bbe51bcf3de0dfa08efbc"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 74,
+      "question_id": "ew-171",
+      "strategy": "s_star",
+      "text": "Since you verified your site manually with Google Search Console, you don't need to connect it through the SEO Setup Checklist. If the step still shows as not completed, you can ignore it [1][2].",
+      "context_ids": [
+        "c104d7065faf024029b59ab7eebe751d7c7b4a7a4b613d377a90ee7bf266a12d",
+        "37cb430372ab6f7343a726511cd84bb5657e8e536267aeaa653735240c20dd45"
+      ],
+      "cited_ids": [
+        "c104d7065faf024029b59ab7eebe751d7c7b4a7a4b613d377a90ee7bf266a12d",
+        "37cb430372ab6f7343a726511cd84bb5657e8e536267aeaa653735240c20dd45"
+      ],
+      "check_grounded": true
+    },
+    {
+      "item": 75,
+      "question_id": "ew-127",
+      "strategy": "s0",
+      "text": "The image that appears when your link is shared is set in your social sharing settings. Here's how to update it:\n\n1. In your site's dashboard, go to **Marketing & SEO** > **SEO**.\n2. Open **Social Sharing** (or the **Social** tab, depending on your dashboard layout).\n3. Upload a new image, then save.\n\nIf you want a different image for a specific page, open that page's SEO settings in the Editor and set the social sharing image there.\n\nIf the new image still doesn't show, the platform you shared to (such as Facebook or LinkedIn) may be showing a cached version. Those platforms have link debugging tools where you can paste your URL to refresh the preview. Also make sure your site is published, since changes don't appear on the live link until you publish.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 76,
+      "question_id": "ew-093",
+      "strategy": "s_star",
+      "text": "Since your domain is already in your account and assigned to another site, you can reassign it:\n\n1. Go to **Domains** in your Wix account and open the Domains page.\n2. If you have more than one domain, scroll to the one you want to connect.\n3. Click the **Domain Actions** icon and select **Assign to a Different Site** [1].\n4. Select the correct site and click **Next** [1].\n5. If that site is already connected to a different domain, choose either **Redirect it to the primary domain** or **Replace the current primary domain** [1].\n6. Click **Assign** [1].\n\nThe site you assign the domain to must have a Premium or Studio plan. If it doesn't, you'll be asked to upgrade it or reassign an existing plan from another site [1].",
+      "context_ids": [
+        "7f54f872dcefc45fec8d7bcaabce47769bccfd8f4efa5ffe8e8232fe11aa24c0"
+      ],
+      "cited_ids": [
+        "7f54f872dcefc45fec8d7bcaabce47769bccfd8f4efa5ffe8e8232fe11aa24c0"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 77,
+      "question_id": "ew-180",
+      "strategy": "s0",
+      "text": "Sort settings that look correct in the editor sometimes don't carry over to the published site. Try these steps in order:\n\n1. **Republish the site.** Click **Publish** in the top right of the editor. Then open the live page in a private browser window, or clear your browser cache, so you aren't seeing an older version.\n\n2. **Confirm the sort is on the dataset the list uses.** Select the list on the page and check which dataset it's connected to. Then open that dataset's settings and check the sort there. A sort set on a different dataset, or on a copy of the collection, won't affect this list.\n\n3. **Check the sort field.** Make sure the field you're sorting by (for example, a Title field) is filled in for every item. Items with empty values can end up in unexpected positions. Also confirm the field is a text field if you want alphabetical order.\n\n4. **Check for a manual order.** If the collection has items ordered manually, that order may take priority. Look at the collection's settings for a manual or custom order and switch it to sort by the field instead.\n\n5. **Check for custom code.** If you or someone else added Velo code that loads or filters the items, that code may be overriding the dataset's sort. Look for `query`, `sort`, or `setSortOrder` calls in the page code, and remove or update them if they're there.\n\nIf the list still isn't sorted after republishing, tell me which field you're sorting by and whether the list is a Repeater or a Dynamic Page, and I can narrow it down.",
+      "context_ids": [],
+      "cited_ids": [],
+      "check_grounded": false
+    },
+    {
+      "item": 78,
+      "question_id": "ew-007",
+      "strategy": "s1",
+      "text": "Because your domain is connected to Wix by pointing, your domain host controls your DNS records, so you can't add the TXT record in your Wix account. Contact your domain host and ask them to add the TXT record on their end. [2][3]\n\nBefore you contact them, get the TXT record from Google:\n\n1. Sign in to your Google Admin Console and click **Domains**.\n   *Note: If Domains is hidden, click More Controls at the bottom of the console and select Domains.*\n2. Click **Manage Domains**, then click **Set up Admin Console** next to your domain.\n   *Note: If your domain isn't listed, click Add a Domain.*\n3. Click **Next**, then **Continue** to choose TXT verification.\n4. Copy the TXT record.\n\nSend the record to your domain host and ask them to add it as a TXT record in your domain's DNS settings. Once they've added it, return to the Google Admin Console and click **Verify**. If verification fails, wait at least 10 minutes and try again, since it can take a few attempts. [2]",
+      "context_ids": [
+        "cf18d0def5791d095b0b422d562fa99eae8e40d0821d65ae59ea60fb51de48d2",
+        "65806b123ff355cef16c8abe4301f1df982e2c3bddcd33b81ed446b92a79e336",
+        "58a8c12fee654106b4b102a102fc1849dd84c65307d7fd5631b11e425533d6ed",
+        "a16d56d04948be96c51b2ae4aa674760fe97ca92f1d560d659091e0968047e6f",
+        "f5c9f44a576976e96ae75ac06e549213af0178daa4bdfd6c89e1bd4fce5fbc95"
+      ],
+      "cited_ids": [
+        "65806b123ff355cef16c8abe4301f1df982e2c3bddcd33b81ed446b92a79e336",
+        "58a8c12fee654106b4b102a102fc1849dd84c65307d7fd5631b11e425533d6ed"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 79,
+      "question_id": "ew-108",
+      "strategy": "s1",
+      "text": "Your company document was likely rejected because it didn't meet one of these requirements. Check each one against your upload:\n\n1. **Company name:** The name must be visible and clear, and it must match the business details in your Wix Payments account [2].\n2. **Tax ID or registration number:** This number must be visible and clear. It must also match your company's registered information [2][1].\n3. **Issue date:** The document must have been issued within the last 12 months [2].\n4. **Directors:** If you submit a company director document, it must include the legal entity name and list all registered directors [2].\n5. **File format and size:** Upload a HEIC, JPEG, JPG, PDF, or PNG file. The maximum size is 10 MB, and the minimum is 1 KB for PDF or 100 KB for other formats [2].\n\nIf your company has changed its name, the name on your registration document may not match your current legal name. In that case, upload the registration document you currently have. You may also be asked for an official name change document that shows both the original and new legal names [2].\n\nIf you're in the United States and set up a Partnership, LLC, Corporation, or NGO account, upload a copy of your IRS EIN confirmation notice. The company name and the 9-digit EIN must be visible and clear [3].\n\nAfter you fix and resubmit the document, verification usually takes up to 7 business days. If that time has passed and your details are correct and match your bank account, contact Wix Customer Care so they can investigate [1].",
+      "context_ids": [
+        "49d9e88fadbf11fa4e685c847590078ff9394c2fe7566094f504f53ca4aca465",
+        "c8783e7cee11b09c015c396cebcd60a7c1c93a4be6d73383d41d11369527cde3",
+        "b7a22176a4173e2a1edcb286710965d8c1c2afc70533d49c7607f210bc3d9c62",
+        "11e6ff65a8bb2f65b29f9d2726561da8f5de81543fe3000fe40668f383c88489",
+        "5968b19fa7b995ef64c9412c8f4579b7480995a1f78571f104a206a6a6b072da"
+      ],
+      "cited_ids": [
+        "c8783e7cee11b09c015c396cebcd60a7c1c93a4be6d73383d41d11369527cde3",
+        "49d9e88fadbf11fa4e685c847590078ff9394c2fe7566094f504f53ca4aca465",
+        "b7a22176a4173e2a1edcb286710965d8c1c2afc70533d49c7607f210bc3d9c62"
+      ],
+      "check_grounded": false
+    },
+    {
+      "item": 80,
+      "question_id": "sim-184",
+      "strategy": "s1",
+      "text": "It depends on the feature:\n\n- **Forum:** Guests can read, like, and share posts, but they can't post or comment. Only members can do that. [1]\n- **Blog comments:** The site owner can allow anyone to comment as a guest, without signing up. However, uploading images within comments is limited to members only. [2]\n- **Shared Gallery:** The app is designed for members to upload photos and videos. [4]",
+      "context_ids": [
+        "b06d44237139bd878d9e8958dee2369cb0b0ea9f98ac0d6eaa40cba38a92088a",
+        "9ae4c5d1717e01150175d3ef1e5a89b9d84e9311b91ed2bc7a22566e58b2552b",
+        "8309620f90a06cbd6b28930591ae59e9f479687ecac060543c69b26214815aab",
+        "9f74374c99faa46d2e4c3f9814ff03ae93111d52aa5a759c8fa31657f089c0d9",
+        "4cbfa0debf50dc4ce7720e345d7883bef45d5a024684e72763b4454ddae9d6d7"
+      ],
+      "cited_ids": [
+        "b06d44237139bd878d9e8958dee2369cb0b0ea9f98ac0d6eaa40cba38a92088a",
+        "9ae4c5d1717e01150175d3ef1e5a89b9d84e9311b91ed2bc7a22566e58b2552b",
+        "9f74374c99faa46d2e4c3f9814ff03ae93111d52aa5a759c8fa31657f089c0d9"
+      ],
+      "check_grounded": false
+    }
+  ]
+}
