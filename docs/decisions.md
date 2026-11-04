@@ -822,6 +822,40 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-035 · Embeddings: local open-weight models first; Voyage is a measured upgrade (Step 4)
+
+**Context.** BM25 misses paraphrases. A gold article is in its top 10 for 66% of real dev questions and 57% of test questions, and S* beats S1 by 10.6 points on test (D-034). Dense embeddings target that gap. An embedding model can run locally or be called through an API. Context length matters too: 33% of the articles are over 512 tokens and 12% are over 1,024, so a 512-token model would see only the start of a third of the knowledge base.
+
+**Decision.**
+- Local, open-weight models first, run with `sentence-transformers`: on the GPU to embed the knowledge base, on the GPU or CPU to embed questions. Two candidates, both Apache 2.0 with a 32K-token context:
+  - Qwen3-Embedding-0.6B: 0.6B parameters, 1,024 dimensions, takes a task instruction with each query.
+  - voyage-4-nano: 340M parameters. It shares an embedding space with Voyage's API models, so it keeps the upgrade path open.
+- Weights are pinned to a Hugging Face revision, which every run records, like the dataset revision. Article vectors are computed once per model and revision and stored locally.
+- Whole articles first (D-012). Chunking is its own experiment later in this step.
+- Voyage's API is the upgrade, with the trigger fixed now: if the better local model doesn't clearly beat BM25 on real dev questions (recall@10, paired 95% interval entirely above zero), voyage-4 is measured before moving on to hybrid fusion. Its free allowance (200M tokens per model) covers the whole project, which needs about 20M.
+
+**Alternatives.**
+- Voyage first: top quality and effectively free here, but it needs an account and a key, adds a network call to every query, and the provider can retire the model.
+- OpenAI or Cohere embeddings: the same trade-offs as Voyage. Voyage is the provider Anthropic's documentation points to.
+- A 512-token model (e5, bge-small): smaller and faster, but blind to the end of a third of the articles.
+- Larger local models (Qwen3-Embedding-4B or 8B): better on benchmarks, but the 4B model alone needs about 8 GB of the GPU's 11 GB in fp16, and neither could embed queries on the small server planned for Step 9.
+
+**Why.**
+- Free, reproducible from a pinned revision, and the data stays on the machine. No new account.
+- Both fit the RTX 2080 Ti for indexing, and both are small enough to embed questions on a CPU when serving.
+- A 32K context holds every article whole.
+- Two candidates instead of one, so "why this model?" has a measured answer.
+
+**Trade-offs.**
+- PyTorch adds about 3 GB to the environment, and the service image will carry the model (Steps 8–9).
+- The RTX 2080 Ti has no bfloat16 or FlashAttention 2, so the models run in fp16 or fp32 and may differ slightly from their reference setup.
+- voyage-4-nano needs `trust_remote_code`: loading it runs a small Python file from its repository. The file is read before first use, and the revision is pinned.
+- Hosted models score higher on public benchmarks, so this may leave a few points on the table. That's what the trigger checks.
+
+**In short.** "I started with local open-weight embedding models: free, pinned by revision and fully reproducible, with a 32K context, so a third of the articles aren't cut off. I compared two of them on real dev questions, and decided in advance when I'd switch to a hosted API: if local embeddings didn't clearly beat BM25."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
@@ -830,7 +864,7 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 |---|---|---|---|
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
 | 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open. Postgres's built-in ranking isn't BM25 | Measured on dev (RQ2) |
-| 4 | Embedding model, reranker, chunking | Open | Measured on dev (RQ2) |
+| 4 | Reranker, chunking | Open | Measured on dev (RQ2) |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |
