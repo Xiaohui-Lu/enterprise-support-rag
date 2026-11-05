@@ -1,6 +1,6 @@
 import pytest
 
-from support_rag.stats import bootstrap_ci, holm, mcnemar_exact, paired_bootstrap_ci
+from support_rag.stats import bootstrap_ci, holm, mcnemar_exact, paired_bootstrap_ci, sign_test
 
 
 def test_a_constant_has_no_uncertainty():
@@ -43,6 +43,12 @@ def test_mcnemar_uses_only_the_questions_where_the_two_disagree():
 
 def test_no_disagreement_means_no_evidence():
     assert mcnemar_exact([True, False], [True, False])["p_value"] == 1.0
+
+
+def test_sign_test_depends_only_on_the_split_not_its_direction():
+    assert sign_test(8, 1) == pytest.approx(2 * 10 / 512)
+    assert sign_test(1, 8) == sign_test(8, 1)
+    assert sign_test(0, 0) == 1.0
 
 
 def test_holm_scales_the_smallest_p_value_most():

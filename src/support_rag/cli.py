@@ -32,11 +32,11 @@ def main(argv: list[str] | None = None) -> None:
     )
     evaluate.add_argument("--no-stem", action="store_true", help="BM25: turn off stemming")
     report = commands.add_parser(
-        "report-retrieval", help="write reports/retrieval_bm25.md from run records"
+        "report-retrieval",
+        help="write reports/retrieval_<name>.md: each run vs every earlier one (D-036)",
     )
-    report.add_argument(
-        "runs", nargs="+", type=Path, help="run directories; the first is the baseline"
-    )
+    report.add_argument("--name", default="bm25", help="report name, e.g. bm25 or dense")
+    report.add_argument("runs", nargs="+", type=Path, help="run directories, earliest first")
     answer = commands.add_parser(
         "answer", help="answer a split with one strategy (paid API calls, cached)"
     )
@@ -150,7 +150,7 @@ def run(args: argparse.Namespace) -> None:
         case "report-retrieval":
             from support_rag.retrieval_report import write_report
 
-            print(f"wrote {write_report(args.runs)}")
+            print(f"wrote {write_report(args.runs, name=args.name)}")
         case "answer":
             import json
 

@@ -60,9 +60,17 @@ class Encoder(Protocol):
 
 def unit_rows(vectors: np.ndarray) -> np.ndarray:
     """Scale every row to length 1, as float32. Cutting a vector to fewer dimensions
-    shortens it, so this runs after the cut."""
+    shortens it, so this runs after the cut.
+
+    Raises ValueError on a row that can't be scaled: an all-zero row, or one with NaN or
+    infinity, which is what an fp16 overflow inside a model would produce.
+    """
     vectors = np.asarray(vectors, dtype=np.float32)
-    return vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rows = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    if not np.isfinite(rows).all():
+        raise ValueError("some vectors are zero or not finite; check the model's dtype")
+    return rows
 
 
 class SentenceTransformerEncoder:
@@ -74,8 +82,9 @@ class SentenceTransformerEncoder:
         from sentence_transformers import SentenceTransformer
 
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        # fp16 on the GPU: on 200 articles it matched fp32 to a cosine of 0.9997 and ran
-        # 2.5 times faster. The RTX 2080 Ti has no bfloat16, the models' native type.
+        # fp16 on the GPU: for Qwen, on 200 articles, it matched fp32 to a cosine of 0.9997
+        # and ran 2.5 times faster. The RTX 2080 Ti has no bfloat16, the models' native
+        # type. unit_rows() refuses vectors an fp16 overflow would break.
         dtype = torch.float16 if self.device == "cuda" else torch.float32
         self._model = SentenceTransformer(
             model.repo_id,

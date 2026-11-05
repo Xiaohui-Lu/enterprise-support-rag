@@ -59,12 +59,17 @@ def mcnemar_exact(a: Sequence[bool], b: Sequence[bool]) -> dict[str, float | int
     """
     only_a = sum(x and not y for x, y in zip(a, b, strict=True))
     only_b = sum(y and not x for x, y in zip(a, b, strict=True))
-    n = only_a + only_b
+    return {"only_a": only_a, "only_b": only_b, "p_value": sign_test(only_a, only_b)}
+
+
+def sign_test(better: int, worse: int) -> float:
+    """Two-sided exact sign test: if neither side is truly better, each question that
+    changed is a coin flip, so how unlikely is a split at least this uneven?"""
+    n = better + worse
     if n == 0:
-        return {"only_a": 0, "only_b": 0, "p_value": 1.0}
-    k = min(only_a, only_b)
-    p_value = min(1.0, 2 * sum(comb(n, i) for i in range(k + 1)) / 2**n)
-    return {"only_a": only_a, "only_b": only_b, "p_value": p_value}
+        return 1.0
+    k = min(better, worse)
+    return min(1.0, 2 * sum(comb(n, i) for i in range(k + 1)) / 2**n)
 
 
 def holm(p_values: Sequence[float]) -> list[float]:

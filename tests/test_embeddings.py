@@ -40,6 +40,12 @@ def test_unit_rows_have_length_one():
     assert rows[0] == pytest.approx([0.6, 0.8])
 
 
+@pytest.mark.parametrize("row", [[0.0, 0.0], [np.nan, 1.0], [np.inf, 1.0]])
+def test_unit_rows_refuses_vectors_that_cannot_be_scaled(row):
+    with pytest.raises(ValueError):
+        unit_rows(np.array([[3.0, 4.0], row]))
+
+
 def test_article_vectors_are_computed_once_and_then_loaded(tmp_path):
     articles = [_article("a", "short"), _article("b", "a longer text")]
     encoder = CountingEncoder()
