@@ -855,7 +855,9 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 **Public evidence (checked 2026-11-04).** [HAKARI-Bench](https://huggingface.co/datasets/hakari-bench/results/discussions/14), an independent benchmark, ran both models on 551 retrieval tasks (nDCG@10, the same weights as the pinned revision).
 - voyage-4-nano leads overall, 0.634 to 0.598, and in 30 of its 35 task groups.
 - Qwen3-Embedding-0.6B leads on the English MTEB v2 retrieval tasks, 0.637 to 0.616. That group is the closest to an English help center.
-- Neither clearly wins for this corpus, so both stay and real dev questions decide. Note that nano was scored at its best size in bf16, while here it runs at 1,024 dimensions in fp16.
+- Neither clearly wins for this corpus, so both stay and real dev questions decide. Note that nano was scored at its best size in bf16, while here it runs at 1,024 dimensions in fp32 (fp16 broke its vectors; see D-036's outcome).
+
+**Outcome (2026-11-05).** Measured by D-036's rule, both models clearly beat BM25 on real dev questions, so the Voyage trigger doesn't fire. voyage-4-nano goes forward (recall@10 0.86, against 0.83 for Qwen and 0.66 for BM25).
 
 **In short.** "I started with local open-weight embedding models: free, pinned by revision and fully reproducible, with a 32K context, so a third of the articles aren't cut off. I compared two of them on real dev questions, and decided in advance when I'd switch to a hosted API: if local embeddings didn't clearly beat BM25."
 
@@ -893,6 +895,20 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 - Picking the better of two models and then comparing it with BM25 flatters it slightly. That only makes the Voyage trigger less likely to fire.
 
 **In short.** "Every retrieval choice was decided on the 50 real dev questions by recall@10, which is what the generator actually reads, with the rule written before any run: a change replaces the default only if its paired 95% interval is entirely above zero. Synthetic questions copy the articles' wording, so they're reported but don't vote. Between two new embedding models, the higher score went forward, since neither had a position to protect."
+
+**Outcome (2026-11-05): dense replaces BM25, with voyage-4-nano.** Results are in [reports/retrieval_dense.md](../reports/retrieval_dense.md).
+
+| Real dev questions, recall@10 | Difference [95% CI] | Fixed / broken | Under the rule |
+|---|---|---|---|
+| Qwen3-Embedding-0.6B vs BM25 (0.83 vs 0.66) | +17 points [+3, +32] | 16 / 4 | Clearly better |
+| voyage-4-nano vs BM25 (0.86 vs 0.66) | +20 points [+8, +33] | 16 / 2 | Clearly better |
+| voyage-4-nano vs Qwen3-Embedding-0.6B | +3 points [−6, +12] | 4 / 2 | Within noise: nano is chosen, not shown to be better |
+
+- **Dense becomes the default, using voyage-4-nano.** Both models clearly beat BM25. Nano scored higher, so it goes forward to hybrid. It's also the smaller model, which helps when questions are embedded on a CPU (Step 9).
+- **The Voyage trigger doesn't fire** (D-035): the chosen model clearly beats BM25, so voyage-4 isn't measured.
+- **Synthetic questions agree.** Dense beats BM25 there too (recall@10 0.998 against 0.95), even though those questions copy the articles' wording, which favors keyword search.
+- **Recall@5 also rose,** from 0.53 to 0.78 with nano. That matters for the planned k=5 question.
+- **Nano runs in fp32.** In fp16 it produced vectors that were zero or not finite, and a check added before this run refused them. Its reference setup is bf16, which this GPU doesn't have. Embedding the knowledge base took about 4 minutes, against under 3 for Qwen in fp16.
 
 ---
 
