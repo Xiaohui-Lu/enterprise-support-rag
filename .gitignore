@@ -20,8 +20,9 @@ cache/
 # Secrets
 .env
 
-# Personal Claude Code instructions
+# Personal Claude Code instructions and settings
 CLAUDE.local.md
+.claude/settings.local.json
 
 # OS and editors
 .DS_Store
