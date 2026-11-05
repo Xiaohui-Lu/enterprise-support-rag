@@ -33,6 +33,11 @@ def test_every_model_is_pinned_to_a_full_commit():
         assert re.fullmatch(r"[0-9a-f]{40}", model.revision), model.name
 
 
+def test_every_model_names_a_gpu_dtype_torch_has():
+    for model in MODELS.values():
+        assert model.gpu_dtype in {"float16", "float32"}, model.name
+
+
 def test_unit_rows_have_length_one():
     rows = unit_rows(np.array([[3.0, 4.0], [0.0, 2.0]]))
     assert np.allclose(np.linalg.norm(rows, axis=1), 1.0)

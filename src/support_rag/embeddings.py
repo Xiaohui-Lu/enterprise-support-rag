@@ -29,6 +29,7 @@ class EmbeddingModel:
     revision: str  # full commit hash: the weights never change under us
     dimensions: int  # both models are trained to be cut to 1,024 dimensions (Matryoshka)
     trust_remote_code: bool = False  # True runs Python from the model repo: read it first
+    gpu_dtype: str = "float16"  # on the CPU it's always float32
 
 
 MODELS = {
@@ -42,12 +43,15 @@ MODELS = {
         ),
         # Its modeling_qwen3_bidirectional.py was read at this revision: it only defines the
         # model (Qwen3 with bidirectional attention and a projection), no I/O.
+        # In fp16 it produced vectors that were zero or not finite (2026-11-05), so it runs
+        # in fp32; its reference setup is bf16, which has fp32's range.
         EmbeddingModel(
             "voyage-4-nano",
             "MongoDB/voyage-4-nano",
             "5fb34e870f49f19e79c94d5e118f5ee730133279",
             1024,
             trust_remote_code=True,
+            gpu_dtype="float32",
         ),
     )
 }
@@ -82,10 +86,10 @@ class SentenceTransformerEncoder:
         from sentence_transformers import SentenceTransformer
 
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        # fp16 on the GPU: for Qwen, on 200 articles, it matched fp32 to a cosine of 0.9997
-        # and ran 2.5 times faster. The RTX 2080 Ti has no bfloat16, the models' native
-        # type. unit_rows() refuses vectors an fp16 overflow would break.
-        dtype = torch.float16 if self.device == "cuda" else torch.float32
+        # fp16 on the GPU where it works: for Qwen, on 200 articles, it matched fp32 to a
+        # cosine of 0.9997 and ran 2.5 times faster. The RTX 2080 Ti has no bfloat16, the
+        # models' native type. unit_rows() refuses vectors an fp16 overflow would break.
+        dtype = getattr(torch, model.gpu_dtype) if self.device == "cuda" else torch.float32
         self._model = SentenceTransformer(
             model.repo_id,
             revision=model.revision,
