@@ -861,6 +861,41 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-036 · Choosing a retriever on dev: real questions decide by recall@10, and only a clear win replaces the default (Step 4)
+
+**Context.** Step 4 makes a chain of retrieval choices: BM25 → dense (Qwen3-Embedding-0.6B or voyage-4-nano) → hybrid → reranker → sections → feature-request down-weighting. All of them are measured on dev, which has 50 real questions; the test set stays locked until M2 (D-034). BM25's recall@10 is 0.66 on the real dev questions, and for 14 of the 50 none of the gold articles is in its top 10. On the 500 synthetic dev questions it's 0.95. If the rule is written after the results, it's easy to pick the rule that fits them.
+
+**Decision (written and committed before any dense retrieval run on dev).**
+- The 50 real dev questions decide. The 500 synthetic dev questions are reported alongside, as a check for a broken retriever, not as a vote.
+- The deciding metric is recall@10, because S1 gives the generator 10 articles (D-033). MRR@20, all-gold@10 and recall@5 are reported but don't decide.
+- **Replacing the default.** A challenger replaces the default only if the paired 95% bootstrap interval of its recall@10 difference (challenger minus default, question by question) lies entirely above zero. Otherwise the simpler option stays. This is D-033's rule.
+- The order is fixed: BM25 → dense → hybrid → reranker → sections → feature-request down-weighting. Each winner becomes the next default.
+- **Choosing between two new options** (Qwen vs nano). Neither is a default, so the one with the higher real-dev recall@10 goes forward, even within noise. An exact tie goes to MRR@20. The report calls it "chosen", and "better" only if its interval clears zero.
+- The Voyage trigger is unchanged (D-035): if the chosen model doesn't clearly beat BM25 by this rule, voyage-4 is measured before hybrid.
+- The rule isn't changed after results are seen. A new question gets its own rule, written here before its runs. One is planned for the last sub-step: whether the better retriever lets S1 use fewer articles (k=5) at the same accuracy.
+
+**Alternatives.**
+- The higher number wins: on 50 questions that's partly luck (D-033's winner's curse).
+- Synthetic dev decides: ten times the questions, but BM25 is already at 0.95, and the questions copy the articles' wording, which favors keyword search (D-019).
+- The 5,721 synthetic reference questions: the same bias, more of it.
+- A minimum gain on top of the interval, such as +5 points: an arbitrary threshold. At n = 50, any win that clears the interval is already at least 8 points.
+- MRR or nDCG as the deciding metric: rank within the top 10 matters less than whether the gold article is there at all, since the generator reads all 10.
+
+**Why.**
+- Real questions are the traffic; synthetic ones measure an easier, different task.
+- Recall@10 is about what the generator actually reads.
+- A default that works is protected from a lucky challenger. Between two new options there's nothing to protect, so the higher score is the better bet.
+- On 50 questions, what decides is how many questions flip each way. A challenger that breaks none needs to fix 4; one that breaks 4 needs to fix 12. Fixing 10 and breaking 5 (+10 points) isn't enough: its interval is [−4, +24].
+
+**Trade-offs.**
+- Gains of a few points can't be seen on 50 questions. Keeping the default means "not shown to be better", not "equal".
+- Every choice reuses the same 50 questions, so dev numbers get more optimistic with each one. M2's test run is the honest check.
+- Picking the better of two models and then comparing it with BM25 flatters it slightly. That only makes the Voyage trigger less likely to fire.
+
+**In short.** "Every retrieval choice was decided on the 50 real dev questions by recall@10, which is what the generator actually reads, with the rule written before any run: a change replaces the default only if its paired 95% interval is entirely above zero. Synthetic questions copy the articles' wording, so they're reported but don't vote. Between two new embedding models, the higher score went forward, since neither had a position to protect."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
@@ -868,8 +903,8 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
-| 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open. Postgres's built-in ranking isn't BM25 | Measured on dev (RQ2) |
-| 4 | Reranker, chunking | Open | Measured on dev (RQ2) |
+| 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open. Postgres's built-in ranking isn't BM25 | Measured on dev by D-036's rule |
+| 4 | Hybrid fusion, reranker, chunking, feature-request down-weighting | Open | Measured on dev by D-036's rule |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |
