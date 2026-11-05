@@ -10,9 +10,31 @@ dependencies = [
     "anthropic>=2.4.0",
     "bm25s>=0.3.16",
     "huggingface-hub>=0.26",
+    "numpy>=2.0",
     "pystemmer>=3.1.0",
+    "sentence-transformers>=5.1",
     "tiktoken>=0.8",
+    "torch>=2.8",
+    "transformers>=4.56",
 ]
+
+# PyTorch comes from its own index: a CUDA build on Windows, where the GPU embeds the
+# knowledge base, and a CPU build on Linux, where the service only embeds questions (D-035).
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu132", marker = "sys_platform == 'win32'" },
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [project.scripts]
 srag = "support_rag.cli:main"
