@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass
 from functools import partial
 from pathlib import Path
 from statistics import fmean
-from typing import Protocol
+from typing import Any, Protocol
 
 from support_rag import config
 from support_rag.bm25 import STOPWORDS, BM25Retriever, tokenize
@@ -108,26 +108,63 @@ def questions_for_split(split: str, raw_dir: Path = config.RAW_DIR) -> list[Ques
 
 def run_bm25_eval(split: str, *, stem: bool = True, runs_dir: Path = config.RUNS_DIR) -> Path:
     """Evaluate BM25 on a split and save the run. Returns the run directory."""
-    questions = questions_for_split(split)
     articles = load_articles()
-
     start = time.perf_counter()
     retriever = BM25Retriever(articles, tokenizer=partial(tokenize, stem=stem))
     index_seconds = time.perf_counter() - start
-
-    run_dir = start_run(
+    return _run_eval(
         f"bm25-{'stem' if stem else 'nostem'}_{split}",
+        retriever,
         {
-            "kind": "retrieval",
             "retriever": {"name": "bm25", **retriever.params},
             "tokenizer": {"stem": stem, "stopwords": f"lucene-en-{len(STOPWORDS)}"},
+            "n_articles": len(articles),
+            "index_seconds": round(index_seconds, 2),
+        },
+        split,
+        runs_dir,
+    )
+
+
+def run_dense_eval(split: str, *, model: str, runs_dir: Path = config.RUNS_DIR) -> Path:
+    """Evaluate dense retrieval with one embedding model and save the run (D-035)."""
+    from support_rag.dense import DenseRetriever
+    from support_rag.embeddings import MODELS, SentenceTransformerEncoder, article_vectors
+
+    articles = load_articles()
+    encoder = SentenceTransformerEncoder(MODELS[model])
+    start = time.perf_counter()
+    vectors, stored = article_vectors(articles, MODELS[model], encoder)
+    index_seconds = time.perf_counter() - start
+    return _run_eval(
+        f"dense-{model}_{split}",
+        DenseRetriever(articles, encoder, vectors),
+        {
+            "retriever": {"name": "dense", **encoder.params},
+            "n_articles": len(articles),
+            # Embedding the articles, or loading their stored vectors.
+            "index_seconds": round(index_seconds, 2),
+            "vectors_stored": stored,
+        },
+        split,
+        runs_dir,
+    )
+
+
+def _run_eval(
+    name: str, retriever: Retriever, settings: dict[str, Any], split: str, runs_dir: Path
+) -> Path:
+    questions = questions_for_split(split)
+    run_dir = start_run(
+        name,
+        {
+            "kind": "retrieval",
+            **settings,
             "unit": "article",
             "depth": DEPTH,
             "ks": list(KS),
             "split": split,
             "n_questions": len(questions),
-            "n_articles": len(articles),
-            "index_seconds": round(index_seconds, 2),
         },
         runs_dir,
     )

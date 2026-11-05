@@ -1,0 +1,64 @@
+import numpy as np
+import pytest
+
+from support_rag.dense import DenseRetriever, top_k
+from support_rag.embeddings import unit_rows
+from support_rag.records import Article
+
+ROWS = np.array([[0.0, 1.0], [0.6, 0.8], [1.0, 0.0]], dtype=np.float32)
+QUERY = np.array([1.0, 0.0], dtype=np.float32)
+
+
+def test_top_k_returns_the_most_similar_rows_best_first():
+    assert top_k(QUERY, ROWS, 2) == [(2, pytest.approx(1.0)), (1, pytest.approx(0.6))]
+
+
+def test_top_k_scores_are_dot_products():
+    query = unit_rows(np.array([[1.0, 1.0]]))[0]
+    hits = top_k(query, ROWS, 3)
+    for row, similarity in hits:
+        assert similarity == pytest.approx(float(ROWS[row] @ query))
+
+
+def test_top_k_with_k_larger_than_the_matrix_returns_every_row():
+    hits = top_k(QUERY, ROWS, 10)
+    assert [row for row, _ in hits] == [2, 1, 0]
+
+
+def test_top_k_returns_python_ints_and_floats():
+    row, similarity = top_k(QUERY, ROWS, 1)[0]
+    assert type(row) is int
+    assert type(similarity) is float
+
+
+def test_top_k_breaks_ties_by_row_order():
+    rows = np.array([[0.6, 0.8], [1.0, 0.0], [0.6, 0.8], [1.0, 0.0]], dtype=np.float32)
+    assert [row for row, _ in top_k(QUERY, rows, 4)] == [1, 3, 0, 2]
+
+
+def test_top_k_finds_the_best_rows_in_a_larger_matrix():
+    rng = np.random.default_rng(0)
+    matrix = unit_rows(rng.normal(size=(1000, 8)))
+    query = unit_rows(rng.normal(size=(1, 8)))[0]
+    expected = np.argsort(-(matrix @ query))[:5]
+    assert [row for row, _ in top_k(query, matrix, 5)] == expected.tolist()
+
+
+class FixedEncoder:
+    def encode_queries(self, texts):
+        return np.array([QUERY for _ in texts])
+
+
+def _article(article_id):
+    return Article(article_id, "", "", "article", "", "")
+
+
+def test_dense_retriever_maps_rows_to_article_ids():
+    retriever = DenseRetriever([_article(i) for i in "abc"], FixedEncoder(), ROWS)
+    hits = retriever.search("anything", k=2)
+    assert [hit.article_id for hit in hits] == ["c", "b"]
+
+
+def test_dense_retriever_rejects_vectors_that_do_not_match_the_articles():
+    with pytest.raises(ValueError):
+        DenseRetriever([_article("a")], FixedEncoder(), ROWS)

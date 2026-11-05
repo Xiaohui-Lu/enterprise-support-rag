@@ -21,7 +21,7 @@ QUESTIONS_FILE = "questions.jsonl"
 SUMMARY_FILE = "summary.json"
 
 # Libraries whose version can change a result.
-_TRACKED_PACKAGES = ("bm25s", "pystemmer")
+_TRACKED_PACKAGES = ("bm25s", "pystemmer", "sentence-transformers", "torch", "transformers")
 
 
 def git_state(repo: Path = config.ROOT) -> dict[str, Any]:

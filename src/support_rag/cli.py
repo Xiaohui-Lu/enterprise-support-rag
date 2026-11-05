@@ -15,7 +15,14 @@ def main(argv: list[str] | None = None) -> None:
     splits = commands.add_parser("splits", help="create the frozen dev/test splits (run once)")
     splits.add_argument("--force", action="store_true", help="overwrite existing splits")
     evaluate = commands.add_parser(
-        "eval-retrieval", help="run BM25 over a split and save a run record in runs/"
+        "eval-retrieval", help="run a retriever over a split and save a run record in runs/"
+    )
+    evaluate.add_argument("--retriever", choices=["bm25", "dense"], default="bm25")
+    evaluate.add_argument(
+        "--model",
+        choices=["qwen3-0.6b", "voyage-4-nano"],
+        default="qwen3-0.6b",
+        help="embedding model for --retriever dense (D-035)",
     )
     evaluate.add_argument(
         "--split",
@@ -23,7 +30,7 @@ def main(argv: list[str] | None = None) -> None:
         default="dev",
         help="questions to evaluate (the test set runs only at milestones)",
     )
-    evaluate.add_argument("--no-stem", action="store_true", help="turn off stemming")
+    evaluate.add_argument("--no-stem", action="store_true", help="BM25: turn off stemming")
     report = commands.add_parser(
         "report-retrieval", help="write reports/retrieval_bm25.md from run records"
     )
@@ -127,10 +134,13 @@ def run(args: argparse.Namespace) -> None:
             for name, value in counts.items():
                 print(f"  {name}: {value}")
         case "eval-retrieval":
-            from support_rag.retrieval_eval import format_summary, run_bm25_eval
+            from support_rag.retrieval_eval import format_summary, run_bm25_eval, run_dense_eval
             from support_rag.runs import load_config, load_summary
 
-            run_dir = run_bm25_eval(args.split, stem=not args.no_stem)
+            if args.retriever == "dense":
+                run_dir = run_dense_eval(args.split, model=args.model)
+            else:
+                run_dir = run_bm25_eval(args.split, stem=not args.no_stem)
             print(f"wrote {run_dir}\n")
             print(format_summary(load_summary(run_dir)))
             if load_config(run_dir)["git"]["dirty"]:

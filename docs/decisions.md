@@ -852,6 +852,11 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 - voyage-4-nano needs `trust_remote_code`: loading it runs a small Python file from its repository. The file is read before first use, and the revision is pinned.
 - Hosted models score higher on public benchmarks, so this may leave a few points on the table. That's what the trigger checks.
 
+**Public evidence (checked 2026-11-04).** [HAKARI-Bench](https://huggingface.co/datasets/hakari-bench/results/discussions/14), an independent benchmark, ran both models on 551 retrieval tasks (nDCG@10, the same weights as the pinned revision).
+- voyage-4-nano leads overall, 0.634 to 0.598, and in 30 of its 35 task groups.
+- Qwen3-Embedding-0.6B leads on the English MTEB v2 retrieval tasks, 0.637 to 0.616. That group is the closest to an English help center.
+- Neither clearly wins for this corpus, so both stay and real dev questions decide. Note that nano was scored at its best size in bf16, while here it runs at 1,024 dimensions in fp16.
+
 **In short.** "I started with local open-weight embedding models: free, pinned by revision and fully reproducible, with a 32K context, so a third of the articles aren't cut off. I compared two of them on real dev questions, and decided in advance when I'd switch to a hosted API: if local embeddings didn't clearly beat BM25."
 
 ---
