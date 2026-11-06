@@ -17,12 +17,18 @@ def main(argv: list[str] | None = None) -> None:
     evaluate = commands.add_parser(
         "eval-retrieval", help="run a retriever over a split and save a run record in runs/"
     )
-    evaluate.add_argument("--retriever", choices=["bm25", "dense"], default="bm25")
+    evaluate.add_argument("--retriever", choices=["bm25", "dense", "hybrid"], default="bm25")
     evaluate.add_argument(
         "--model",
         choices=["qwen3-0.6b", "voyage-4-nano"],
         default="qwen3-0.6b",
-        help="embedding model for --retriever dense (D-035)",
+        help="embedding model for --retriever dense or hybrid (D-035)",
+    )
+    evaluate.add_argument(
+        "--fusion",
+        choices=["rrf", "weighted"],
+        default="rrf",
+        help="how --retriever hybrid merges its two rankings (D-037)",
     )
     evaluate.add_argument(
         "--split",
@@ -134,10 +140,17 @@ def run(args: argparse.Namespace) -> None:
             for name, value in counts.items():
                 print(f"  {name}: {value}")
         case "eval-retrieval":
-            from support_rag.retrieval_eval import format_summary, run_bm25_eval, run_dense_eval
+            from support_rag.retrieval_eval import (
+                format_summary,
+                run_bm25_eval,
+                run_dense_eval,
+                run_hybrid_eval,
+            )
             from support_rag.runs import load_config, load_summary
 
-            if args.retriever == "dense":
+            if args.retriever == "hybrid":
+                run_dir = run_hybrid_eval(args.split, model=args.model, fusion=args.fusion)
+            elif args.retriever == "dense":
                 run_dir = run_dense_eval(args.split, model=args.model)
             else:
                 run_dir = run_bm25_eval(args.split, stem=not args.no_stem)

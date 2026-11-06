@@ -40,8 +40,17 @@ def test_only_an_interval_that_excludes_zero_counts():
 def test_describe_names_the_retriever_and_its_main_setting():
     bm25 = {"retriever": {"name": "bm25"}, "tokenizer": {"stem": False}}
     dense = {"retriever": {"name": "dense", "model": "m", "dimensions": 8, "dtype": "float16"}}
+    hybrid = {
+        "retriever": {
+            "name": "hybrid",
+            "fusion": "rrf",
+            "candidate_depth": 100,
+            "dense": {"model": "m"},
+        }
+    }
     assert describe(bm25) == "BM25, stemming off"
     assert describe(dense) == "dense: m, 8 dims, float16"
+    assert describe(hybrid) == "hybrid: rrf, BM25 + m, top 100 of each"
 
 
 def _run(tmp_path, name, results):

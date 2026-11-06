@@ -15,6 +15,7 @@ uv run srag download   # WixQA at the pinned revision, into data/raw/
 uv run srag stats      # regenerate reports/corpus_stats.md
 uv run srag eval-retrieval --split dev           # BM25 on dev; add --no-stem for the ablation
 uv run srag eval-retrieval --retriever dense --model qwen3-0.6b   # or voyage-4-nano (D-035)
+uv run srag eval-retrieval --retriever hybrid --fusion rrf --model voyage-4-nano   # or weighted (D-037)
 uv run srag report-retrieval --name dense runs/<a> runs/<b>   # reports/retrieval_<name>.md, compared by D-036
 uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, cached); s0, s1 or s_star
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)

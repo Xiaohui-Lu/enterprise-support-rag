@@ -69,6 +69,11 @@ def verdict(low: float, high: float) -> str:
 def describe(run_config: dict[str, Any]) -> str:
     """One line for the runs table: which retriever, with its main settings."""
     retriever = run_config.get("retriever", {})
+    if retriever.get("name") == "hybrid":
+        return (
+            f"hybrid: {retriever['fusion']}, BM25 + {retriever['dense']['model']}, "
+            f"top {retriever['candidate_depth']} of each"
+        )
     if retriever.get("name") == "dense":
         return f"dense: {retriever['model']}, {retriever['dimensions']} dims, {retriever['dtype']}"
     if retriever.get("name") == "bm25":
