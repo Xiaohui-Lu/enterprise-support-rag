@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass
 from functools import partial
 from pathlib import Path
 from statistics import fmean
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from support_rag import config
 from support_rag.bm25 import STOPWORDS, BM25Retriever, tokenize
@@ -21,6 +21,9 @@ from support_rag.records import Article, Hit, Question
 from support_rag.runs import append_result, start_run, write_summary
 from support_rag.splits import load_splits
 from support_rag.wixqa import QA_SUBSETS, load_articles, load_questions
+
+if TYPE_CHECKING:
+    from support_rag.dense import SectionRetriever
 
 KS = (1, 5, 10, 20)  # context sizes the strategies use (D-017)
 DEPTH = max(KS)  # retrieved once per question; every metric comes from this list
@@ -135,6 +138,27 @@ def _dense_retriever(articles: Sequence[Article], model: str) -> tuple[Retriever
     }
 
 
+def _section_retriever(
+    articles: Sequence[Article], model: str, unit: str, *, title: bool = True
+) -> tuple[SectionRetriever, dict[str, Any]]:
+    """The retriever, and its settings for the run record (D-039)."""
+    from support_rag.dense import SectionRetriever
+    from support_rag.embeddings import MODELS, SentenceTransformerEncoder, section_vectors
+    from support_rag.sections import cut_articles
+
+    encoder = SentenceTransformerEncoder(MODELS[model])
+    start = time.perf_counter()
+    sections = cut_articles(articles, unit, title=title)
+    vectors, stored = section_vectors(sections, MODELS[model], encoder)
+    return SectionRetriever(sections, encoder, vectors), {
+        "retriever": {"name": "dense", **encoder.params, "title": title},
+        "unit": unit,
+        "n_sections": len(sections),
+        "index_seconds": round(time.perf_counter() - start, 2),
+        "vectors_stored": stored,
+    }
+
+
 def run_bm25_eval(split: str, *, stem: bool = True, runs_dir: Path = config.RUNS_DIR) -> Path:
     """Evaluate BM25 on a split and save the run. Returns the run directory."""
     articles = load_articles()
@@ -148,12 +172,25 @@ def run_bm25_eval(split: str, *, stem: bool = True, runs_dir: Path = config.RUNS
     )
 
 
-def run_dense_eval(split: str, *, model: str, runs_dir: Path = config.RUNS_DIR) -> Path:
-    """Evaluate dense retrieval with one embedding model and save the run (D-035)."""
+def run_dense_eval(
+    split: str,
+    *,
+    model: str,
+    unit: str = "article",
+    title: bool = True,
+    runs_dir: Path = config.RUNS_DIR,
+) -> Path:
+    """Evaluate dense retrieval with one embedding model and save the run (D-035). A unit
+    other than "article" searches that kind of section instead (D-039)."""
     articles = load_articles()
-    retriever, settings = _dense_retriever(articles, model)
+    if unit == "article":
+        retriever, settings = _dense_retriever(articles, model)
+        name = f"dense-{model}_{split}"
+    else:
+        retriever, settings = _section_retriever(articles, model, unit, title=title)
+        name = f"dense-{unit}{'' if title else '-notitle'}-{model}_{split}"
     return _run_eval(
-        f"dense-{model}_{split}",
+        name,
         retriever,
         {**settings, "n_articles": len(articles)},
         split,
@@ -241,6 +278,39 @@ def run_rerank_eval(
     )
 
 
+def run_section_rerank_eval(
+    split: str, *, model: str, reranker: str, unit: str, runs_dir: Path = config.RUNS_DIR
+) -> Path:
+    """Evaluate a cross-encoder over the top 50 articles' best sections (D-039)."""
+    from support_rag.rerank import (
+        CANDIDATE_DEPTH,
+        RERANKERS,
+        CrossEncoderScorer,
+        SectionRerankingRetriever,
+    )
+
+    articles = load_articles()
+    sections, section_settings = _section_retriever(articles, model, unit)
+    scorer = CrossEncoderScorer(RERANKERS[reranker])
+    return _run_eval(
+        f"rerank-{reranker}-{unit}-{model}_{split}",
+        SectionRerankingRetriever(sections, scorer),
+        {
+            **section_settings,
+            "retriever": {
+                "name": "rerank",
+                "reranker": scorer.params,
+                "candidates": "dense",
+                "candidate_depth": CANDIDATE_DEPTH,
+                "dense": section_settings["retriever"],
+            },
+            "n_articles": len(articles),
+        },
+        split,
+        runs_dir,
+    )
+
+
 def _run_eval(
     name: str, retriever: Retriever, settings: dict[str, Any], split: str, runs_dir: Path
 ) -> Path:
@@ -249,8 +319,8 @@ def _run_eval(
         name,
         {
             "kind": "retrieval",
+            "unit": "article",  # the search unit; the metrics always count articles (D-012)
             **settings,
-            "unit": "article",
             "depth": DEPTH,
             "ks": list(KS),
             "split": split,

@@ -45,6 +45,17 @@ def main(argv: list[str] | None = None) -> None:
         help="what --retriever rerank reads: dense's top 50, or BM25's top 50 too (D-038)",
     )
     evaluate.add_argument(
+        "--unit",
+        choices=["article", "h2", "headings", "window"],
+        default="article",
+        help="what --retriever dense or rerank searches: whole articles or sections (D-039)",
+    )
+    evaluate.add_argument(
+        "--no-title",
+        action="store_true",
+        help="sections: don't put the article's title in front of each one (D-039)",
+    )
+    evaluate.add_argument(
         "--split",
         choices=["dev", "synthetic_reference"],
         default="dev",
@@ -160,10 +171,22 @@ def run(args: argparse.Namespace) -> None:
                 run_dense_eval,
                 run_hybrid_eval,
                 run_rerank_eval,
+                run_section_rerank_eval,
             )
             from support_rag.runs import load_config, load_summary
 
-            if args.retriever == "rerank":
+            if args.unit != "article" and args.retriever not in ("dense", "rerank"):
+                raise ValueError("--unit works only with --retriever dense or rerank")
+            if args.unit != "article" and args.candidates != "dense":
+                raise ValueError("--unit reranks dense's candidates only (D-039)")
+            if args.no_title and (args.retriever != "dense" or args.unit == "article"):
+                raise ValueError("--no-title works only with --retriever dense and sections")
+
+            if args.retriever == "rerank" and args.unit != "article":
+                run_dir = run_section_rerank_eval(
+                    args.split, model=args.model, reranker=args.reranker, unit=args.unit
+                )
+            elif args.retriever == "rerank":
                 run_dir = run_rerank_eval(
                     args.split,
                     model=args.model,
@@ -173,7 +196,9 @@ def run(args: argparse.Namespace) -> None:
             elif args.retriever == "hybrid":
                 run_dir = run_hybrid_eval(args.split, model=args.model, fusion=args.fusion)
             elif args.retriever == "dense":
-                run_dir = run_dense_eval(args.split, model=args.model)
+                run_dir = run_dense_eval(
+                    args.split, model=args.model, unit=args.unit, title=not args.no_title
+                )
             else:
                 run_dir = run_bm25_eval(args.split, stem=not args.no_stem)
             print(f"wrote {run_dir}\n")

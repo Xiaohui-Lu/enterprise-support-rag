@@ -69,14 +69,16 @@ def verdict(low: float, high: float) -> str:
 def describe(run_config: dict[str, Any]) -> str:
     """One line for the runs table: which retriever, with its main settings."""
     retriever = run_config.get("retriever", {})
+    unit = run_config.get("unit", "article")
     if retriever.get("name") == "rerank":
         reranker, dense = retriever["reranker"], retriever["dense"]["model"]
         depth = retriever["candidate_depth"]
-        shortlist = (
-            f"BM25 + {dense}, top {depth} of each"
-            if retriever["candidates"] == "both"
-            else f"{dense}, top {depth}"
-        )
+        if unit != "article":
+            shortlist = f"{dense}, best {unit} section of the top {depth} articles"
+        elif retriever["candidates"] == "both":
+            shortlist = f"BM25 + {dense}, top {depth} of each"
+        else:
+            shortlist = f"{dense}, top {depth}"
         return f"rerank: {reranker['model']}, {reranker['dtype']}, over {shortlist}"
     if retriever.get("name") == "hybrid":
         return (
@@ -84,7 +86,11 @@ def describe(run_config: dict[str, Any]) -> str:
             f"top {retriever['candidate_depth']} of each"
         )
     if retriever.get("name") == "dense":
-        return f"dense: {retriever['model']}, {retriever['dimensions']} dims, {retriever['dtype']}"
+        line = f"dense: {retriever['model']}, {retriever['dimensions']} dims, {retriever['dtype']}"
+        if unit == "article":
+            return line
+        titles = "" if retriever["title"] else ", no titles"
+        return f"{line}, {unit} ({run_config['n_sections']:,} sections{titles})"
     if retriever.get("name") == "bm25":
         stem = run_config.get("tokenizer", {}).get("stem")
         return f"BM25, stemming {'on' if stem else 'off'}"

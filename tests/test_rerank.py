@@ -7,6 +7,7 @@ from support_rag.records import Article, Hit
 from support_rag.rerank import (
     RERANKERS,
     RerankingRetriever,
+    SectionRerankingRetriever,
     best_first,
     checked_scores,
     merged_candidates,
@@ -115,3 +116,20 @@ def test_the_cli_offers_every_reranker():
     source = Path(cli.__file__).read_text(encoding="utf-8")
     for name in RERANKERS:
         assert f'"{name}"' in source
+
+
+def test_section_reranker_reads_each_articles_best_section_not_the_article():
+    hits = [Hit("a", 0.9, section="text of a1"), Hit("b", 0.8, section="text of b1")]
+    scorer = TableScorer({"a1": 1.0, "b1": 2.0})
+    found = SectionRerankingRetriever(FixedRetriever(hits), scorer).search("q", k=2)
+    assert scorer.read == ["text of a1", "text of b1"]
+    assert [(hit.article_id, hit.score) for hit in found] == [("b", 2.0), ("a", 1.0)]
+
+
+def test_section_reranker_asks_for_its_depth_of_articles_and_returns_k():
+    hits = [Hit(a, 1.0, section=f"text of {a}") for a in "abcd"]
+    retriever = FixedRetriever(hits)
+    scorer = TableScorer(dict.fromkeys("abcd", 1.0))
+    found = SectionRerankingRetriever(retriever, scorer, depth=3).search("q", k=2)
+    assert retriever.asked_for == 3
+    assert _ids(found) == ["a", "b"]

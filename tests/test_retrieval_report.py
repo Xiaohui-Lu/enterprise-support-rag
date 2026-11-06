@@ -70,6 +70,30 @@ def test_describe_says_what_a_reranker_read(candidates, shortlist):
     assert describe(rerank) == f"rerank: r, float16, over {shortlist}"
 
 
+@pytest.mark.parametrize(
+    ("title", "ending"),
+    [(True, "h2 (1,234 sections)"), (False, "h2 (1,234 sections, no titles)")],
+)
+def test_describe_says_how_a_dense_run_was_cut(title, ending):
+    retriever = {"name": "dense", "model": "m", "dimensions": 8, "dtype": "fp", "title": title}
+    run = {"retriever": retriever, "unit": "h2", "n_sections": 1234}
+    assert describe(run) == f"dense: m, 8 dims, fp, {ending}"
+
+
+def test_describe_says_a_reranker_read_sections():
+    rerank = {
+        "retriever": {
+            "name": "rerank",
+            "reranker": {"model": "r", "dtype": "fp"},
+            "candidates": "dense",
+            "candidate_depth": 50,
+            "dense": {"model": "m"},
+        },
+        "unit": "h2",
+    }
+    assert describe(rerank) == "rerank: r, fp, over m, best h2 section of the top 50 articles"
+
+
 def _run(tmp_path, name, results):
     run_dir = start_run(
         name,

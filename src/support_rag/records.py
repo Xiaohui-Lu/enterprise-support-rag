@@ -16,7 +16,7 @@ class Article:
     url: str
     article_type: str  # "article", "feature_request" or "known_issue"
     contents: str  # plain text; starts with the title
-    html: str  # original HTML; keeps the headings for section-aware chunking later
+    html: str  # original HTML; its headings mark where sections start (D-039)
 
 
 @dataclass(frozen=True)
@@ -33,8 +33,17 @@ class Question:
 
 
 @dataclass(frozen=True)
+class Section:
+    """A piece of an article with its own vector (D-039)."""
+
+    article_id: str
+    text: str  # what gets embedded and reranked: the piece, with the article's title in front
+
+
+@dataclass(frozen=True)
 class Hit:
     """One retrieved article. A retriever returns hits best first."""
 
     article_id: str
     score: float
+    section: str | None = None  # the best piece's text, when the retriever searches sections

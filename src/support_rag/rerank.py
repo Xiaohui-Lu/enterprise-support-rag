@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from support_rag.records import Article, Hit
 
 if TYPE_CHECKING:
+    from support_rag.dense import SectionRetriever
     from support_rag.retrieval_eval import Retriever
 
 CANDIDATE_DEPTH = 50  # how many articles each retriever supplies
@@ -136,3 +137,21 @@ class RerankingRetriever:
         candidates = merged_candidates(rankings)
         scores = self._scorer.score(query, [self._texts[c] for c in candidates])
         return best_first(candidates, scores)[:k]
+
+
+class SectionRerankingRetriever:
+    """Has the cross-encoder reorder a section retriever's top articles, reading each
+    article's best section instead of the whole article (D-039)."""
+
+    def __init__(
+        self, retriever: SectionRetriever, scorer: PairScorer, *, depth: int = CANDIDATE_DEPTH
+    ) -> None:
+        self._retriever = retriever
+        self._scorer = scorer
+        self._depth = depth
+
+    def search(self, query: str, k: int = 10) -> list[Hit]:
+        """The top k articles for a query, best first."""
+        hits = self._retriever.search(query, k=self._depth)
+        scores = self._scorer.score(query, [hit.section for hit in hits])
+        return best_first([hit.article_id for hit in hits], scores)[:k]

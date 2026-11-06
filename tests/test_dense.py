@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from support_rag.dense import DenseRetriever, top_k
+from support_rag.dense import DenseRetriever, SectionRetriever, best_per_article, top_k
 from support_rag.embeddings import unit_rows
-from support_rag.records import Article
+from support_rag.records import Article, Hit, Section
 
 ROWS = np.array([[0.0, 1.0], [0.6, 0.8], [1.0, 0.0]], dtype=np.float32)
 QUERY = np.array([1.0, 0.0], dtype=np.float32)
@@ -62,3 +62,35 @@ def test_dense_retriever_maps_rows_to_article_ids():
 def test_dense_retriever_rejects_vectors_that_do_not_match_the_articles():
     with pytest.raises(ValueError):
         DenseRetriever([_article("a")], FixedEncoder(), ROWS)
+
+
+def test_best_per_article_keeps_each_article_once_at_its_best_section():
+    ranked = [Hit("a", 0.9), Hit("b", 0.8), Hit("a", 0.7), Hit("c", 0.6)]
+    assert best_per_article(ranked, 10) == [Hit("a", 0.9), Hit("b", 0.8), Hit("c", 0.6)]
+
+
+def test_best_per_article_counts_articles_not_sections():
+    ranked = [Hit("a", 0.9), Hit("a", 0.8), Hit("b", 0.7), Hit("c", 0.6)]
+    assert best_per_article(ranked, 2) == [Hit("a", 0.9), Hit("b", 0.7)]
+
+
+def test_best_per_article_with_k_zero_returns_nothing():
+    assert best_per_article([Hit("a", 0.9)], 0) == []
+
+
+def test_best_per_article_stops_reading_once_it_has_k_articles():
+    ranked = iter([Hit("a", 0.9), Hit("b", 0.8), Hit("c", 0.7), Hit("d", 0.6)])
+    best_per_article(ranked, 2)
+    assert next(ranked) == Hit("d", 0.6)
+
+
+def test_section_retriever_scores_an_article_by_its_best_section():
+    sections = [Section("a", "off topic"), Section("b", "close"), Section("a", "exact")]
+    hits = SectionRetriever(sections, FixedEncoder(), ROWS).search("anything", k=10)
+    assert [(hit.article_id, hit.section) for hit in hits] == [("a", "exact"), ("b", "close")]
+    assert hits[0].score == pytest.approx(1.0)
+
+
+def test_section_retriever_refuses_vectors_that_do_not_match_its_sections():
+    with pytest.raises(ValueError):
+        SectionRetriever([Section("a", "only one")], FixedEncoder(), ROWS)

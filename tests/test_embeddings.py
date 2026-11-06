@@ -4,8 +4,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from support_rag.embeddings import MODELS, article_vectors, corpus_fingerprint, unit_rows
-from support_rag.records import Article
+from support_rag.embeddings import (
+    MODELS,
+    article_vectors,
+    corpus_fingerprint,
+    section_vectors,
+    unit_rows,
+)
+from support_rag.records import Article, Section
 
 MODEL = MODELS["qwen3-0.6b"]
 
@@ -72,6 +78,25 @@ def test_changed_articles_get_new_vectors(tmp_path):
 def test_the_fingerprint_depends_on_article_order():
     a, b = _article("a", "one"), _article("b", "two")
     assert corpus_fingerprint([a, b]) != corpus_fingerprint([b, a])
+
+
+def test_section_vectors_are_computed_once_and_then_loaded(tmp_path):
+    sections = [Section("a", "short"), Section("a", "a longer text")]
+    encoder = CountingEncoder()
+    first, stored_first = section_vectors(sections, MODEL, encoder, vectors_dir=tmp_path)
+    second, stored_second = section_vectors(sections, MODEL, encoder, vectors_dir=tmp_path)
+    assert encoder.calls == 1
+    assert (stored_first, stored_second) == (False, True)
+    assert np.array_equal(first, second)
+    assert first.shape == (2, 2)
+
+
+def test_each_way_of_cutting_gets_its_own_vectors(tmp_path):
+    encoder = CountingEncoder()
+    split = [Section("a", "one"), Section("a", "two")]
+    section_vectors(split, MODEL, encoder, vectors_dir=tmp_path)
+    section_vectors([Section("a", "one two")], MODEL, encoder, vectors_dir=tmp_path)
+    assert encoder.calls == 2
 
 
 def test_the_cli_offers_every_embedding_model():

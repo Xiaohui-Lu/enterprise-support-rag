@@ -1,9 +1,9 @@
 """Embedding models: turn articles and questions into unit-length vectors (D-035).
 
 Models run locally through sentence-transformers, pinned to a Hugging Face revision.
-Article vectors are computed once and stored under cache/vectors/, in a file named after
-the model, its revision and a fingerprint of the articles, so a changed model or corpus
-never reuses stale vectors.
+Article and section vectors are computed once and stored under cache/vectors/, in a file
+named after the model, its revision and a fingerprint of the texts, so a changed model or
+corpus never reuses stale vectors.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from typing import Any, Protocol
 import numpy as np
 
 from support_rag import config
-from support_rag.records import Article
+from support_rag.records import Article, Section
 
 VECTORS_DIR = config.CACHE_DIR / "vectors"
 
@@ -146,9 +146,33 @@ def article_vectors(
     """One unit-length row per article, in the articles' order. Computed on first use and
     stored; later calls load the file. Returns the vectors and whether they were stored."""
     path = vectors_path(model, articles, vectors_dir)
+    return _computed_once(path, [article.contents for article in articles], encoder)
+
+
+def section_fingerprint(sections: Sequence[Section]) -> str:
+    """A hash of every section's article and text, in order: row i of the vectors is section i."""
+    digest = hashlib.sha256()
+    for section in sections:
+        digest.update(f"{section.article_id}\0{section.text}\0".encode())
+    return digest.hexdigest()
+
+
+def section_vectors(
+    sections: Sequence[Section],
+    model: EmbeddingModel,
+    encoder: Encoder,
+    *,
+    vectors_dir: Path = VECTORS_DIR,
+) -> tuple[np.ndarray, bool]:
+    """Like article_vectors, with one row per section. Each way of cutting has its own file."""
+    name = f"{model.name}_{model.revision[:12]}_{section_fingerprint(sections)[:12]}.npy"
+    return _computed_once(vectors_dir / name, [section.text for section in sections], encoder)
+
+
+def _computed_once(path: Path, texts: Sequence[str], encoder: Encoder) -> tuple[np.ndarray, bool]:
     if path.exists():
         return np.load(path), True
-    vectors = encoder.encode_documents([article.contents for article in articles])
+    vectors = encoder.encode_documents(texts)
     path.parent.mkdir(parents=True, exist_ok=True)
     partial = path.with_suffix(".partial.npy")  # never leave a half-written file behind
     np.save(partial, vectors)
