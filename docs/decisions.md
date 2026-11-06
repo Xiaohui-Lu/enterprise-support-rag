@@ -912,6 +912,43 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-037 · Hybrid fusion: RRF and a weighted score, one untuned setting each, over each retriever's top 100 (Step 4)
+
+**Context.** voyage-4-nano is the default retriever (D-036). BM25 matches exact words and nano matches meaning, so combining them might catch what each misses. Their scores can't simply be added: BM25's have no upper limit, while cosine similarities here run from about 0 to 1. The room to improve is small. Nano misses a gold article on 8 of the 50 real dev questions, so under D-036 hybrid needs 4 fixes with none broken, or 7 with one broken. With two broken, a clear win is out of reach.
+
+**Decision (written and committed before any hybrid run).**
+- Hybrid combines BM25 (with stemming) and voyage-4-nano over whole articles. Each supplies its top 100.
+- **RRF (Reciprocal Rank Fusion).** An article's score is the sum, over the lists it appears in, of 1 / (60 + rank), with rank starting at 1.
+- **Weighted score.** Each list is scaled per question so its best score is 1 and its lowest is 0. The score is 0.5 × dense + 0.5 × BM25, and an article missing from a list gets 0 from it.
+- Equal scores are ordered by article ID, so every run gives the same ranking.
+- Neither k, the weight nor the depth is tuned.
+- Between the two, D-036's rule for two new options applies: the higher real-dev recall@10 goes forward, and an exact tie goes to MRR@20.
+- The winner then challenges dense under D-036: its paired 95% interval must lie entirely above zero. Otherwise dense stays.
+- One question is planned for the reranker sub-step: whether its candidates come from dense alone or from both retrievers. Its rule gets written before those runs.
+
+**Alternatives.**
+- Tuning the weight or k on dev: a tuned weighted score [beat RRF in Bruch et al.](https://arxiv.org/abs/2210.11934), and needed little data to tune. But with 8 questions left to fix, a tuned value would fit a handful of questions, and those same questions would then judge it.
+- RRF only: less code, but the weighted score is its main competitor, and measuring it is free.
+- Adding raw scores: BM25's larger numbers would decide almost everything.
+- Other scaling, such as z-scores: Bruch et al. found the weighted score generally isn't sensitive to the choice of scaling, so the simplest one is used.
+- Learned fusion: needs far more than 50 questions.
+- Each retriever's top 20: an article at rank 40 could never climb. The whole corpus: more weak matches, with no reason to expect a gain.
+
+**Why.**
+- RRF uses only ranks, so it needs no scaling, and it keeps working if sub-step 7 swaps BM25 for another keyword engine.
+- A weighted score keeps how strong each match is, which RRF throws away, so the two can disagree (RRF favors agreement; weighted favors one strong signal).
+- One setting each leaves luck the fewest chances to produce a false winner (D-033).
+
+**Trade-offs.**
+- This compares two untuned defaults, not each method at its best. A tuned weighted score might do better.
+- RRF rewards agreement: an article at rank 30 in both lists scores 2/90 = 0.022, beating one at rank 1 in a single list at 1/61 = 0.016. On paraphrase questions, where BM25 can't see the gold article, that can push it out of the top 10.
+- In the weighted score, an article missing from a list counts the same as that list's weakest article.
+- Two retrievers in production mean more latency and one more index to maintain. If hybrid doesn't clearly win, the simpler system stays.
+
+**In short.** "I measured hybrid two ways, RRF and a weighted score, one default setting each, because tuning on 50 questions mostly fits noise. Hybrid then had to clearly beat dense alone, under the rule I'd already fixed. With only 8 questions left to fix, I said before the run that it might not."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
