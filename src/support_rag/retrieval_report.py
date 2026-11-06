@@ -69,6 +69,15 @@ def verdict(low: float, high: float) -> str:
 def describe(run_config: dict[str, Any]) -> str:
     """One line for the runs table: which retriever, with its main settings."""
     retriever = run_config.get("retriever", {})
+    if retriever.get("name") == "rerank":
+        reranker, dense = retriever["reranker"], retriever["dense"]["model"]
+        depth = retriever["candidate_depth"]
+        shortlist = (
+            f"BM25 + {dense}, top {depth} of each"
+            if retriever["candidates"] == "both"
+            else f"{dense}, top {depth}"
+        )
+        return f"rerank: {reranker['model']}, {reranker['dtype']}, over {shortlist}"
     if retriever.get("name") == "hybrid":
         return (
             f"hybrid: {retriever['fusion']}, BM25 + {retriever['dense']['model']}, "

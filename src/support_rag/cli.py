@@ -17,18 +17,32 @@ def main(argv: list[str] | None = None) -> None:
     evaluate = commands.add_parser(
         "eval-retrieval", help="run a retriever over a split and save a run record in runs/"
     )
-    evaluate.add_argument("--retriever", choices=["bm25", "dense", "hybrid"], default="bm25")
+    evaluate.add_argument(
+        "--retriever", choices=["bm25", "dense", "hybrid", "rerank"], default="bm25"
+    )
     evaluate.add_argument(
         "--model",
         choices=["qwen3-0.6b", "voyage-4-nano"],
         default="qwen3-0.6b",
-        help="embedding model for --retriever dense or hybrid (D-035)",
+        help="embedding model for --retriever dense, hybrid or rerank (D-035)",
     )
     evaluate.add_argument(
         "--fusion",
         choices=["rrf", "weighted"],
         default="rrf",
         help="how --retriever hybrid merges its two rankings (D-037)",
+    )
+    evaluate.add_argument(
+        "--reranker",
+        choices=["qwen3-reranker-0.6b", "minilm-l6"],
+        default="qwen3-reranker-0.6b",
+        help="cross-encoder for --retriever rerank (D-038)",
+    )
+    evaluate.add_argument(
+        "--candidates",
+        choices=["dense", "both"],
+        default="dense",
+        help="what --retriever rerank reads: dense's top 50, or BM25's top 50 too (D-038)",
     )
     evaluate.add_argument(
         "--split",
@@ -145,10 +159,18 @@ def run(args: argparse.Namespace) -> None:
                 run_bm25_eval,
                 run_dense_eval,
                 run_hybrid_eval,
+                run_rerank_eval,
             )
             from support_rag.runs import load_config, load_summary
 
-            if args.retriever == "hybrid":
+            if args.retriever == "rerank":
+                run_dir = run_rerank_eval(
+                    args.split,
+                    model=args.model,
+                    reranker=args.reranker,
+                    candidates=args.candidates,
+                )
+            elif args.retriever == "hybrid":
                 run_dir = run_hybrid_eval(args.split, model=args.model, fusion=args.fusion)
             elif args.retriever == "dense":
                 run_dir = run_dense_eval(args.split, model=args.model)

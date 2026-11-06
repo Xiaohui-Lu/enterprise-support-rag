@@ -53,6 +53,23 @@ def test_describe_names_the_retriever_and_its_main_setting():
     assert describe(hybrid) == "hybrid: rrf, BM25 + m, top 100 of each"
 
 
+@pytest.mark.parametrize(
+    ("candidates", "shortlist"),
+    [("dense", "m, top 50"), ("both", "BM25 + m, top 50 of each")],
+)
+def test_describe_says_what_a_reranker_read(candidates, shortlist):
+    rerank = {
+        "retriever": {
+            "name": "rerank",
+            "reranker": {"model": "r", "dtype": "float16"},
+            "candidates": candidates,
+            "candidate_depth": 50,
+            "dense": {"model": "m"},
+        }
+    }
+    assert describe(rerank) == f"rerank: r, float16, over {shortlist}"
+
+
 def _run(tmp_path, name, results):
     run_dir = start_run(
         name,

@@ -194,6 +194,53 @@ def run_hybrid_eval(
     )
 
 
+def run_rerank_eval(
+    split: str,
+    *,
+    model: str,
+    reranker: str,
+    candidates: str = "dense",
+    runs_dir: Path = config.RUNS_DIR,
+) -> Path:
+    """Evaluate a cross-encoder over dense's top candidates, plus BM25's if asked (D-038)."""
+    from support_rag.rerank import (
+        CANDIDATE_DEPTH,
+        RERANKERS,
+        CrossEncoderScorer,
+        RerankingRetriever,
+    )
+
+    articles = load_articles()
+    dense, dense_settings = _dense_retriever(articles, model)
+    scorer = CrossEncoderScorer(RERANKERS[reranker])
+    retrievers: list[Retriever] = [dense]
+    settings: dict[str, Any] = {
+        "retriever": {
+            "name": "rerank",
+            "reranker": scorer.params,
+            "candidates": candidates,
+            "candidate_depth": CANDIDATE_DEPTH,
+            "dense": dense_settings["retriever"],
+        },
+        "n_articles": len(articles),
+        "index_seconds": dense_settings["index_seconds"],
+        "vectors_stored": dense_settings["vectors_stored"],
+    }
+    if candidates == "both":
+        keyword, keyword_settings = _bm25_retriever(articles, stem=True)
+        retrievers.append(keyword)
+        settings["retriever"]["keyword"] = keyword_settings["retriever"]
+        settings["tokenizer"] = keyword_settings["tokenizer"]
+        settings["index_seconds"] += keyword_settings["index_seconds"]
+    return _run_eval(
+        f"rerank-{reranker}-{candidates}-{model}_{split}",
+        RerankingRetriever(articles, retrievers, scorer),
+        settings,
+        split,
+        runs_dir,
+    )
+
+
 def _run_eval(
     name: str, retriever: Retriever, settings: dict[str, Any], split: str, runs_dir: Path
 ) -> Path:
