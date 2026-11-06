@@ -1034,6 +1034,52 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-039 · Sections: three ways to cut an article, scored by the best piece, with the rerankers retested on sections (Step 4)
+
+**Context.** voyage-4-nano on whole articles is the default retriever (D-038). One vector has to stand for everything in an article, while a question is usually about one part of it. The 62 gold articles of the 50 real dev questions are long (median 707 tokens, against 251 for the corpus), and only 3 of them have no headings to cut at. Long ones also rank worse: of the 19 over 1,000 tokens, 3 are at rank 1 and 15 are in the top 10; of the 13 under 300 tokens, 5 are at rank 1 and all 13 are in the top 10. Those counts are small, and I saw them before writing this rule. All 9 gold articles outside the top 10 would be split, so sections can reach all 8 questions with something to fix. A reranker couldn't, because it only reorders a list. D-012 left this measurement for Step 4.
+
+**Decision (written and committed before any section run).**
+- **Three candidates, nothing tuned.** Each cuts every article into pieces, and each piece gets its own vector.
+  - `h2`: cut at `h2` headings. 21,524 pieces, median 88 tokens.
+  - `headings`: cut at every `h2`, `h3` and `h4` heading. 32,363 pieces, median 69 tokens.
+  - `window`: 200 words with 40 words of overlap, ignoring headings. 17,027 pieces.
+- **Cut positions come from the HTML, not from a text search.** Ignoring whitespace, the HTML's text equals `contents` minus the title in all 6,221 articles, so a heading's position is found by counting non-space characters. Searching `contents` for the heading's text would cut in the wrong place in 925 articles at `h2` level, because "In this article" lists repeat the headings. Heading pieces rejoin to exactly `contents`, so nothing is lost or cleaned (D-012): only the unit changes.
+- **What gets embedded.** The article's title, then the piece. The first piece already starts with the title, so it isn't added twice. An article with no headings stays one piece with the same text as before.
+- **An article's score is its best piece's score.** The metrics still count articles (D-017).
+- **Tiny pieces stay.** Only 331 of the `headings` pieces (1%) are under 10 tokens, and merging them would add a threshold.
+- **Between the three,** D-036's rule for new options applies: the higher real-dev recall@10 goes forward, and an exact tie goes to MRR@20.
+- **Against the default,** the chosen variant must clear D-036's bar: its paired 95% interval on real-dev recall@10 lies entirely above zero. On these 50 questions that takes about 4 fixed with none broken, or 7 fixed with one broken. With two broken it's out of reach, since even all 8 fixed gives [0, +24].
+- **A path for recall@5,** as in D-038. If the chosen variant misses the bar on recall@10 but its recall@5 interval against the default lies entirely above zero, the default stays and sections become a candidate for the k=5 question (D-036), under a rule written before those runs.
+- **Titles, reported only.** The chosen variant also runs once without titles. That run can't replace the default.
+- **The rerankers get one retest on sections.** Both D-038 models, with their settings unchanged, run after the verdict above, whichever way it goes. Each reads the chosen variant's top 50 articles, with each article represented by its best piece, title included. Between the two, the higher real-dev recall@10 goes forward, and an exact tie goes to MRR@20. It replaces the default of that moment only if it clears D-036's bar against it. The recall@5 path applies here too. If it clears neither, the reranker is dropped.
+- **What S1 reads isn't decided here.** S1 keeps receiving whole articles, which are what these metrics measure. Sending only sections would change tokens and answers, not recall@10, so it needs paid answer runs and a rule of its own before the S1 sub-step.
+
+**Alternatives.**
+- Testing only one way to cut: `h2` and `headings` differ in a way that can't be settled in advance. 1,004 articles have an `FAQs` heading, and only `headings` gives each question in it its own vector, while `h2` avoids most of the near-copies (see Trade-offs).
+- Other window sizes: size and overlap are two more settings, and 8 questions can't tune them (D-037). 200 words is a common starting size. The windows are a control for "did the headings help?", and a fallback for a future knowledge base without headings.
+- LLM-written context for every piece (contextual retrieval): one paid call per piece, or 17,000 to 32,000 calls. It's worth considering only if a cheap title doesn't do enough.
+- Semantic chunking, which cuts where neighboring sentences' embeddings differ: another threshold to tune, when this corpus already marks its sections.
+- A mean or a sum over an article's pieces, instead of the best one: a mean penalizes a long article for its off-topic sections, and a sum rewards length itself.
+- Cleaning glued sentences ("...to ADI.If you want...") while cutting: that changes the text and the unit at once, so a gain couldn't be attributed to either (D-012).
+- Reranking the top 50 pieces instead of the top 50 articles: several pieces can come from one article, so the list could hold far fewer than 50 articles, and fewer than the 20 the metrics need.
+
+**Why.**
+- Headings are boundaries the authors chose, and using them adds no size or overlap to tune.
+- The first piece and any article with no headings keep exactly the text they had, so the comparison with whole articles changes one thing.
+- A piece like "To cancel your site plan:" doesn't say which product it's about, and identical FAQ sections appear in many articles. The title is the cheap way to give a piece that context. Running without it once shows what it adds.
+- The retest is a fair new question. Qwen's pull toward short text should matter less when candidates are closer in length, though that's a hypothesis. MiniLM's 512-token cut would affect about 184 `headings` pieces or 653 `h2` pieces, against a third of the articles, and it's the only one of the two fast enough for a CPU.
+
+**Trade-offs.**
+- **Short articles can get crowded out.** A one-piece article keeps its score, but other articles now compete with their best piece, which tends to score higher than their whole-article vector. 2,418 articles (39%) stay in one piece at `headings`, including 1,998 of the 2,049 feature requests. Only 3 of the 62 real dev gold articles do, so real questions may gain from this while synthetic ones, a third of which target feature requests, may lose. That would describe this corpus's real traffic, not a general law.
+- **Near-copies can flood the results.** At `headings`, 2,597 pieces share their exact text with another piece, and "How do I get my payouts?" appears in 129 articles. Titles make them differ only slightly, so a question on that topic could fill the top 20 with them. At `h2` it's 274 pieces, and the largest group is 17.
+- **More vectors.** Up to 32,363 rows instead of 6,221, which affects memory and the pgvector sub-step, and an exact search takes longer.
+- **Recall@10 can't see the token savings.** If sections only help the generator read less, this rule won't show it. That's the later S1 question.
+- **More chances for luck.** Six options have been tried against the default on these 50 questions, and this adds up to five more, designed after seeing dense's ranks. Each bar is still strict, but only M2's test run can confirm a win.
+
+**In short.** "A whole article gets one vector, but a question is usually about one part of it. So I cut articles at their headings, with fixed-size windows as a control, and scored each article by its best piece. The cuts come from the HTML and rejoin to the exact text, so only the unit changes. I fixed the decision rule first, gave the rerankers one retest on sections because their weaknesses on whole articles might not apply there, and kept 'what does the generator read' as a separate, paid question."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
