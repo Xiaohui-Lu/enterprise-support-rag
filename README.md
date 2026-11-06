@@ -70,7 +70,7 @@ The dev/test split lives in `data/splits/splits.json`. It was generated once wit
 - [Experiment design](docs/experiment-design.md): research questions, splits, strategies, metrics, roadmap
 - [Decision log](docs/decisions.md): what was chosen, what else was considered, and why
 - [Porting to a new dataset](docs/porting.md): what to redo, including how many labels
-- Reports: [test answers (M1)](reports/answers_test.md), [dev answers](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md), [BM25 retrieval](reports/retrieval_bm25.md), [dense retrieval](reports/retrieval_dense.md), [hybrid retrieval](reports/retrieval_hybrid.md), [corpus statistics](reports/corpus_stats.md)
+- Reports: [test answers (M1)](reports/answers_test.md), [dev answers](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md), [BM25 retrieval](reports/retrieval_bm25.md), [dense retrieval](reports/retrieval_dense.md), [hybrid retrieval](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [corpus statistics](reports/corpus_stats.md)
 
 ## Data
 

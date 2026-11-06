@@ -1005,6 +1005,33 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "A reranker reads the question and each candidate together, which is more accurate than comparing precomputed vectors but far too slow for the whole knowledge base, so it only gets dense's top 50. I measured a long-context model and a tiny one, under the rule I'd already fixed. I also worked out before running anything that BM25 candidates couldn't clear the bar: the reranker scores each pair on its own, so they could only rescue the 3 gold articles dense might have missed."
 
+**Outcome (2026-11-06): dense stays the default, and the reranker is dropped.** Results are in [reports/retrieval_rerank.md](../reports/retrieval_rerank.md).
+
+| Real dev questions, recall@10 | Difference [95% CI] | Better / worse | Under the rule |
+|---|---|---|---|
+| MiniLM vs dense (0.78 vs 0.86) | −8 points [−19, +2] | 3 / 7 | Not clearly better |
+| Qwen vs dense (0.86 vs 0.86) | −0.3 points [−6, +6] | 2 / 2 | Not clearly better |
+| Qwen vs MiniLM | +8 points [−2, +18] | 6 / 2 | Qwen goes forward as the higher score |
+| Qwen with BM25 candidates vs Qwen on dense | 0 points | 0 / 0 | Reported only |
+
+- **Dense with voyage-4-nano stays the default.** Qwen went forward and then didn't clear the bar.
+- **The recall@5 path doesn't fire.** Qwen's recall@5 is +3 points [−8, +14] against dense (6 better, 4 worse), so under the rule above the reranker is dropped, and the k=5 question will use dense alone.
+- **Qwen made the very top of the ranking worse.** On real questions, MRR@20 fell from 0.61 to 0.51 (−10 points [−19, −3]) and recall@1 from 0.40 to 0.25. On synthetic questions, MRR@20 fell from 0.93 to 0.75 (−18 points [−20, −15]) and recall@10 from 0.998 to 0.96 (−3.8 points [−5.6, −2.2]). MiniLM's recall@5 on real questions is clearly lower too (−16 points [−31, −2]).
+- **That looked like a bug, so it was checked first. It isn't one.** On 25 synthetic questions where the gold article fell, scoring at batch size 8, at batch size 1 and with the raw code from Qwen's model card gave a correlation of at least 0.9998, with the gold article at the same rank every time. This also supports the assumption above: an article's score doesn't depend on what else is in its batch.
+- **What Qwen favors.** Its top article is about half as long as dense's: a median of 1,200 characters against 2,248 on real questions, and 567 against 1,072 on synthetic ones. Real gold articles are long, with a median of 3,302. On synthetic questions, feature requests at rank 1 rise from 32% to 44%; on real questions they stay at 10%. This is what the rankings show, not a proven cause.
+- **BM25 candidates rescued nothing.** Recall@10 and recall@5 on real questions are identical with or without them, and they add about 1.6 seconds per question. `sim-064`'s gold article was already in dense's top 50: Qwen ranked it 11th, and 15th with BM25's articles added. The other two stayed out of the top 20. Nothing here supports a keyword index, so production needs only the vector index.
+- **Speed per question.** The GPU times include embedding the question.
+
+| | Dense only | MiniLM | Qwen | Qwen with BM25 candidates |
+|---|---:|---:|---:|---:|
+| GPU, median | 28 ms | 123 ms | 2.7 s | 4.2 s |
+| GPU, 95th percentile | 33 ms | 138 ms | 5.3 s | 8.2 s |
+| CPU, 8 threads, reranking only | | 1.6 s | about 3 minutes | |
+
+  The CPU timing is rough: 50 articles per question, partly filled at random, on 10 questions for MiniLM and 5 for Qwen (106 to 336 seconds). The slowest Qwen question on the GPU took 117 seconds, probably because a batch of long articles overflowed the GPU's memory; that wasn't investigated.
+- **What this doesn't show.** It doesn't show that reranking is bad in general. These are two untuned models reading whole articles, and rerankers are more often used on passages. Qwen also kept its default "web search" instruction. Sections could behave differently, which would be a new question with its own rule.
+- **One knock-on change.** The router's cascade (Step 7) planned to use the top reranker score as a signal. With no reranker, it now says the top retrieval score.
+
 ---
 
 ## Coming up
@@ -1014,8 +1041,7 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
-| 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open, and only needed if the reranker's candidates keep BM25 (D-037). Postgres's built-in ranking isn't BM25 | Measured on dev by D-036's rule |
-| 4 | Reranker, chunking, feature-request down-weighting | Open | Measured on dev by D-036's rule |
+| 4 | Chunking, feature-request down-weighting | Open | Measured on dev by D-036's rule |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |

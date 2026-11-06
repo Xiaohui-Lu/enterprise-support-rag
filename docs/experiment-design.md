@@ -120,7 +120,7 @@ The router chooses between S1 (fast) and S2 (agentic). S3 joins only if Step 6 f
 | Router | How it decides | Tuned on |
 |---|---|---|
 | R1 Rules | Question length, troubleshooting phrases, several products named | Dev |
-| R2 Cascade | Run S1; escalate to S2 if the top reranker score is low or S1 declines | Dev (thresholds) |
+| R2 Cascade | Run S1; escalate to S2 if the top retrieval score is low or S1 declines | Dev (thresholds) |
 | R3 Classifier (optional) | A small model predicts the route from the question; label = cheapest strategy that got it right | 5-fold cross-validation over the 400 real questions |
 | Oracle | Hindsight: the cheapest strategy that got each question right | Nothing; it's the ceiling |
 
