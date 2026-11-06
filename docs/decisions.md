@@ -947,6 +947,22 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "I measured hybrid two ways, RRF and a weighted score, one default setting each, because tuning on 50 questions mostly fits noise. Hybrid then had to clearly beat dense alone, under the rule I'd already fixed. With only 8 questions left to fix, I said before the run that it might not."
 
+**Outcome (2026-11-05): dense stays the default; hybrid didn't clear the bar.** Results are in [reports/retrieval_hybrid.md](../reports/retrieval_hybrid.md).
+
+| Real dev questions, recall@10 | Difference [95% CI] | Fixed / broken | Under the rule |
+|---|---|---|---|
+| RRF vs dense (0.79 vs 0.86) | −7 points [−18, +4] | 3 / 8 | Not clearly better |
+| Weighted vs dense (0.83 vs 0.86) | −3 points [−12, +5] | 2 / 5 | Not clearly better |
+| Weighted vs RRF | +4 points [−4, +12] | 3 / 1 | Weighted goes forward as the higher score |
+
+- **Dense with voyage-4-nano stays the default.** The weighted score went forward and then didn't clear the bar. Both intervals include zero, so hybrid isn't shown to be worse either, but nothing supports the extra index and latency.
+- **The risk named before the run is what happened.** On every question hybrid broke, under both methods, the gold article that dropped out was beyond BM25's top 20. For example, on `ew-000` nano had it at rank 2, and under RRF it fell out of the top 20.
+- **The fixes were the expected ones.** They came where BM25 ranked the gold article well: rank 1 on `sim-184` and rank 5 on `sim-021`. RRF also fixed `sim-064` (BM25 rank 14).
+- **Why equal say hurts here.** BM25 is much weaker than nano on these questions (0.66 against 0.86), and both methods give it the same say.
+- **Synthetic questions lean the same way.** RRF is clearly lower than dense (−1.2 points [−2.2, −0.4]), and the weighted score is level.
+- **No tuning after the fact.** A weight moved toward dense would only approach dense alone, and choosing it after seeing these results would fit those same few questions.
+- **What this doesn't show.** It doesn't show that hybrid is bad in general. It's two untuned defaults on 50 questions and one knowledge base. BM25 can still contribute candidates for the reranker, which is the question planned above.
+
 ---
 
 ## Coming up
@@ -956,8 +972,8 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
-| 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open. Postgres's built-in ranking isn't BM25 | Measured on dev by D-036's rule |
-| 4 | Hybrid fusion, reranker, chunking, feature-request down-weighting | Open | Measured on dev by D-036's rule |
+| 4 | Keyword search in production: Postgres full-text search vs a BM25 extension | Open, and only needed if the reranker's candidates keep BM25 (D-037). Postgres's built-in ranking isn't BM25 | Measured on dev by D-036's rule |
+| 4 | Reranker, chunking, feature-request down-weighting | Open | Measured on dev by D-036's rule |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |
