@@ -965,6 +965,48 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-038 · Reranking: a cross-encoder over dense's top 50, two local models, BM25 candidates reported only (Step 4)
+
+**Context.** voyage-4-nano is the default retriever (D-037). Its vectors are made without seeing the question. A cross-encoder reads the question and an article together, one pair at a time, so it can weigh a single sentence against that question. Nothing can be computed ahead, and reading all 6,221 articles would take about 3 minutes per question on this GPU, so it only reads a shortlist and can only reorder what's on it. The room to improve at recall@10 is small. Of the 62 gold articles of the 50 real dev questions, 53 are in nano's top 10, 6 are at ranks 11–20 and 3 are beyond 20. That leaves 8 questions missing a gold article at recall@10, and 13 at recall@5.
+
+**Decision (written and committed before any reranker run).**
+- **Two local models,** both Apache 2.0, with no remote code, pinned to a Hugging Face revision:
+  - Qwen3-Reranker-0.6B: 596M parameters, 32K-token context, so it reads every article whole.
+  - ms-marco-MiniLM-L6-v2: 23M parameters, 512-token limit, so a third of the articles get cut.
+- **Candidates.** Dense's top 50, whole articles (`contents`, the same text that was embedded). Each model uses its authors' default settings, including Qwen's default instruction. Nothing is tuned. Equal scores keep dense's order.
+- **Between the two models,** D-036's rule for two new options applies: the higher real-dev recall@10 goes forward, and an exact tie goes to MRR@20. Speed is reported but doesn't vote.
+- **Against the default,** the chosen model must clear D-036's bar: its paired 95% interval on real-dev recall@10 lies entirely above zero. Otherwise dense stays. On these 50 questions that takes 4 fixed with none broken, or 7 fixed with one broken. With two broken, it's out of reach, since only 8 questions have anything to fix.
+- **BM25 candidates** (the question D-037 left open). The chosen model also runs once on dense's top 50 plus BM25's top 50, without duplicates, so up to 100 articles. This run is reported but can't replace the default. See Why for the arithmetic.
+- **A path for recall@5.** If the chosen model misses the bar on recall@10 but its recall@5 interval against dense lies entirely above zero, dense stays the default and the reranker becomes a candidate for the k=5 question (D-036), under a rule written before those runs. If it clears neither, it's dropped.
+- **Speed.** Runs record latency on the GPU. A small CPU timing is also taken, because Step 9's server may have no GPU.
+
+**Alternatives.**
+- bge-reranker-v2-m3: the usual baseline, but as large as Qwen (568M parameters), and its model card's examples cut documents at 512 or 1,024 tokens. It gives up both Qwen's reach and MiniLM's size.
+- mxbai-rerank-base-v2: long-context and a similar size to Qwen, so it adds a third chance for luck without a different trade-off. The only benchmark I found for it is its authors'.
+- jina-reranker-v3: a non-commercial license (CC BY-NC 4.0), and it needs remote code.
+- Hosted rerankers (Voyage, Cohere): an account, a key and a network call on every question. They're the fallback if local models can't be served fast enough.
+- A Claude model as the reranker: slower and more expensive per question.
+- Top 20: can't reach the 3 gold articles beyond rank 20. Top 100: twice the reading per question for articles dense ranks that low.
+- Tuning the instruction or depth on dev: with 8 questions to fix, a tuned value would fit a handful of questions, and those same questions would then judge it (D-037).
+- Deciding this one by recall@5 or MRR, where rerankers usually shine: that picks the rule to suit the challenger. S1 reads 10 articles, so recall@10 still decides the default. The recall@5 path keeps the other benefit visible without moving the bar.
+- Letting BM25 candidates challenge the reranker on dense: they can't win, as Why shows, so a verdict would add nothing.
+
+**Why.**
+- The two models span the real trade-off: reading everything against being small enough to run without a GPU. Public evidence doesn't settle it. I found no independent head-to-head, and the one leaderboard that ranks Qwen first marks its results as self-reported.
+- A cross-encoder scores each pair on its own, so an article gets the same score whatever else is on the list. BM25's candidates can therefore only help if a gold article is missing from dense's list. At most 3 can be (`ew-127`, `sim-064` and one of `sim-016`'s three). Even if BM25 rescued all 3 and broke nothing, the interval would be [0, +11], which doesn't clear zero.
+- Reordering within the top 10 doesn't change recall@10. Moving a gold article from rank 8 to rank 3 raises recall@5, but the generator already reads all 10. That only pays off if S1 then sends fewer articles, which is the k=5 question.
+
+**Trade-offs.**
+- The bar is high and recall@10 barely sees what rerankers do best, so a useful reranker can miss it. Keeping dense would then mean "not shown to be better at k=10", not "no use".
+- Qwen may be too slow on a CPU to serve. If so, Step 9 has to choose between a GPU, a hosted reranker and the smaller model.
+- MiniLM reads only the start of a third of the articles, and it was trained on short web passages, not help-center articles.
+- A gain from BM25 candidates too small to see on 50 questions isn't proof there is none. Leaving them out keeps production to one index on that basis.
+- This is one more choice made on the same 50 questions, so dev numbers keep getting more optimistic (D-036). M2's test run is the honest check.
+
+**In short.** "A reranker reads the question and each candidate together, which is more accurate than comparing precomputed vectors but far too slow for the whole knowledge base, so it only gets dense's top 50. I measured a long-context model and a tiny one, under the rule I'd already fixed. I also worked out before running anything that BM25 candidates couldn't clear the bar: the reranker scores each pair on its own, so they could only rescue the 3 gold articles dense might have missed."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
