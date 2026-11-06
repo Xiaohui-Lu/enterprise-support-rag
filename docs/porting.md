@@ -28,7 +28,7 @@ What makes it cheaper the second time:
 1. **Loader:** map the data to `Article` and `Question` records (D-013). Check the license, and pin the dataset revision (D-011).
 2. **Corpus statistics:** article lengths, the share of multi-article questions, and the kinds of questions. Long articles change chunking (D-012) and token cost; for example, Haiku charges more for prompts over 100K tokens.
 3. **Split:** freeze a dev/test split by question before looking at any result (D-004).
-4. **Retrieval baseline on dev:** check the tokenizer choices again. The stopwords and stemming are English, and stemming was decided on WixQA data (D-019).
+4. **Retrieval baseline on dev:** check the tokenizer choices again. The stopwords and stemming are English, and stemming was decided on WixQA data (D-019). Cutting at headings needs HTML whose text matches the article text, and `heading_starts` refuses any that doesn't; fixed windows work on anything (D-039).
 5. **Prompts:** the answer and judge prompts name Wix. Rewrite them for the domain and bump `PROMPT_VERSION` and `JUDGE_PROMPT_VERSION`; old cache entries then simply stop matching.
 6. **Rubric:** reread the hard-case rules for the new domain (alternative routes, declines, numbers), and bump the judge's version.
 7. **Judge validation:** draw a new label sample by whole question, let the panel pre-label it, hand-label its splits plus an audit, and require kappa ≥ 0.6 per strategy (D-005, D-027, D-028). All of this happens before any test run.

@@ -1078,6 +1078,33 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "A whole article gets one vector, but a question is usually about one part of it. So I cut articles at their headings, with fixed-size windows as a control, and scored each article by its best piece. The cuts come from the HTML and rejoin to the exact text, so only the unit changes. I fixed the decision rule first, gave the rerankers one retest on sections because their weaknesses on whole articles might not apply there, and kept 'what does the generator read' as a separate, paid question."
 
+**Outcome (2026-11-06): dense on whole articles stays the default, sections narrowly miss the bar, and the reranker is dropped.** Results are in [reports/retrieval_sections.md](../reports/retrieval_sections.md) and [reports/retrieval_rerank_sections.md](../reports/retrieval_rerank_sections.md).
+
+| Real dev questions, against whole articles (recall@10 0.86) | Recall@10 | Difference [95% CI] | Better / worse | MRR@20 |
+|---|---:|---|---|---:|
+| `h2` (goes forward on the tie-break) | 0.913 | +5.3 points [0, +12] | 3 / 0 | 0.657 |
+| `headings` | 0.913 | +5.3 points [0, +12] | 3 / 0 | 0.651 |
+| `window` | 0.913 | +5.3 points [−2, +14] | 4 / 1 | 0.618 |
+| MiniLM on `h2`'s best sections | 0.740 | −12 points [−25, +1] | 4 / 11 | 0.486 |
+| Qwen on `h2`'s best sections (goes forward over MiniLM) | 0.807 | −5.3 points [−17, +6] | 4 / 8 | 0.586 |
+
+- **An exact three-way tie.** All three variants score 137/3 out of 50, by fixing different questions, so MRR@20 decided and `h2` went forward. Five of the 8 questions were fixed by at least one variant; `ew-127`, `sim-016` and `sim-064` by none.
+- **`h2` misses by one question, and the rule stands.** Its interval's lower bound is exactly zero, so it doesn't lie entirely above zero. A bootstrap resample of 50 questions misses all 3 fixed questions (47/50)^50 ≈ 4.5% of the time, more than the 2.5% tail, so the lower bound stays at 0. With 4 fixed, that chance is about 1.5%. This means "not shown to be better on 50 questions", not "no use". The evidence is also thinner than 3 suggests: `sim-021` and `sim-027` share one gold article.
+- **The recall@5 path doesn't fire.** `h2`'s recall@5 is −5 points [−14, +3] (3 better, 6 worse), so the k=5 question stays on whole articles. Sections pulled far-off gold articles into the top 10 while pushing others out of the top 5. MRR@20 is +4.7 points [−1, +11], within noise.
+- **Titles lean helpful, but not clearly.** Without titles, `h2`'s recall@10 is 0.893 (−2 points [−6, 0] against `h2` with titles) and its MRR@20 is 0.600 (−5.8 points [−12, +0.4], 6 better, 13 worse).
+- **Crowding out happened as predicted.** Gold articles left in one piece kept their scores to the 4 decimals recorded, in all 215 cases. Of the 211 on synthetic questions, 200 kept their rank, 11 fell and none rose. One real gold feature request stayed at 0.5105 and fell from rank 2 to rank 6. Feature requests' share of the top 10 fell from 17% to 8% on real questions and from 23% to 16% on synthetic ones. Top-10 articles also got longer on real questions, with a median of 2,805 characters against 1,614, so searching by section and then sending whole articles would raise S1's cost.
+- **Near-copies didn't flood the results on dev.** Articles with a piece shared by 20 or more articles hold 1.2 of the top 20 on average with whole articles and 1.5 at `headings`. One question has 10 or more either way, and the most for any question rises from 10 to 14. This is a proxy, because run records don't keep which piece won.
+- **The reranker retest fails too, so the reranker is dropped.** Qwen went forward (+7 points [−5, +19] over MiniLM), then cleared neither the bar nor the recall@5 path (−9 points [−23, +5]). Reranking also lowered `h2`'s own recall@10: MiniLM by 17 points [−29, −7], Qwen by 11 points [−22, 0].
+- **The hypotheses held only in part.** Against Qwen on whole articles, real recall@1 rose from 0.25 to 0.39 and MRR@20 from 0.51 to 0.59, but recall@10 fell from 0.857 to 0.807. On synthetic questions MRR@20 barely moved (0.75 to 0.77), so length probably wasn't the main cause there. Lifting MiniLM's cut didn't help it either (0.777 to 0.740). One untested possibility: dense picks the one piece a reranker reads, so it can't help when that piece isn't the one that answers.
+- **Speed per question** (GPU median, including embedding the question). Embedding the corpus took 201 to 220 seconds per variant, against 246 for whole articles. CPU speed wasn't measured, because the reranker was dropped.
+
+| Dense, whole articles | `h2` | `headings` | `window` | MiniLM on `h2` | Qwen on `h2` |
+|---:|---:|---:|---:|---:|---:|
+| 28 ms | 34 ms | 36 ms | 33 ms | 115 ms | 829 ms |
+
+- **Where these numbers come from.** The tables and intervals are in the two reports. The fixed-question lists, the crowding-out counts and the near-copy proxy came from one-off scripts over the run records, not from an `srag` command.
+- **What this leaves open.** The pgvector sub-step indexes 6,221 article vectors. `h2` broke nothing at recall@10 and could send the generator far less text, so "S1 reads sections" is still worth a paid dev run, under a rule written before it.
+
 ---
 
 ## Coming up
@@ -1087,7 +1114,8 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
-| 4 | Chunking, feature-request down-weighting | Open | Measured on dev by D-036's rule |
+| 4 | Feature-request down-weighting | Open | Measured on dev by D-036's rule |
+| 4 | What S1 reads: whole articles or only the best sections | Open | A paid dev run, under a rule written first |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |

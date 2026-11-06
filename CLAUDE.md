@@ -17,6 +17,7 @@ uv run srag eval-retrieval --split dev           # BM25 on dev; add --no-stem fo
 uv run srag eval-retrieval --retriever dense --model qwen3-0.6b   # or voyage-4-nano (D-035)
 uv run srag eval-retrieval --retriever hybrid --fusion rrf --model voyage-4-nano   # or weighted (D-037)
 uv run srag eval-retrieval --retriever rerank --reranker minilm-l6 --model voyage-4-nano   # or qwen3-reranker-0.6b; add --candidates both (D-038)
+uv run srag eval-retrieval --retriever dense --model voyage-4-nano --unit h2   # or headings, window; add --no-title; rerank takes --unit too (D-039)
 uv run srag report-retrieval --name dense runs/<a> runs/<b>   # reports/retrieval_<name>.md, compared by D-036
 uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, cached); s0, s1 or s_star
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)
