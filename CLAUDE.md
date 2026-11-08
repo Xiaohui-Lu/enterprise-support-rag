@@ -18,6 +18,9 @@ uv run srag eval-retrieval --retriever dense --model qwen3-0.6b   # or voyage-4-
 uv run srag eval-retrieval --retriever hybrid --fusion rrf --model voyage-4-nano   # or weighted (D-037)
 uv run srag eval-retrieval --retriever rerank --reranker minilm-l6 --model voyage-4-nano   # or qwen3-reranker-0.6b; add --candidates both (D-038)
 uv run srag eval-retrieval --retriever dense --model voyage-4-nano --unit h2   # or headings, window; add --no-title; rerank takes --unit too (D-039)
+docker compose up -d   # Postgres with pgvector (compose.yaml; needs .env, see .env.example)
+uv run srag db-load    # load the articles and their stored vectors into Postgres (D-041)
+uv run srag eval-retrieval --retriever dense --model voyage-4-nano --store postgres --index exact   # or hnsw (D-041)
 uv run srag report-retrieval --name dense runs/<a> runs/<b>   # reports/retrieval_<name>.md, compared by D-036
 uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, cached); s0, s1 or s_star
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)
@@ -34,13 +37,14 @@ uv run srag label --adjudicate                    # hand-label only what the pan
 ## Layout
 
 - `src/support_rag/`: the only package. Every step is an `srag` subcommand in `cli.py`; no notebooks or loose scripts (D-010).
-- `tests/`: pytest, run against the installed package. Tests never touch the network or `data/raw/`.
+- `tests/`: pytest, run against the installed package. Tests never touch the network or `data/raw/`. Database tests are skipped unless `SRAG_TEST_DATABASE_URL` is set (D-041).
 - `docs/`: `experiment-design.md` (questions, splits, strategies, metrics, roadmap), `decisions.md` (decision log) and `porting.md` (what to redo for a new dataset).
 - `reports/`: generated reports, committed.
 - `data/raw/`: the downloaded dataset, git-ignored. `data/splits/splits.json`: the frozen split, committed.
 - `data/labels/`: the hand-label sample and labels for validating the judge, committed (D-027).
 - `runs/`: run records (config, per-question results, summary), git-ignored; reports cite run IDs (D-018).
 - `cache/`: the LLM response cache (SQLite), git-ignored (D-020).
+- `compose.yaml`: Postgres with pgvector for the article vectors, open to this machine only (D-041).
 
 ## Rules
 

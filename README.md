@@ -63,6 +63,8 @@ uv run srag judge runs/<answer run> --effort high --batch   # grades it through 
 uv run srag report-answers runs/<judge runs>                # one judge run per strategy
 ```
 
+Dense retrieval can also search Postgres with pgvector. Copy `.env.example` to `.env`, then run `docker compose up -d` and `uv run srag db-load`, and add `--store postgres` to `srag eval-retrieval`.
+
 The dev/test split lives in `data/splits/splits.json`. It was generated once with `srag splits` and is never regenerated, so the test set can't drift. The test set runs only with `--split test --milestone M1` (or M2, M3) from a clean commit.
 
 ## Docs
@@ -70,7 +72,7 @@ The dev/test split lives in `data/splits/splits.json`. It was generated once wit
 - [Experiment design](docs/experiment-design.md): research questions, splits, strategies, metrics, roadmap
 - [Decision log](docs/decisions.md): what was chosen, what else was considered, and why
 - [Porting to a new dataset](docs/porting.md): what to redo, including how many labels
-- Reports: [test answers (M1)](reports/answers_test.md), [dev answers](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md), [BM25 retrieval](reports/retrieval_bm25.md), [dense retrieval](reports/retrieval_dense.md), [hybrid retrieval](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [sections](reports/retrieval_sections.md), [reranking on sections](reports/retrieval_rerank_sections.md), [corpus statistics](reports/corpus_stats.md)
+- Reports: [test answers (M1)](reports/answers_test.md), [dev answers](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md), [BM25 retrieval](reports/retrieval_bm25.md), [dense retrieval](reports/retrieval_dense.md), [hybrid retrieval](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [sections](reports/retrieval_sections.md), [reranking on sections](reports/retrieval_rerank_sections.md), [Postgres and HNSW](reports/retrieval_pgvector.md), [corpus statistics](reports/corpus_stats.md)
 
 ## Data
 

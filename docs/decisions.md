@@ -1178,6 +1178,24 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 **In short.** "I moved the vectors into Postgres with pgvector, because the service needs text, vectors and metadata in one database I already know how to run. Before trusting it, I checked that Postgres returns exactly what my NumPy search did. I set a latency bar before measuring: exact search stays unless it's slower than 50 ms, and an HNSW index is measured against exact search either way, so I know what the approximation costs."
 
+**Outcome (2026-11-08): exact search in Postgres stays, and HNSW isn't needed at this size.** Results are in [reports/retrieval_pgvector.md](../reports/retrieval_pgvector.md).
+
+| 550 dev questions | Search alone, median | Search alone, 95th percentile | Total per question, median | Top-10 overlap with exact | Same top 20, same order |
+|---|---:|---:|---:|---:|---:|
+| NumPy, exact | not recorded | not recorded | 28.0 ms | reference | reference |
+| Postgres, exact | 7.4 ms | 8.2 ms | 34.1 ms | 1.000 | 550 of 550 |
+| Postgres, HNSW | 2.3 ms | 2.6 ms | 28.5 ms | 0.994 | 490 of 550 |
+
+- **The plumbing check passes.** Exact search in Postgres returned NumPy's top 20, in the same order, on all 550 dev questions, so every metric is identical.
+- **Exact stays.** Its 95th-percentile search time is 8.2 ms, well under the 50 ms bar, and its plan is the full scan it should be (`Limit > Sort > Seq Scan`).
+- **HNSW meets its 99% requirement, but it isn't needed.** Its top-10 overlap with exact search is 0.994 and its top-20 overlap is 0.991. Real recall@10 and MRR@20 are identical. It saves about 5 ms of a 4-second answer, took 1.0 second to build, and its index is 49 MB, as large as the table.
+- **What an approximate miss looks like.** On `syn-4552`, the gold article is at rank 1 in exact search and absent from HNSW's top 20, so that question's recall@10 falls from 1 to 0. A 0.994 average hides a complete miss like that one. On real questions, the top-10 set differed on 1 of 50, and no metric moved.
+- **A projection.** Exact search time grows in line with the number of rows, so it would reach 50 ms at about 38,000 articles (6,221 × 50 / 8.2). That assumes the table stays in memory. At this row size, Postgres's default 128 MB buffer cache holds about 16,000 articles, and beyond that it depends on the operating system's cache, so the real limit may be lower.
+- **The table is twice the size of the vectors.** A 1,024-dimension vector takes 4,108 bytes, just over half of an 8 KB page, so each page holds one row and the table is 49 MB. pgvector's default for this type does keep long values out of the row (`typstorage` is `e`), but I didn't measure search with that default.
+- **Two setup facts.** On this machine `localhost` tries IPv6 first, and nothing answers there because the port is open on IPv4 only, so each connection waited for its timeout. The connection strings use `127.0.0.1` instead. The image digest is `sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f`.
+- **What these timings are.** Docker Desktop on Windows, one connection, a warm cache and 6,221 rows. They compare options on this machine and aren't a promise about the server.
+- **What's still to do.** S1 still reads BM25's results (D-033). Moving it to dense search on Postgres is the next sub-step, and M2 will use that path.
+
 ---
 
 ## Coming up
@@ -1186,7 +1204,6 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
-| 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
 | 4 | Feature requests in S1's context | Count the wrong answers that cite a non-gold feature request (D-040) | The S1 dev run; a rule only if it's common |
 | 4 | What S1 reads: whole articles or only the best sections | Open | A paid dev run, under a rule written first |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
