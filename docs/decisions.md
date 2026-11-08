@@ -1198,6 +1198,64 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-042 · S1 on dense search: what it buys, and two ways to read less that must show they aren't worse (Step 4)
+
+**Context.** S1 still reads BM25's top 10 (D-033), while D-036 to D-041 made dense search with voyage-4-nano, on Postgres, the default retriever. Those choices used recall@10, so nothing yet says what dense search does to answers. This run also has to settle two questions left open earlier: whether the better retriever lets S1 read fewer articles (D-036), and whether S1 can read only sections (D-039). D-040 moved the worry about feature requests misleading the generator here too. On the 50 real dev questions:
+
+| What S1 reads | Prompt text (tiktoken, mean) | Questions with a gold article in it |
+|---|---:|---:|
+| BM25, top 10 whole articles (today) | 8,908 | 36 |
+| Dense, top 10 whole articles | 5,677 | 44 |
+| Dense, top 5 whole articles | 2,865 | 41 |
+| `h2` search, the best section of each of the top 10 articles | about 1,500 to 3,200 | 46 |
+
+The last row's range assumes each best section is of average size at one end and the article's largest at the other, because run records don't keep which section won. "Gold in it" means the article was found there; its best section may not be the part that answers.
+
+**Decision (written and committed before any dense S1 run).**
+- **Three new runs, nothing tuned,** on the 50 real dev questions, at effort `medium` with prompt `answer-v1`, graded by judge-v1 at `high` through the batch API (D-031). The test set waits for M2.
+  - Dense k=10, the new default: voyage-4-nano, exact search in Postgres, the top 10 whole articles.
+  - k=5: the same search, the top 5 whole articles.
+  - Sections: search `h2` sections (in NumPy, as D-041 allows for dev experiments), then send the top 10 articles, each as its title and best section.
+  - The reference is the judged BM25 k=10 run from D-033 (`20261103-004215_judge-high_20261103-003456_s1-k10-medium_dev_real`).
+- **S1 moves to dense search.** D-036 chose the retriever by recall@10, and the design has S1 use the best retriever. This run measures what that buys in answers, without re-deciding it on 50 questions. It's reversed only if dense's paired 95% interval against BM25 lies entirely below zero, and then I look for a bug first.
+- **k=5 and sections have to show they aren't worse.** Each is compared with dense k=10, on % correct, question by question. A candidate replaces the default only if both hold:
+  - its % correct is at least the default's, and
+  - its paired 95% interval lies entirely above −10 points.
+- **Anything that isn't cheaper keeps D-033's bar.** A candidate with no fewer mean input tokens than the default replaces it only if its interval lies entirely above zero.
+- **Between two that pass,** the higher % correct goes forward, and an exact tie goes to fewer mean input tokens. If neither passes, dense k=10 stays.
+- **The judge reads what the generator read.** A section run saves the sections it sent, and the judge grades groundedness against those, not the whole cited article. Correctness compares the answer with the reference either way. Runs with whole articles send the judge exactly what they sent before, so their cached verdicts stay valid.
+- **The feature-request count, from D-040.** In the default run, count the not-correct answers (partial or incorrect) that cite at least one feature request that isn't gold. "Common" means 4 or more. Fewer can't clear D-036's bar even if every one of them were fixed, so below 4 feature requests stay as they are. At 4 or more, down-weighting comes back as an answer-level question with its own rule.
+- **If sections win,** Postgres gets a table of section vectors before M2, under D-041's plumbing check. If they don't, nothing changes there.
+- **`srag report-tuning`** writes all four arms to one report, with dense k=10 as the default, so BM25's row reads as "BM25 minus dense". BM25 isn't cheaper, so D-033's bar on that row is exactly the reversal test above.
+- **Cost.** About $0.90 at most: roughly $0.14 for the answers and up to $0.75 for three judge runs.
+
+**Alternatives.**
+- D-033's bar (interval entirely above zero) for k=5 and sections: it asks whether they're better, and neither is expected to be. It would almost never fire, and "not shown better" would say nothing about whether they're safe to use.
+- Accepting a candidate that merely scores the same: a tie can hide real losses. 2 fixed and 2 broken, and 6 fixed and 6 broken, are both a difference of zero, and only the first says the two arms mostly agree.
+- A margin of −5: on 50 questions one broken question with nothing fixed already gives [−6, 0], so −5 would be nearly the same as D-033's bar.
+- A margin of −15: passes candidates that flip 6 answers each way, and a 15-point loss is far too large to call "not worse".
+- Searching whole articles, then picking the best section inside each: a two-stage path nobody has measured, and it gives up `h2`'s better retrieval.
+- The top N pieces whatever article they came from: fewer distinct articles and an unmeasured recall (D-039 rejected the same idea for reranking).
+- The best section plus its neighbors, or two sections per article: another setting that 50 questions can't tune (D-037).
+- `h2` search with whole articles: it missed its bar (D-039) and costs more than whole-article search, so it has no case to answer.
+- The 500 synthetic dev questions, for more power: the judge isn't validated on them, and they're easier (D-033).
+
+**Why.**
+- For an option that saves money, the useful question is whether it's worse, which is the reverse of the question D-033 asks. A non-inferiority margin turns "no sign of a difference" into a claim with a size.
+- The margin says what 50 questions can rule out. It isn't a statement that losing 10 points is acceptable. At the sizes that decide this, 2 fixed and 2 broken gives [−8, +8] and passes, and 3 fixed and 1 broken gives [−4, +12] and passes, while 0 fixed and 2 broken gives [−10, 0] and 1 fixed and 3 broken gives [−12, +4], and neither does.
+- It can pass. Changing only the effort flipped 3 to 4 of S1's 50 answers in D-033 (3 and 0 for `high`, 3 and 1 for `low`), though changing the context will probably flip more.
+- The score clause reflects the prices. k=5 saves about $0.0005 per answer and about half a second. If a wrong answer costs one support ticket, even a small loss in correctness outweighs that, so a candidate that measures lower shouldn't replace the default however narrow its interval is.
+
+**Trade-offs.**
+- The margin is wide. Passing means "not shown to lose more than 10 points on 50 questions". Only a larger sample can narrow it, and the test set can't be used to choose.
+- A sections win would change two things at once, the search unit and what gets read. That's accepted because reading the best section is what section search makes possible, and each change was already measured for recall (D-039).
+- These are the same 50 questions used for every Step 4 choice, and dev has little room to show a gain from dense search: BM25 at k=10 scored 76% and S* 78% (D-033). M2 is the honest check (D-034).
+- Each arm is one sample from a nondeterministic generator, and the intervals don't cover that (D-033).
+
+**In short.** "S1 moved to dense search because the retriever was already chosen on recall, and the answer run measured what that bought. Reading fewer articles or only the best sections saves tokens, so I asked a different question for those: are they worse? I set a non-inferiority rule before running them. The option has to score at least as well as the default, and its paired interval has to stay above minus 10 points, which is about the tightest loss 50 questions can rule out."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
