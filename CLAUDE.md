@@ -23,11 +23,12 @@ uv run srag db-load    # load the articles and their stored vectors into Postgre
 uv run srag eval-retrieval --retriever dense --model voyage-4-nano --store postgres --index exact   # or hnsw (D-041)
 uv run srag report-retrieval --name dense runs/<a> runs/<b>   # reports/retrieval_<name>.md, compared by D-036
 uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, cached); s0, s1 or s_star
+uv run srag answer --strategy s1 --retriever dense --k 5   # S1 searches Postgres by default; or --unit h2, or --retriever bm25 (D-042)
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)
 uv run srag judge runs/<answers> --effort high --batch   # grade an answer run (paid, cached)
 uv run srag validate-judge runs/<judge runs>      # judge vs labels: kappa, to reports/judge_validation.md
 uv run srag report-answers runs/<judge runs>      # % correct with CIs and paired tests, to reports/
-uv run srag report-tuning <name> runs/<judge runs> # candidates vs the default on dev, to reports/
+uv run srag report-tuning <name> runs/<judge runs> # candidates vs the default on dev, to reports/; --default-retriever, --margin, --feature-requests (D-042)
 uv run srag label-sample runs/<s0> runs/<s1> runs/<s_star>   # draw the hand-label sample, once
 uv run srag panel --limit 5                       # four-model panel pilot; --batch for the full run
 uv run srag panel-labels runs/<4 panel runs>      # commit the panel's votes and labels, once

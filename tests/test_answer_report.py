@@ -1,9 +1,19 @@
 import pytest
 
-from support_rag.answer_report import compare_strategies, format_report
+from support_rag.answer_report import compare_strategies, format_report, strategy_name
 from support_rag.runs import append_result, start_run, write_summary
 
 QUESTIONS = [f"q{i}" for i in range(10)]
+
+
+def test_s1_is_named_after_what_it_searched_and_read():
+    bm25 = {"k": 10, "retriever": {"name": "bm25"}}
+    dense = {"k": 5, "retriever": {"name": "dense"}, "unit": "article"}
+    sections = {"k": 10, "retriever": {"name": "dense"}, "unit": "h2"}
+    assert strategy_name("s1", bm25) == "S1, BM25 top 10"
+    assert strategy_name("s1", dense) == "S1, dense search top 5"
+    assert strategy_name("s1", sections) == "S1, dense search top 10, best h2 section"
+    assert strategy_name("s0", {}) == "S0, closed book"
 
 
 def _runs(tmp_path, right_by_strategy, effort="high", failed=(), split="dev_real"):

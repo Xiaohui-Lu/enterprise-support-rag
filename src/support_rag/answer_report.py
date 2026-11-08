@@ -16,9 +16,21 @@ from support_rag import config
 from support_rag.runs import load_config, load_results, load_summary
 from support_rag.stats import N_RESAMPLES, bootstrap_ci, holm, mcnemar_exact, paired_bootstrap_ci
 
-STRATEGY_NAMES = {"s0": "S0, closed book", "s1": "S1, BM25", "s_star": "S*, gold articles"}
+STRATEGY_NAMES = {"s0": "S0, closed book", "s1": "S1", "s_star": "S*, gold articles"}
+RETRIEVER_NAMES = {"bm25": "BM25", "dense": "dense search"}
 # (better-expected, baseline): what retrieval adds, what better retrieval would add, both.
 COMPARISONS = (("s1", "s0"), ("s_star", "s1"), ("s_star", "s0"))
+
+
+def strategy_name(strategy: str, answers_config: Mapping[str, Any]) -> str:
+    """How a report names a run: "S1, dense search top 10", or just the strategy's name."""
+    name = STRATEGY_NAMES[strategy]
+    k = answers_config.get("k")
+    if not k:
+        return name
+    name = f"{name}, {RETRIEVER_NAMES[answers_config['retriever']['name']]} top {k}"
+    unit = answers_config.get("unit", "article")
+    return name if unit == "article" else f"{name}, best {unit} section"
 
 
 def compare_strategies(
@@ -60,8 +72,7 @@ def compare_strategies(
             "split": answers_config["split"],
             "milestone": answers_config.get("milestone"),
             "commit": answers_config["git"]["commit"],
-            "name": STRATEGY_NAMES[strategy]
-            + (f" top {answers_config['k']}" if answers_config.get("k") else ""),
+            "name": strategy_name(strategy, answers_config),
             "generator": (answers_config["model"], answers_config["effort"]),
         }
 

@@ -106,6 +106,16 @@ def main(argv: list[str] | None = None) -> None:
     answer.add_argument(
         "--k", type=int, help="articles retrieved for S1; default: the tuned value (D-033)"
     )
+    answer.add_argument(
+        "--retriever",
+        choices=["bm25", "dense"],
+        help="what S1 searches; default: dense, exact search in Postgres (D-042)",
+    )
+    answer.add_argument(
+        "--unit",
+        choices=["article", "h2"],
+        help="what S1 reads: whole articles (default) or each one's best h2 section (D-042)",
+    )
     answer.add_argument("--limit", type=int, help="answer only this many questions (a pilot)")
     judge = commands.add_parser("judge", help="grade an answer run with the judge (paid, cached)")
     judge.add_argument("answers_run", type=Path, help="the answer run directory to grade")
@@ -126,6 +136,19 @@ def main(argv: list[str] | None = None) -> None:
     report_tuning.add_argument("name", help="report name, e.g. effort or k")
     report_tuning.add_argument("--default-effort", help="the baseline's effort (default: tuned)")
     report_tuning.add_argument("--default-k", type=int, help="the baseline's k (default: tuned)")
+    report_tuning.add_argument(
+        "--default-retriever",
+        choices=["bm25", "dense"],
+        help="S1's baseline retriever, to tell arms at the same k apart (D-042)",
+    )
+    report_tuning.add_argument(
+        "--margin", type=float, help="points a cheaper candidate must stay within (D-042)"
+    )
+    report_tuning.add_argument(
+        "--feature-requests",
+        action="store_true",
+        help="count the answers citing a feature request that isn't gold (D-040)",
+    )
     report_tuning.add_argument(
         "runs", nargs="+", type=Path, help="judge runs, including each strategy's default"
     )
@@ -259,14 +282,28 @@ def run(args: argparse.Namespace) -> None:
         case "answer":
             import json
 
-            from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K, run_answers
+            from support_rag.answer_eval import (
+                DEFAULT_EFFORT,
+                DEFAULT_K,
+                DEFAULT_RETRIEVER,
+                run_answers,
+            )
             from support_rag.runs import load_summary
+
+            if args.strategy != "s1" and (args.retriever or args.unit):
+                raise ValueError("--retriever and --unit work only with --strategy s1")
+            retriever = args.retriever or DEFAULT_RETRIEVER
+            unit = args.unit or "article"
+            if retriever == "bm25" and unit != "article":
+                raise ValueError("--unit h2 works only with --retriever dense (D-042)")
 
             run_dir = run_answers(
                 args.strategy,
                 args.split,
                 effort=args.effort or DEFAULT_EFFORT,
                 k=args.k or DEFAULT_K,
+                retriever_name=retriever,
+                unit=unit,
                 limit=args.limit,
                 milestone=args.milestone,
             )
@@ -292,11 +329,21 @@ def run(args: argparse.Namespace) -> None:
             from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K
             from support_rag.tuning import write_report
 
+            feature_requests: frozenset[str] = frozenset()
+            if args.feature_requests:
+                from support_rag.wixqa import load_articles
+
+                feature_requests = frozenset(
+                    a.id for a in load_articles() if a.article_type == "feature_request"
+                )
             path = write_report(
                 args.name,
                 args.runs,
                 default_effort=args.default_effort or DEFAULT_EFFORT,
                 default_k=args.default_k or DEFAULT_K,
+                default_retriever=args.default_retriever,
+                margin=args.margin,
+                feature_requests=feature_requests,
             )
             print(path.read_text(encoding="utf-8"))
         case "validate-judge":

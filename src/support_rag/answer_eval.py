@@ -9,21 +9,22 @@ from __future__ import annotations
 import statistics
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Protocol
 
 from support_rag import config
 from support_rag.answer import PROMPT_VERSION, build_request, parse_answer
 from support_rag.llm import LLMResult, cost_usd
-from support_rag.records import Article, Question
-from support_rag.retrieval_eval import Retriever, questions_for_split
+from support_rag.records import Article, Hit, Question
+from support_rag.retrieval_eval import Retriever, answer_retriever, questions_for_split
 from support_rag.runs import append_result, git_state, start_run, write_summary
 
 # The generator's settings after tuning on dev (D-033): Haiku's default effort, and how
-# many BM25 articles S1 shows the model.
+# many articles S1 shows the model. S1 searches with the default retriever (D-042).
 DEFAULT_EFFORT = "medium"
 DEFAULT_K = 10
+DEFAULT_RETRIEVER = "dense"
 MILESTONES = ("M1", "M2", "M3")
 
 
@@ -49,6 +50,22 @@ class AnswerResult:
     cost_usd: float  # what this answer cost when it was generated
     latency_ms: float  # of the original call
     cached: bool  # True: replayed from the cache, nothing paid in this run
+    # What the model read, in prompt order, when it wasn't whole articles (D-042).
+    context_sections: tuple[str, ...] | None = None
+
+
+def reading_context(hits: Sequence[Hit], articles_by_id: Mapping[str, Article]) -> list[Article]:
+    """What the model reads for these hits, in rank order (D-042).
+
+    A hit that carries a section stands for that section alone, which already starts with
+    the article's title. Any other hit is the whole article. The result is a list of
+    Articles either way, so the prompt and the citation numbers don't change.
+    """
+    context = []
+    for hit in hits:
+        article = articles_by_id[hit.article_id]
+        context.append(article if hit.section is None else replace(article, contents=hit.section))
+    return context
 
 
 def context_for(
@@ -59,24 +76,24 @@ def context_for(
     retriever: Retriever | None = None,
     k: int = DEFAULT_K,
 ) -> list[Article]:
-    """The articles a strategy shows the model: none (S0), BM25's top k (S1) or gold (S*)."""
+    """What a strategy shows the model: nothing (S0), the top k hits (S1) or gold (S*)."""
     match strategy:
         case "s0":
             return []
         case "s1":
             if retriever is None:
                 raise ValueError("S1 needs a retriever")
-            return [
-                articles_by_id[hit.article_id] for hit in retriever.search(question.question, k)
-            ]
+            return reading_context(retriever.search(question.question, k), articles_by_id)
         case "s_star":
             return [articles_by_id[article_id] for article_id in question.gold_ids]
     raise ValueError(f"unknown strategy {strategy!r}")
 
 
 def answer_question(
-    llm: LLM, question: Question, context: Sequence[Article], *, effort: str
+    llm: LLM, question: Question, context: Sequence[Article], *, effort: str, sections: bool = False
 ) -> AnswerResult:
+    """Answer one question. With `sections`, the context holds sections rather than whole
+    articles, so the result saves what the model read for the judge (D-042)."""
     request = build_request(question, context, effort=effort)
     result = llm.complete(request)
     context_ids = tuple(article.id for article in context)
@@ -96,6 +113,7 @@ def answer_question(
         cost_usd=round(cost_usd(result.model, result.usage, batch=result.batch), 6),
         latency_ms=result.latency_ms,
         cached=result.cached,
+        context_sections=tuple(article.contents for article in context) if sections else None,
     )
 
 
@@ -147,6 +165,8 @@ def run_answers(
     *,
     effort: str = DEFAULT_EFFORT,
     k: int = DEFAULT_K,
+    retriever_name: str = DEFAULT_RETRIEVER,
+    unit: str = "article",
     limit: int | None = None,
     milestone: str | None = None,
     runs_dir: Path = config.RUNS_DIR,
@@ -154,7 +174,6 @@ def run_answers(
     """Answer a split with one strategy and save the run. Returns the run directory."""
     if split == "test":
         check_test_run(milestone)
-    from support_rag.bm25 import STOPWORDS, BM25Retriever
     from support_rag.llm import GENERATOR_MODEL, LLMClient
     from support_rag.llm_cache import LLMCache
     from support_rag.wixqa import load_articles
@@ -162,7 +181,6 @@ def run_answers(
     questions = pick_evenly(questions_for_split(split), limit)
     articles = load_articles()
     articles_by_id = {article.id: article for article in articles}
-    retriever = BM25Retriever(articles) if strategy == "s1" else None
 
     run_config: dict[str, Any] = {
         "kind": "answers",
@@ -175,11 +193,13 @@ def run_answers(
         "limit": limit,
         "milestone": milestone,
     }
-    if retriever is not None:
-        run_config["k"] = k
-        run_config["retriever"] = {"name": "bm25", **retriever.params}
-        run_config["tokenizer"] = {"stem": True, "stopwords": f"lucene-en-{len(STOPWORDS)}"}
-    name = f"{strategy}{f'-k{k}' if retriever else ''}-{effort}_{split}"
+    retriever = None
+    name = f"{strategy}-{effort}_{split}"
+    if strategy == "s1":
+        retriever, settings = answer_retriever(retriever_name, unit, articles)
+        run_config |= {"k": k, "unit": unit, **settings}
+        reads = "" if unit == "article" else f"-{unit}"
+        name = f"s1-{retriever_name}{reads}-k{k}-{effort}_{split}"
     run_dir = start_run(name, run_config, runs_dir)
 
     results = []
@@ -189,7 +209,9 @@ def run_answers(
             context = context_for(
                 strategy, question, articles_by_id=articles_by_id, retriever=retriever, k=k
             )
-            result = answer_question(llm, question, context, effort=effort)
+            result = answer_question(
+                llm, question, context, effort=effort, sections=unit != "article"
+            )
             append_result(run_dir, asdict(result))
             results.append(result)
     write_summary(run_dir, summarize_answers(results))

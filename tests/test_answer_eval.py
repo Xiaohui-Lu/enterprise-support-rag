@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from support_rag.answer_eval import (
@@ -5,6 +7,7 @@ from support_rag.answer_eval import (
     check_test_run,
     context_for,
     pick_evenly,
+    reading_context,
     summarize_answers,
 )
 from support_rag.llm import LLMResult
@@ -49,6 +52,51 @@ def test_each_strategy_shows_the_right_articles():
 def test_s1_without_a_retriever_is_an_error():
     with pytest.raises(ValueError):
         context_for("s1", QUESTION, articles_by_id=ARTICLES)
+
+
+def test_a_hit_with_a_section_shows_only_that_section():
+    hits = [Hit("B", 2.0, section="Title B\nJust this part."), Hit("C", 1.0)]
+    context = reading_context(hits, ARTICLES)
+    assert [(a.id, a.contents) for a in context] == [
+        ("B", "Title B\nJust this part."),
+        ("C", "Text C"),
+    ]
+
+
+def test_the_prompt_holds_the_section_and_not_the_rest_of_the_article():
+    llm = FakeLLM("Yes [1].")
+    context = reading_context([Hit("B", 2.0, section="Title B\nJust this part.")], ARTICLES)
+    answer_question(llm, QUESTION, context, effort="medium", sections=True)
+    prompt = llm.requests[0]["messages"][0]["content"]
+    assert "Just this part." in prompt
+    assert "Text B" not in prompt
+
+
+def test_a_section_answer_saves_what_the_model_read():
+    context = [replace(ARTICLES["B"], contents="Title B\nPart.")]
+    result = answer_question(FakeLLM("Yes [1]."), QUESTION, context, effort="medium", sections=True)
+    assert result.context_ids == ("B",)
+    assert result.context_sections == ("Title B\nPart.",)
+
+
+def test_a_whole_article_answer_saves_no_sections():
+    result = answer_question(FakeLLM("Yes [1]."), QUESTION, [ARTICLES["B"]], effort="medium")
+    assert result.context_sections is None
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [
+        ["--strategy", "s0", "--retriever", "dense"],
+        ["--strategy", "s_star", "--unit", "h2"],
+        ["--strategy", "s1", "--retriever", "bm25", "--unit", "h2"],
+    ],
+)
+def test_the_cli_refuses_answer_options_that_would_be_ignored(flags):
+    from support_rag.cli import main
+
+    with pytest.raises(SystemExit, match="error"):
+        main(["answer", *flags])
 
 
 def test_answer_maps_citations_through_the_context_order():

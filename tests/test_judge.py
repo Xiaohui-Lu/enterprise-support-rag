@@ -3,7 +3,7 @@ import json
 import pytest
 
 from support_rag.judge import SYSTEM, build_judge_request, parse_verdict
-from support_rag.judge_eval import judge_answer, summarize_verdicts
+from support_rag.judge_eval import judge_answer, judge_request, summarize_verdicts
 from support_rag.llm import LLMResult
 from support_rag.records import Article, Question
 
@@ -63,6 +63,31 @@ def test_the_judge_request_pins_model_effort_and_schema():
 def test_a_verdict_outside_the_rubric_is_rejected():
     with pytest.raises(ValueError):
         parse_verdict(json.dumps({"reasoning": "", "correctness": "great", "grounded": "yes"}))
+
+
+# judge_request()
+
+
+def test_the_judge_reads_only_the_section_the_generator_read():
+    answer = _answer("Answer [2].", ["B"]) | {"context_sections": ["sec A", "sec B", "sec C"]}
+    request = judge_request(answer, QUESTION, ARTICLES, effort="high")
+    prompt = request["messages"][0]["content"]
+    assert "[2] sec B" in prompt
+    assert "Text B" not in prompt
+    assert "sec A" not in prompt
+
+
+def test_the_judge_reads_the_whole_article_when_no_sections_were_saved():
+    request = judge_request(_answer("Answer [2].", ["B"]), QUESTION, ARTICLES, effort="high")
+    assert "[2] Text B" in request["messages"][0]["content"]
+
+
+def test_an_old_answer_builds_the_same_request_as_one_saved_without_sections():
+    old = _answer("Answer [1].", ["A"])
+    new = old | {"context_sections": None}
+    assert judge_request(old, QUESTION, ARTICLES, effort="high") == judge_request(
+        new, QUESTION, ARTICLES, effort="high"
+    )
 
 
 # judge_answer()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -47,10 +47,18 @@ def judge_request(
     model: str = JUDGE_MODEL,
     max_tokens: int = JUDGE_MAX_TOKENS,
 ) -> dict[str, Any]:
-    """The judge's request for one saved answer (a line of an answer run's questions.jsonl)."""
+    """The judge's request for one saved answer (a line of an answer run's questions.jsonl).
+    The judge reads each cited article as the generator did: only its section, if that's
+    all the generator was shown (D-042)."""
     # The answer cites articles by their number in its own prompt: [1] is context_ids[0].
     numbers = {article_id: n for n, article_id in enumerate(answer["context_ids"], start=1)}
-    cited = [(numbers[a], articles_by_id[a]) for a in answer["cited_ids"]]
+    sections = answer.get("context_sections")
+    cited = []
+    for article_id in answer["cited_ids"]:
+        article = articles_by_id[article_id]
+        if sections is not None:
+            article = replace(article, contents=sections[numbers[article_id] - 1])
+        cited.append((numbers[article_id], article))
     return build_judge_request(
         question.question,
         question.answer,

@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 KS = (1, 5, 10, 20)  # context sizes the strategies use (D-017)
 DEPTH = max(KS)  # retrieved once per question; every metric comes from this list
+EMBEDDING_MODEL = "voyage-4-nano"  # the default retriever's model (D-036)
 
 # Split name on the command line -> lists in splits.json.
 SPLITS = {
@@ -196,6 +197,18 @@ def _pg_retriever(
         "index_seconds": round(time.perf_counter() - start, 2),  # connecting and checking
         "vectors_stored": True,
     }
+
+
+def answer_retriever(
+    name: str, unit: str, articles: Sequence[Article]
+) -> tuple[Retriever, dict[str, Any]]:
+    """What S1 searches, and its settings for the run record (D-042): BM25 or dense search.
+    Whole articles come from Postgres (D-041); sections stay in memory for dev runs."""
+    if name == "bm25":
+        return _bm25_retriever(articles, stem=True)
+    if unit == "article":
+        return _pg_retriever(articles, EMBEDDING_MODEL, "exact")
+    return _section_retriever(articles, EMBEDDING_MODEL, unit)
 
 
 def run_bm25_eval(split: str, *, stem: bool = True, runs_dir: Path = config.RUNS_DIR) -> Path:
