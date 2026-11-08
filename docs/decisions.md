@@ -1278,6 +1278,57 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-043 · S2: a hand-written loop with two tools, two limits and prompt caching (Step 5)
+
+**Context.** S2 lets the model decide what to search and read before it answers. The design listed three tools (`search`, `read`, `answer`), about 6 steps and a token budget. Step 4 left S1 on dense search at k=10, with 90% on the 50 real dev questions (D-042). S2 should help most where one search isn't enough: 79 of the 400 real questions need more than one article. The generator stays Claude Haiku 5.5 at effort `medium`, so the only new variable is the model steering the search.
+
+**Decision (written and committed before any S2 run).**
+- **A hand-written loop** that calls `LLMClient` for every model turn, so each turn is cached and counted (D-003, D-020).
+- **Two tools.**
+  - `search(query)` runs the same search as S1: voyage-4-nano, exact search in Postgres. It returns the top 10, each as a number and the article's first 50 words, which start with its title. That's about 60 tokens per result.
+  - `read(number)` returns the full article.
+  - An article gets a number the first time it appears and keeps it for the rest of the question (D-023).
+- **The loop ends when the model writes text,** in D-023's format: inline `[n]` citations or exactly `NOT_FOUND`. There is no `answer` tool, which changes the design.
+- **Two limits.** A step is one model turn that asks for tools, however many tools it asks for. The limits are 6 steps, and a prompt of 30,000 tokens, a little over 3 times what S1 sends. When either is reached, the model gets the last tool results, a note telling it to answer from what it has read, and one more call with `tool_choice: none`. So a question makes at most 7 model calls.
+- **Other stops.** A bad tool call (an unknown number, an empty query) goes back to the model as an error result, and the loop continues. A turn that ends in `max_tokens` or `refusal` ends the question, its tools aren't run, and the run records the stop reason.
+- **Prompt caching** through the API's top-level `cache_control`, which moves the cache point to the end of each request. The 5-minute lifetime is enough, since steps take seconds. The report also gives the cost without caching, calculated from the same usage numbers, so no second run is needed.
+- **The judge reads what the generator read (D-042).** For a cited article the judge gets the full text if the model called `read` on it, and otherwise only the snippet the model saw.
+- **The prompt is `agent-v1`.** It uses D-023's citation and decline rules word for word. S0, S1 and S\* don't change.
+- **The runs.** A 5-question pilot, whose traces get read before going further, then the 50 real dev questions in real time, graded by judge-v1 at `high` through the batch API (D-031). Each step depends on the one before, so the loop can't use the batch API.
+- **The limits are tuned only if they bind.** They stay if 5 or fewer of the 50 questions hit one. If more do, one extra run doubles the limit that fired, and it replaces the default only if its paired 95% interval lies entirely above zero (D-033).
+- **What dev can say.** S1 is at 90%, so S2 can win at most 5 questions, and it would need 4 fixed and 0 broken to clear D-036's bar. Dev shows whether the loop works and what it costs. S2 against S1 is decided on the test set at M2 (D-034).
+- **Cost.** About $0.50: $0.10 to $0.20 for the answers, about $0.25 for judging, and a few cents for the pilot.
+
+**Alternatives.**
+- The SDK's tool runner: less code, but it's a beta helper that would call the API outside `LLMClient`, so turns wouldn't be cached or counted the same way. Writing the loop is also the point of this step.
+- An `answer` tool: it gives the loop a definite end and a checked structure, but a tool's input is JSON, the format D-023 rejected because it streams badly to a chat UI. S2 would also differ from every other strategy.
+- `search` returning titles only: too little to choose from, so more wasted reads.
+- `search` returning full articles: close to S1, and every result is re-sent on every later step.
+- `search` returning the best-matching passage: a better preview, but it needs a table of section vectors that D-042 decided not to build.
+- A second, keyword search tool: BM25 added nothing on real questions (D-037, D-038).
+- Running one search before the model starts: guarantees S2 sees what S1 sees and saves a step, but it takes the first decision away from the model, which is what's being measured.
+- One tool call per step (`disable_parallel_tool_use`): easier to count, but more round trips, more latency and more re-sent history.
+- A step cap alone: doesn't bound cost, since one step can read several long articles and the longest is about 10,600 tokens. A token budget alone: doesn't bound latency, and a model repeating short searches would run for a long time.
+- Declining at a limit: simplest, but it throws away everything the model has read.
+- Keeping tools on at the last call and asking the model to stop: keeps the message cache, but nothing guarantees it stops. `tool_choice: none` costs one cache miss on the messages, at most about $0.003.
+- Explicit cache breakpoints: more bookkeeping for the same result. The 1-hour lifetime: writes cost twice the input price instead of 1.25 times, for steps that take seconds.
+
+**Why.**
+- The model only needs enough from a search result to decide what to read. Ten 60-token results cost about as much as one article, which keeps early steps cheap.
+- A guardrail should bound the worst case and rarely fire. The worst case here is about a cent per question: 7 calls with a 30,000-token prompt, mostly read from the cache. Checking how often a limit fires is more informative on 50 questions than tuning it would be.
+- Haiku's cache writes cost $0.125 per million tokens and reads $0.01, against $0.10 uncached, so anything read back once has paid for itself. With prompts of 1K, 2K, 4K, 5K and 7K tokens, the input bill goes from $0.0019 to $0.0010. It's about half and not 90%, because every new token is still written once and these loops are short.
+
+**Trade-offs.**
+- 6 steps and 30,000 tokens are reasoned guesses, not measured values. The dev run shows whether they bind.
+- Nothing enforces the text format at the end of the loop. `parse_answer` counts bad citations, as it does for every strategy.
+- A snippet can mislead: 439 articles open with an "Important" note rather than with what they're about.
+- S2's latency includes its tools' time, while S1's doesn't include its one search. That difference is tens of milliseconds against seconds.
+- Every Step 4 choice used these same 50 questions, and S1's 90% is flattered by that (D-042), which makes S2's gap look smaller than it may be.
+
+**In short.** "S2 is a hand-written loop with two tools. Search returns numbered 50-word previews and read returns the full article, and the loop ends when the model writes its answer in the same format as every other strategy. I dropped the answer tool the design had, because tool input is JSON and streams badly. Two limits, 6 steps and 30,000 prompt tokens, bound the worst case at about a cent per question, and hitting one forces a final answer from what was read instead of throwing it away. Prompt caching halves the input cost, not 90%, because every token is still written once and the loops are short."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
