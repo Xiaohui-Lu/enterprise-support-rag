@@ -1107,6 +1107,40 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-040 · Feature-request down-weighting: not built, because even its best case can't clear the bar (Step 4)
+
+**Context.** A third of the knowledge base (2,049 articles) is feature requests, and only 10 of the 400 real questions have one as a gold article, 2 of them among the 50 real dev questions. With dense on whole articles, the default (D-039), feature requests fill 1.7 of the top 10 on real dev questions on average, and 35 of the 50 questions have at least one there. Down-weighting them is the last retrieval change in D-036's order.
+
+**Decision.** Don't build it. Before writing a rule, I worked out the best case from the default's dev run (`20261105-161402_dense-voyage-4-nano_dev`). It can't clear D-036's bar, and it can't trigger D-038's recall@5 path either:
+
+| Real dev questions, best case | Change [95% CI] | Fixed / broken |
+|---|---|---|
+| Recall@10 (now 0.86) | +2.7 points [0, +7] | 2 / 0 |
+| Recall@5 (now 0.78) | +5 points [0, +11] | 3 / 0 |
+
+- **How the best case is worked out.** Pushing feature requests down never reorders the other articles. So a regular gold article's best possible rank is 1 plus the regular articles above it, whatever the method or the penalty. The best case also assumes a scheme gentle enough to keep both gold feature requests where they are. Every real top 20 holds at least 11 regular articles, so nothing beyond rank 20 can reach the top 10. This was a one-off calculation over the run record, not an `srag` command.
+- **The real worry moves to the S1 dev run.** That run will report how many wrong answers cite a feature request that isn't gold, since feature requests in the context might mislead the generator. If that's common, down-weighting comes back as an answer-level question, under a rule of its own. The check costs nothing extra.
+
+**Alternatives.**
+- A soft penalty, run anyway and reported only: free, but it adds code and a penalty value that 50 questions can't tune, for a result that can't change the default.
+- Removing feature requests from the index: recall@10 changes by −0.3 points [−6, +6], with 2 fixed and 2 broken, because `ew-143` and `sim-194` have a feature request as gold. It would also drop the "not possible yet" answers that 10 of the 400 real questions rely on.
+- A cap (say, at most 2 in the top 10) or a reserved slot: both only move feature requests, so the same best case limits them.
+- A paid S1 run without feature requests now: about $0.40, and 50 questions are unlikely to show a small effect, which was M1's lesson (D-034).
+
+**Why.**
+- The arithmetic settles it without a run, as it did for BM25 candidates in D-038, because no run can beat its own best case.
+- With 2 fixed questions, a bootstrap redraw of 50 misses both about 13% of the time, and with 3 fixed about 4.5%. Both are above the 2.5% tail, which is why neither interval starts above zero.
+- It isn't free. Feature requests are short (median 350 characters, against 2,464 for regular articles), so replacing them with regular articles adds 21% more text to the top 10 on real questions, and S1 would cost more.
+
+**Trade-offs.**
+- A small real effect could exist and stay invisible on 50 questions. The best case for MRR@20 is clearly positive (+4.4 points [+1, +8]), but MRR doesn't decide (D-036).
+- Removing feature requests outright would miss all 159 synthetic questions that target one. Synthetic questions don't vote, but production traffic could hold more "is this possible?" questions than WixQA's real sets.
+- `h2` sections halved feature requests' share of the top 10 without targeting them (D-039), but sections aren't the default.
+
+**In short.** "Before building feature-request down-weighting, I worked out its best case. Pushing feature requests down can't reorder the other articles, so a gold article's best rank is fixed by the regular articles above it. On dev that's 2 questions at most, which can't clear my bar, so I didn't build it. The real worry, feature requests misleading the generator, became a free check in the next answer run."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
@@ -1114,7 +1148,7 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
 | 4 | Vector store: Postgres + pgvector vs a dedicated vector DB (Qdrant, Pinecone) | pgvector: about 6K articles is small, and one database can hold text, vectors and run results | Scale and operating cost |
-| 4 | Feature-request down-weighting | Open | Measured on dev by D-036's rule |
+| 4 | Feature requests in S1's context | Count the wrong answers that cite a non-gold feature request (D-040) | The S1 dev run; a rule only if it's common |
 | 4 | What S1 reads: whole articles or only the best sections | Open | A paid dev run, under a rule written first |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
