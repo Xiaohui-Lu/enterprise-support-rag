@@ -1254,6 +1254,28 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "S1 moved to dense search because the retriever was already chosen on recall, and the answer run measured what that bought. Reading fewer articles or only the best sections saves tokens, so I asked a different question for those: are they worse? I set a non-inferiority rule before running them. The option has to score at least as well as the default, and its paired interval has to stay above minus 10 points, which is about the tightest loss 50 questions can rule out."
 
+**Outcome (2026-11-08): S1 moves to dense search at k=10 on whole articles, and neither cheaper option passes.** Results are in [reports/tuning_s1_reading.md](../reports/tuning_s1_reading.md).
+
+| 50 real dev questions | % correct [95% CI] | Against dense k=10 [95% CI] | Only it right / only dense k=10 right | Input tokens | Cost per answer | Latency p50 |
+|---|---:|---|---:|---:|---:|---:|
+| **Dense, k=10 (the default)** | 90.0% [80, 98] | | | 8,758 | $0.00122 | 3.5 s |
+| BM25, k=10 | 76.0% [64, 88] | −14 points [−26, −2] | 2 / 9 | 13,572 | $0.00169 | 3.6 s |
+| Dense, k=5 | 76.0% [64, 88] | −14 points [−24, −6] | 0 / 7 | 4,507 | $0.00077 | 3.0 s |
+| `h2` search, best section | 64.0% [50, 76] | −26 points [−40, −14] | 1 / 14 | 2,858 | $0.00060 | 3.0 s |
+
+- **S1 moves to dense search.** The reversal test doesn't come close: dense is 14 points above BM25, with 35% fewer input tokens and 28% lower cost. Seven of the 9 questions only dense got right had no gold article in BM25's context. The paired interval is entirely above zero, while McNemar's p is 0.065, so the evidence is good but not overwhelming, and the move didn't depend on it.
+- **k=5 fails both clauses.** It lost 7 questions and won none. On 5 of the 7, no gold article was in the top 5. It saves about $0.00045 per answer and half a second. It does match BM25 at k=10 (76% each, +0 [−14, +14]) on a third of the tokens, which is what the better retriever buys if tokens ever matter more than correctness.
+- **Sections fail clearly.** They lost 14 questions and won 1. On 12 of the 14, every gold article was in the context, and 12 of the 14 were graded partial. Search found the right article, but its best-scoring section didn't hold the whole answer. Finding by section and reading by section are separate questions: D-039 showed sections can help find articles, and this shows reading only one piece loses content. Groundedness against what the model read is also lower, 42 yes and 6 partly, against 48 and 2. Postgres needs no table of section vectors.
+- **Feature requests aren't common.** Of the default run's 5 not-correct answers, 2 cite a feature request that isn't gold, under the 4 this rule requires, so down-weighting stays unbuilt (D-040). Another 6 correct answers cite one.
+- **A surprise: dense k=10 scores above S\*.** It beats S\*'s gold-only context by 12 points [+4, +22], 6 questions to 0. On those 6, S\* was partial 5 times and incorrect once.
+  - All 6 questions with no gold article in dense's top 10 were answered correctly, and groundedness is 48 of 50, so the answers come from the retrieved articles rather than from memory.
+  - So gold lists aren't the only route to a correct answer, and gold alone can be less complete than ten related articles. S\* is a useful diagnostic, not a strict ceiling.
+  - I checked it isn't a bug: these were new paid calls, the judge doesn't see the strategy, and no question was right only for S\*.
+- **Don't quote 90%.** These 50 questions chose k=10 and the retriever. BM25's dev score of 76% fell to 64% on the test set (D-034). M2 is the honest check, and it runs dense k=10 through Postgres.
+- **More context may help further.** Dense k=10's lead over k=5 suggests it. Going past 10 is S3's question (Step 6).
+- **Where these numbers come from.** The tables and intervals are in the report. The breakdowns of the lost questions and the comparison with S\* came from one-off scripts over the run records. The runs are `20261108-121330_s1-dense-k10-medium_dev_real`, `20261108-121653_s1-dense-k5-medium_dev_real` and `20261108-122004_s1-dense-h2-k10-medium_dev_real`, all from commit `6fc8110` with a clean tree.
+- **Cost.** $0.74: $0.13 for the answers, including a two-question pilot, and $0.61 for judging.
+
 ---
 
 ## Coming up
@@ -1262,8 +1284,6 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
-| 4 | Feature requests in S1's context | Count the wrong answers that cite a non-gold feature request (D-040) | The S1 dev run; a rule only if it's common |
-| 4 | What S1 reads: whole articles or only the best sections | Open | A paid dev run, under a rule written first |
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
 | 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |
