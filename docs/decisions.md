@@ -1141,6 +1141,45 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 
 ---
 
+## D-041 · Postgres with pgvector for the vectors: exact search unless it's too slow, with HNSW measured (Step 4)
+
+**Context.** Dense retrieval with voyage-4-nano on whole articles is the default (D-040). It runs in NumPy inside the evaluating process: 6,221 vectors of 1,024 numbers (25 MB), searched exactly in a few milliseconds. The service (Step 8) needs the vectors in a store it can query and update, next to the articles' text. The roadmap planned Postgres with pgvector. The keyword engine on the same roadmap row isn't needed (D-038).
+
+**Decision (written and committed before any Postgres run).**
+- **Store.** Postgres 17 with pgvector, in Docker from the pinned image `pgvector/pgvector:0.8.6-pg17`. The port is open only on this machine, and the password lives in `.env`. 0.8.7 came out a week ago; 0.8.6 has been out since August.
+- **Schema.** An `articles` table with the text, the type and `position`, each article's row in the pinned file. A narrow `article_vectors` table holds 32-bit `vector(1024)` values kept in the row (`STORAGE PLAIN`), so a scan doesn't fetch each vector from a side table; Postgres otherwise moves values over about 2 KB out of the row. A `corpus` row records the model, its revision and the corpus fingerprint, and the retriever refuses to search vectors from another model or corpus.
+- **Loading.** `srag db-load` copies the stored vectors (D-035), so it never runs the embedding model.
+- **Distance.** Inner product (`<#>`). The vectors have length 1, so it ranks the same as cosine. Exact search sorts by score and then by `position`, so ties come out in NumPy's order.
+- **Driver.** psycopg 3 with the pgvector package, and no ORM (D-003).
+- **The plumbing check comes first.** Exact search in Postgres must return NumPy's top 20 for every dev question, in the same order, except where two scores differ only by rounding (by less than 1e-5). Any other difference is a bug to fix, not a result.
+- **Exact stays unless it's too slow.** Exact search remains the method unless its 95th-percentile search time, the SQL alone, exceeds 50 ms over the 550 dev questions. An S1 answer takes about 4 seconds, so 50 ms is about 1% of that.
+- **HNSW is measured either way.** With pgvector's defaults (16 links per vector, 64 candidates while building, 40 while searching), the report gives its overlap with exact search's top 10 and top 20, its recall@10 under D-036's comparison, its build time, index size and speed. If it's ever needed, it must keep a mean top-10 overlap of at least 99% with exact search, or its search candidates go up.
+- **A projection.** Exact search time grows in line with the number of rows, so the report states the corpus size at which it would reach 50 ms.
+- **Which code path evaluation uses (D-008).** The Postgres retriever is what the service and M2 use. NumPy stays as the reference for dev experiments, and the plumbing check shows the two agree.
+
+**Alternatives.**
+- A dedicated vector database (Qdrant, Pinecone, Weaviate): built for far larger scale, with compression and sharding, but it's a second system to run and keep in sync with the text. Pinecone is hosted, which adds an account and a network call to every question.
+- Keeping NumPy in memory: enough for search at 6,221 vectors, but there are no updates without a restart, and every server process loads its own copy.
+- IVFFlat instead of HNSW: it has to be trained on the data and needs a list count chosen. HNSW is pgvector's usual recommendation for the trade between recall and speed.
+- Half-precision vectors (`halfvec`): half the storage, but they'd no longer match NumPy's exactly, and size isn't a problem here.
+- asyncpg, which is async only, or SQLAlchemy, an ORM this doesn't need. psycopg has both a normal and an async interface, so FastAPI in Step 8 can use the same driver.
+- Switching every evaluation to Postgres now: every dev run would then need Docker running.
+
+**Why.**
+- The case for Postgres is the service around search: one database for text, vectors, metadata and later run results, filters in plain SQL, transactions when articles change, and a database I already know how to run.
+- Exact search is simpler and gives the same answer every time. An approximate index only pays off when exact search is too slow, and the bar says what "too slow" means before anything is measured.
+- Comparing HNSW with exact search, not only with the gold articles, isolates the approximation. A missed article that isn't gold doesn't move recall, but it's still an error.
+
+**Trade-offs.**
+- Two retrievers compute the same thing, NumPy for dev and Postgres for the service, so they could drift apart. The plumbing check guards that now, and M2 runs on Postgres.
+- Database tests are skipped unless a test database is set, so `uv run pytest` alone doesn't cover the SQL. Step 10's CI can run them against a database container.
+- Keeping vectors in the row only works while a row fits in Postgres's 8 KB page. At 1,024 dimensions a vector takes about 4 KB, so this is fine here.
+- The timings come from one machine with a warm cache. They're for comparing options, not a promise about the server.
+
+**In short.** "I moved the vectors into Postgres with pgvector, because the service needs text, vectors and metadata in one database I already know how to run. Before trusting it, I checked that Postgres returns exactly what my NumPy search did. I set a latency bar before measuring: exact search stays unless it's slower than 50 ms, and an HNSW index is measured against exact search either way, so I know what the approximation costs."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
