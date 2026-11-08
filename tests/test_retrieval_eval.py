@@ -47,6 +47,19 @@ def test_evaluate_question_scores_the_ranking_at_every_k():
     assert result.metrics["mrr@20"] == 0.5
 
 
+class TimedRetriever(FixedRetriever):
+    last_search_ms = 1.23456
+
+
+def test_evaluate_question_keeps_the_search_time_a_retriever_reports():
+    result = evaluate_question(TimedRetriever(["A"]), _question(["A"]))
+    assert result.search_ms == 1.235
+
+
+def test_evaluate_question_leaves_search_time_empty_when_not_reported():
+    assert evaluate_question(FixedRetriever(["A"]), _question(["A"])).search_ms is None
+
+
 def test_evaluate_question_asks_the_retriever_for_the_top_20():
     retriever = FixedRetriever([f"x{i}" for i in range(30)])
     result = evaluate_question(retriever, _question(["A"]))

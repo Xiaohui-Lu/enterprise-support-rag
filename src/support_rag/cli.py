@@ -56,12 +56,34 @@ def main(argv: list[str] | None = None) -> None:
         help="sections: don't put the article's title in front of each one (D-039)",
     )
     evaluate.add_argument(
+        "--store",
+        choices=["numpy", "postgres"],
+        default="numpy",
+        help="where --retriever dense searches whole articles: in memory or Postgres (D-041)",
+    )
+    evaluate.add_argument(
+        "--index",
+        choices=["exact", "hnsw"],
+        default="exact",
+        help="--store postgres: scan every vector, or use the HNSW index (D-041)",
+    )
+    evaluate.add_argument(
         "--split",
         choices=["dev", "synthetic_reference"],
         default="dev",
         help="questions to evaluate (the test set runs only at milestones)",
     )
     evaluate.add_argument("--no-stem", action="store_true", help="BM25: turn off stemming")
+    db_load = commands.add_parser(
+        "db-load", help="load the articles and their stored vectors into Postgres (D-041)"
+    )
+    db_load.add_argument(
+        "--model",
+        choices=["qwen3-0.6b", "voyage-4-nano"],
+        default="voyage-4-nano",
+        help="whose stored vectors to load; the model itself isn't run",
+    )
+    db_load.add_argument("--no-hnsw", action="store_true", help="don't build the HNSW index")
     report = commands.add_parser(
         "report-retrieval",
         help="write reports/retrieval_<name>.md: each run vs every earlier one (D-036)",
@@ -181,6 +203,10 @@ def run(args: argparse.Namespace) -> None:
                 raise ValueError("--unit reranks dense's candidates only (D-039)")
             if args.no_title and (args.retriever != "dense" or args.unit == "article"):
                 raise ValueError("--no-title works only with --retriever dense and sections")
+            if args.store == "postgres" and (args.retriever != "dense" or args.unit != "article"):
+                raise ValueError("--store postgres works only with --retriever dense on articles")
+            if args.index != "exact" and args.store != "postgres":
+                raise ValueError("--index works only with --store postgres")
 
             if args.retriever == "rerank" and args.unit != "article":
                 run_dir = run_section_rerank_eval(
@@ -197,7 +223,12 @@ def run(args: argparse.Namespace) -> None:
                 run_dir = run_hybrid_eval(args.split, model=args.model, fusion=args.fusion)
             elif args.retriever == "dense":
                 run_dir = run_dense_eval(
-                    args.split, model=args.model, unit=args.unit, title=not args.no_title
+                    args.split,
+                    model=args.model,
+                    unit=args.unit,
+                    title=not args.no_title,
+                    store=args.store,
+                    index=args.index,
                 )
             else:
                 run_dir = run_bm25_eval(args.split, stem=not args.no_stem)
@@ -207,6 +238,20 @@ def run(args: argparse.Namespace) -> None:
                 print(
                     "\nnote: uncommitted changes, so this run can't be reproduced from its commit"
                 )
+        case "db-load":
+            from support_rag.config import database_url
+            from support_rag.embeddings import MODELS, stored_article_vectors
+            from support_rag.store import connect, load
+            from support_rag.wixqa import load_articles
+
+            articles = load_articles()
+            model = MODELS[args.model]
+            vectors = stored_article_vectors(articles, model)
+            with connect(database_url()) as connection:
+                loaded = load(connection, articles, vectors, model, hnsw=not args.no_hnsw)
+            print(f"loaded {model.name} vectors into Postgres")
+            for key, value in loaded.items():
+                print(f"  {key}: {value}")
         case "report-retrieval":
             from support_rag.retrieval_report import write_report
 

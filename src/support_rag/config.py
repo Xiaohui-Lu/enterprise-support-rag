@@ -40,3 +40,13 @@ def load_env(path: Path = ENV_PATH) -> None:
             continue
         key, value = line.split("=", 1)
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+def database_url(variable: str = "DATABASE_URL") -> str:
+    """The Postgres connection string from the environment or .env (D-041). It holds a
+    password, so it's never printed or written to a run record."""
+    load_env()
+    url = os.environ.get(variable)
+    if not url:
+        raise ValueError(f"{variable} isn't set; see .env.example")
+    return url

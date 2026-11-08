@@ -11,10 +11,11 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from itertools import combinations
 from pathlib import Path
-from statistics import fmean
+from statistics import fmean, median, quantiles
 from typing import Any
 
 from support_rag import config
+from support_rag.metrics import overlap_at_k
 from support_rag.retrieval_eval import format_summary
 from support_rag.runs import load_config, load_results, load_summary
 from support_rag.stats import paired_bootstrap_ci, sign_test
@@ -87,6 +88,11 @@ def describe(run_config: dict[str, Any]) -> str:
         )
     if retriever.get("name") == "dense":
         line = f"dense: {retriever['model']}, {retriever['dimensions']} dims, {retriever['dtype']}"
+        if store := retriever.get("store"):
+            if store["index"] == "hnsw":
+                hnsw = store["hnsw"]
+                return f"{line}, Postgres HNSW (m {hnsw['m']}, ef_search {hnsw['ef_search']})"
+            return f"{line}, Postgres exact"
         if unit == "article":
             return line
         titles = "" if retriever["title"] else ", no titles"
@@ -120,6 +126,8 @@ def write_report(run_dirs: Sequence[Path], *, name: str, path: Path | None = Non
         )
     for run_dir, c in zip(run_dirs, configs, strict=True):
         lines += ["", f"## `{c['run_id']}`", "", format_summary(load_summary(run_dir))]
+    results = [load_results(d) for d in run_dirs]
+    lines += _speed(configs, results)
 
     pairs = [
         (i, j)
@@ -137,7 +145,6 @@ def write_report(run_dirs: Sequence[Path], *, name: str, path: Path | None = Non
             "the two-sided sign test on better vs worse. Under D-036, real questions decide by",
             "recall@10, and a change counts only if its interval is entirely above zero.",
         ]
-    results = [load_results(d) for d in run_dirs]
     for i, j in pairs:
         lines += _comparison(configs[i], results[i], configs[j], results[j])
 
@@ -182,4 +189,49 @@ def _comparison(
                 )
     if decision:
         lines += ["", decision]
+    if all("ranked_ids" in r for r in [*base_results, *other_results]):
+        lines += ["", _overlap(base_results, other_results)]
     return lines
+
+
+def _overlap(base_results: Sequence[Result], other_results: Sequence[Result]) -> str:
+    """How much of the earlier run's ranking the later one kept, gold or not (D-041)."""
+    other = {r["question_id"]: r["ranked_ids"] for r in other_results}
+    pairs = [(r["ranked_ids"], other[r["question_id"]]) for r in base_results]
+    top10 = fmean(overlap_at_k(a, b, 10) for a, b in pairs)
+    top20 = fmean(overlap_at_k(a, b, 20) for a, b in pairs)
+    same = sum(a == b for a, b in pairs)
+    return (
+        f"Overlap with the earlier run, all questions: top 10 {top10:.3f} and top 20 "
+        f"{top20:.3f} on average; the same top 20, in the same order, on {same} of {len(pairs)}."
+    )
+
+
+def _p95(values: Sequence[float]) -> float:
+    return quantiles(values, n=20, method="inclusive")[-1] if len(values) > 1 else values[0]
+
+
+def _speed(configs: Sequence[dict[str, Any]], results: Sequence[Sequence[Result]]) -> list[str]:
+    """Milliseconds per question for each run that recorded them."""
+    rows = []
+    for c, run_results in zip(configs, results, strict=True):
+        total = [r["latency_ms"] for r in run_results if "latency_ms" in r]
+        if not total:
+            continue
+        search = [r["search_ms"] for r in run_results if r.get("search_ms") is not None]
+        searched = f"{median(search):.1f} | {_p95(search):.1f}" if search else "– | –"
+        rows.append(f"| `{c['run_id']}` | {median(total):.1f} | {_p95(total):.1f} | {searched} |")
+    if not rows:
+        return []
+    return [
+        "",
+        "## Speed",
+        "",
+        "Milliseconds per question, over every question in the run, on this machine. Total",
+        "includes embedding the question. Search is the database query alone, for retrievers",
+        "that report it (D-041).",
+        "",
+        "| Run | Total, median | Total, 95th pct | Search, median | Search, 95th pct |",
+        "|---|---:|---:|---:|---:|",
+        *rows,
+    ]

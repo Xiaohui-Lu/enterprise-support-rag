@@ -149,6 +149,20 @@ def article_vectors(
     return _computed_once(path, [article.contents for article in articles], encoder)
 
 
+def stored_article_vectors(
+    articles: Sequence[Article], model: EmbeddingModel, *, vectors_dir: Path = VECTORS_DIR
+) -> np.ndarray:
+    """The article vectors stored by an earlier run, without loading the model. Raises
+    FileNotFoundError if there are none for this model and corpus."""
+    path = vectors_path(model, articles, vectors_dir)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"no stored vectors for {model.name} and this corpus; run "
+            f"`srag eval-retrieval --retriever dense --model {model.name}` first"
+        )
+    return np.load(path)
+
+
 def section_fingerprint(sections: Sequence[Section]) -> str:
     """A hash of every section's article and text, in order: row i of the vectors is section i."""
     digest = hashlib.sha256()

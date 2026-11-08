@@ -94,6 +94,16 @@ def test_describe_says_a_reranker_read_sections():
     assert describe(rerank) == "rerank: r, fp, over m, best h2 section of the top 50 articles"
 
 
+@pytest.mark.parametrize(
+    ("index", "ending"),
+    [("exact", "Postgres exact"), ("hnsw", "Postgres HNSW (m 16, ef_search 40)")],
+)
+def test_describe_says_where_a_dense_run_searched(index, ending):
+    store = {"index": index, "hnsw": {"m": 16, "ef_search": 40}}
+    retriever = {"name": "dense", "model": "m", "dimensions": 8, "dtype": "fp", "store": store}
+    assert describe({"retriever": retriever}) == f"dense: m, 8 dims, fp, {ending}"
+
+
 def _run(tmp_path, name, results):
     run_dir = start_run(
         name,
@@ -127,3 +137,28 @@ def test_report_applies_the_decision_rule_to_real_recall_at_10(tmp_path):
     assert row in text
     assert "**clearly better**" in text
     assert "**within noise**" in text
+
+
+def _ranked(question_id, ranked_ids, latency_ms, search_ms=None):
+    result = _result(question_id, "expertwritten", 1.0)
+    return result | {"ranked_ids": ranked_ids, "latency_ms": latency_ms, "search_ms": search_ms}
+
+
+def test_report_says_how_much_of_the_earlier_ranking_was_kept(tmp_path):
+    ranked = [f"x{i}" for i in range(20)]
+    swapped = [*ranked[:9], "new", *ranked[10:]]
+    base = _run(tmp_path, "base", [_ranked("q1", ranked, 1.0), _ranked("q2", ranked, 1.0)])
+    other = _run(tmp_path, "other", [_ranked("q1", ranked, 1.0), _ranked("q2", swapped, 1.0)])
+    text = write_report([base, other], name="x", path=tmp_path / "r.md").read_text(encoding="utf-8")
+    assert "top 10 0.950 and top 20 0.975 on average" in text
+    assert "the same top 20, in the same order, on 1 of 2" in text
+
+
+def test_report_gives_search_time_only_for_runs_that_recorded_it(tmp_path):
+    ranked = [f"x{i}" for i in range(20)]
+    timed = _run(tmp_path, "timed", [_ranked("q1", ranked, 30.0, 2.0)])
+    untimed = _run(tmp_path, "untimed", [_ranked("q1", ranked, 25.0)])
+    path = tmp_path / "r.md"
+    text = write_report([timed, untimed], name="x", path=path).read_text(encoding="utf-8")
+    assert f"| `{timed.name}` | 30.0 | 30.0 | 2.0 | 2.0 |" in text
+    assert f"| `{untimed.name}` | 25.0 | 25.0 | – | – |" in text

@@ -45,3 +45,18 @@ def reciprocal_rank(ranked_ids: Sequence[str], gold_ids: Collection[str]) -> flo
         if article_id in gold_ids:
             return 1 / rank
     return 0
+
+
+def overlap_at_k(reference: Sequence[str], other: Sequence[str], k: int) -> float:
+    """Share of the reference's top k that `other` also has in its top k: 0.0 to 1.0.
+
+    It compares two rankings with each other, not with the gold articles: how much of an
+    exact search an approximate one keeps (D-041). A missed article that isn't gold leaves
+    recall unchanged, but it's still a miss.
+
+    reference [A, B, C], other [A, C, D], k=3  ->  2/3
+    """
+    top = reference[:k]
+    if not top:
+        raise ValueError("the reference ranking is empty")
+    return len(set(top) & set(other[:k])) / len(top)

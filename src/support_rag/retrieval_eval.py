@@ -53,12 +53,15 @@ class QuestionResult:
     scores: tuple[float, ...]
     metrics: dict[str, float]  # "recall@5", "all_gold@5", "mrr@20" (reciprocal rank), ...
     latency_ms: float
+    search_ms: float | None = None  # the database query alone, if the retriever reports it
 
 
 def evaluate_question(retriever: Retriever, question: Question) -> QuestionResult:
     start = time.perf_counter()
     hits = retriever.search(question.question, k=DEPTH)
     latency_ms = (time.perf_counter() - start) * 1000
+    # A retriever backed by a database reports its query time on its own (D-041).
+    search_ms = getattr(retriever, "last_search_ms", None)
 
     ranked = [hit.article_id for hit in hits]
     gold = question.gold_ids
@@ -76,6 +79,7 @@ def evaluate_question(retriever: Retriever, question: Question) -> QuestionResul
         scores=tuple(round(hit.score, 4) for hit in hits),
         metrics=metrics,
         latency_ms=round(latency_ms, 3),
+        search_ms=None if search_ms is None else round(search_ms, 3),
     )
 
 
@@ -159,6 +163,41 @@ def _section_retriever(
     }
 
 
+def _pg_retriever(
+    articles: Sequence[Article], model: str, index: str
+) -> tuple[Retriever, dict[str, Any]]:
+    """The Postgres retriever, and its settings for the run record (D-041). The connection
+    string holds a password, so it isn't recorded."""
+    from support_rag.config import database_url
+    from support_rag.embeddings import MODELS, SentenceTransformerEncoder
+    from support_rag.store import HNSW_SETTINGS, PgVectorRetriever, connect
+
+    encoder = SentenceTransformerEncoder(MODELS[model])
+    start = time.perf_counter()
+    connection = connect(database_url())
+    retriever = PgVectorRetriever(
+        connection, encoder, model=MODELS[model], articles=articles, index=index
+    )
+    postgres, pgvector = connection.execute(
+        "SELECT current_setting('server_version'), extversion "
+        "FROM pg_extension WHERE extname = 'vector'"
+    ).fetchone()
+    store: dict[str, Any] = {
+        "name": "postgres",
+        "index": index,
+        "plan": retriever.plan,
+        "postgres": postgres,
+        "pgvector": pgvector,
+    }
+    if index == "hnsw":
+        store["hnsw"] = HNSW_SETTINGS
+    return retriever, {
+        "retriever": {"name": "dense", **encoder.params, "store": store},
+        "index_seconds": round(time.perf_counter() - start, 2),  # connecting and checking
+        "vectors_stored": True,
+    }
+
+
 def run_bm25_eval(split: str, *, stem: bool = True, runs_dir: Path = config.RUNS_DIR) -> Path:
     """Evaluate BM25 on a split and save the run. Returns the run directory."""
     articles = load_articles()
@@ -178,12 +217,18 @@ def run_dense_eval(
     model: str,
     unit: str = "article",
     title: bool = True,
+    store: str = "numpy",
+    index: str = "exact",
     runs_dir: Path = config.RUNS_DIR,
 ) -> Path:
     """Evaluate dense retrieval with one embedding model and save the run (D-035). A unit
-    other than "article" searches that kind of section instead (D-039)."""
+    other than "article" searches that kind of section instead (D-039). The "postgres"
+    store searches the vectors loaded by `srag db-load`, exactly or through HNSW (D-041)."""
     articles = load_articles()
-    if unit == "article":
+    if store == "postgres":
+        retriever, settings = _pg_retriever(articles, model, index)
+        name = f"dense-pg-{index}-{model}_{split}"
+    elif unit == "article":
         retriever, settings = _dense_retriever(articles, model)
         name = f"dense-{model}_{split}"
     else:

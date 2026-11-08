@@ -144,6 +144,9 @@ def test_the_cli_offers_every_unit():
         ["--retriever", "rerank", "--unit", "h2", "--candidates", "both"],
         ["--retriever", "dense", "--no-title"],
         ["--retriever", "rerank", "--unit", "h2", "--no-title"],
+        ["--retriever", "bm25", "--store", "postgres"],
+        ["--retriever", "dense", "--unit", "h2", "--store", "postgres"],
+        ["--retriever", "dense", "--index", "hnsw"],
     ],
 )
 def test_the_cli_refuses_section_options_that_would_be_ignored(flags):
