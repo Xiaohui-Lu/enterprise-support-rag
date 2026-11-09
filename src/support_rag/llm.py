@@ -8,7 +8,7 @@ run record and the API call all see exactly the same thing.
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -19,11 +19,11 @@ from support_rag.llm_cache import LLMCache, cache_key
 GENERATOR_MODEL = "claude-haiku-5-5"  # D-021
 JUDGE_MODEL = "claude-sonnet-5-5"  # D-021
 
-# Dollars per million tokens, Anthropic first-party prices, checked 2026-11-02.
+# Dollars per million tokens, Anthropic first-party prices, checked 2026-11-08.
 # Haiku 5.5 charges more once a prompt goes over 100K tokens.
 PRICES: dict[str, dict[str, float]] = {
-    "claude-haiku-5-5": {"input": 0.10, "output": 0.50},
-    "claude-haiku-5-5>100k": {"input": 0.50, "output": 2.50},
+    "claude-haiku-5-5": {"input": 0.10, "output": 0.50, "cache_read": 0.01},
+    "claude-haiku-5-5>100k": {"input": 0.50, "output": 2.50, "cache_read": 0.05},
     "claude-sonnet-5-5": {"input": 2.00, "output": 10.00, "cache_read": 0.20},
     # The labeling panel (D-028).
     "claude-opus-5-5": {"input": 4.00, "output": 20.00, "cache_read": 0.20},
@@ -33,8 +33,9 @@ LONG_PROMPT_TOKENS = 100_000
 BATCH_DISCOUNT = 0.5  # the Message Batches API is half price (D-022)
 
 # Only complete answers are cached (D-020). "max_tokens" means cut off, "refusal" means
-# declined by a safety classifier: neither is a result to replay.
-COMPLETE_STOP_REASONS = frozenset({"end_turn", "stop_sequence"})
+# declined by a safety classifier: neither is a result to replay. "tool_use" is a finished
+# turn of S2's loop (D-043).
+COMPLETE_STOP_REASONS = frozenset({"end_turn", "stop_sequence", "tool_use"})
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,8 @@ class LLMResult:
     cached: bool
     model: str
     batch: bool = False  # answered by the Message Batches API: half price, no latency
+    # Every content block, thinking included, to send back on the loop's next turn (D-043).
+    content: tuple[dict[str, Any], ...] = ()
 
     @property
     def complete(self) -> bool:
@@ -93,7 +96,14 @@ def _result(
     text = "".join(block["text"] for block in response["content"] if block["type"] == "text")
     usage = {k: v for k, v in response["usage"].items() if isinstance(v, int)}
     return LLMResult(
-        text, response["stop_reason"], usage, latency_ms, cached, response["model"], batch
+        text,
+        response["stop_reason"],
+        usage,
+        latency_ms,
+        cached,
+        response["model"],
+        batch,
+        tuple(response["content"]),
     )
 
 
@@ -166,13 +176,25 @@ def run_batch(
     }
 
 
-def cost_usd(model: str, usage: dict[str, int], *, batch: bool = False) -> float:
-    """What a call cost, from its token usage."""
-    prompt = (
+def prompt_tokens(usage: Mapping[str, int]) -> int:
+    """The size of the whole prompt. With prompt caching, `input_tokens` alone is only the
+    part that was neither read from the cache nor written to it."""
+    return (
         usage.get("input_tokens", 0)
         + usage.get("cache_read_input_tokens", 0)
         + usage.get("cache_creation_input_tokens", 0)
     )
+
+
+def cost_without_caching(model: str, usage: Mapping[str, int]) -> float:
+    """What a call would have cost if none of its prompt had been cached (D-043)."""
+    flat = {"input_tokens": prompt_tokens(usage), "output_tokens": usage.get("output_tokens", 0)}
+    return cost_usd(model, flat)
+
+
+def cost_usd(model: str, usage: Mapping[str, int], *, batch: bool = False) -> float:
+    """What a call cost, from its token usage."""
+    prompt = prompt_tokens(usage)
     tier = f"{model}>100k" if prompt > LONG_PROMPT_TOKENS and f"{model}>100k" in PRICES else model
     price = PRICES[tier]
     dollars = (

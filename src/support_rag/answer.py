@@ -17,7 +17,7 @@ from support_rag.llm import GENERATOR_MODEL
 from support_rag.records import Article, Question
 
 NOT_FOUND = "NOT_FOUND"
-STRATEGIES = ("s0", "s1", "s_star")
+STRATEGIES = ("s0", "s1", "s2", "s_star")
 
 # "[2]" or "[1, 3]": digits, then optionally ", digits" repeated. The group captures the
 # inside of the brackets. Text in brackets, like a Markdown link label, never matches.
@@ -25,24 +25,27 @@ _CITATION = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 
 PROMPT_VERSION = "answer-v1"  # bump on any change to the prompts below; it's in every run
 
-_SHARED_RULES = f"""\
+SHARED_RULES = f"""\
 - Write for a customer: the steps they need, in the order they need them, and nothing \
 they didn't ask about.
 - If you can't answer the question, reply with exactly {NOT_FOUND} and nothing else."""
+
+CITE_RULE = """\
+- Cite the articles you use with their numbers in square brackets, like [2], right after \
+the sentence they support."""
 
 SYSTEM_WITH_ARTICLES = f"""\
 You are a customer support assistant for Wix, the website builder. Answer the customer's \
 question using only the help-center articles provided, numbered [1] to [n].
 
-- Cite the articles you use with their numbers in square brackets, like [2], right after \
-the sentence they support.
-{_SHARED_RULES}"""
+{CITE_RULE}
+{SHARED_RULES}"""
 
 SYSTEM_CLOSED_BOOK = f"""\
 You are a customer support assistant for Wix, the website builder. Answer the customer's \
 question from what you know about Wix.
 
-{_SHARED_RULES}"""
+{SHARED_RULES}"""
 
 
 @dataclass(frozen=True)

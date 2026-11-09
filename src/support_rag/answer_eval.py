@@ -14,8 +14,17 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from support_rag import config
+from support_rag.agent import (
+    AGENT_PROMPT_VERSION,
+    MAX_PROMPT_TOKENS,
+    MAX_STEPS,
+    SEARCH_RESULTS,
+    SNIPPET_WORDS,
+    ToolBox,
+    run_agent,
+)
 from support_rag.answer import PROMPT_VERSION, build_request, parse_answer
-from support_rag.llm import LLMResult, cost_usd
+from support_rag.llm import LLMResult, cost_usd, cost_without_caching, prompt_tokens
 from support_rag.records import Article, Hit, Question
 from support_rag.retrieval_eval import Retriever, answer_retriever, questions_for_split
 from support_rag.runs import append_result, git_state, start_run, write_summary
@@ -52,6 +61,8 @@ class AnswerResult:
     cached: bool  # True: replayed from the cache, nothing paid in this run
     # What the model read, in prompt order, when it wasn't whole articles (D-042).
     context_sections: tuple[str, ...] | None = None
+    # S2 only: how the loop went (D-043).
+    agent: dict[str, Any] | None = None
 
 
 def reading_context(hits: Sequence[Hit], articles_by_id: Mapping[str, Article]) -> list[Article]:
@@ -117,16 +128,59 @@ def answer_question(
     )
 
 
+def answer_with_agent(
+    llm: LLM, question: Question, toolbox: ToolBox, *, effort: str
+) -> AnswerResult:
+    """Answer one question with S2. Tokens and cost add up every model call, and latency
+    also includes the time the tools took (D-043)."""
+    run = run_agent(llm, toolbox, question, effort=effort)
+    answer = parse_answer(run.final.text, toolbox.context_ids)
+    usage: Counter[str] = Counter()
+    for call in run.calls:
+        usage.update(call.usage)
+    return AnswerResult(
+        question_id=question.id,
+        subset=question.subset,
+        multi_article=question.is_multi_article,
+        gold_ids=question.gold_ids,
+        context_ids=toolbox.context_ids,
+        text=answer.text,
+        cited_ids=answer.cited_ids,
+        declined=answer.declined,
+        invalid_citations=answer.invalid_citations,
+        stop_reason=run.final.stop_reason,
+        usage=dict(usage),
+        cost_usd=round(sum(cost_usd(c.model, c.usage, batch=c.batch) for c in run.calls), 6),
+        latency_ms=round(sum(c.latency_ms for c in run.calls) + toolbox.tool_ms, 1),
+        cached=all(c.cached for c in run.calls),
+        context_sections=toolbox.context_sections,
+        agent={
+            "steps": sum(c.stop_reason == "tool_use" for c in run.calls),
+            "model_calls": len(run.calls),
+            "stopped_by": run.stopped_by,
+            "queries": list(toolbox.queries),
+            "read_ids": list(toolbox.read_ids),
+            "tool_errors": toolbox.errors,
+            "tool_ms": round(toolbox.tool_ms, 1),
+            "prompt_tokens": [prompt_tokens(c.usage) for c in run.calls],
+            "cost_without_caching_usd": round(
+                sum(cost_without_caching(c.model, c.usage) for c in run.calls), 6
+            ),
+        },
+    )
+
+
 def summarize_answers(results: Sequence[AnswerResult]) -> dict[str, Any]:
     """Format and cost figures for a run. Correctness comes later, from the judge."""
     paid = [r for r in results if not r.cached]
     latencies = sorted(r.latency_ms for r in paid)
-    return {
+    summary: dict[str, Any] = {
         "n": len(results),
         "declined": sum(r.declined for r in results),
         "with_invalid_citations": sum(r.invalid_citations > 0 for r in results),
         "stop_reasons": dict(Counter(r.stop_reason for r in results)),
-        "mean_input_tokens": _mean(r.usage.get("input_tokens", 0) for r in results),
+        # The whole prompt, cached or not; for S2, added up over every model call.
+        "mean_input_tokens": _mean(prompt_tokens(r.usage) for r in results),
         "mean_output_tokens": _mean(r.usage.get("output_tokens", 0) for r in results),
         "cost_of_answers_usd": round(sum(r.cost_usd for r in results), 4),
         "paid_this_run_usd": round(sum(r.cost_usd for r in paid), 4),
@@ -134,6 +188,27 @@ def summarize_answers(results: Sequence[AnswerResult]) -> dict[str, Any]:
         # Latency only from real calls: a cache hit takes no time (D-020, D-022).
         "latency_p50_ms": statistics.median(latencies) if latencies else None,
         "latency_max_ms": latencies[-1] if latencies else None,
+    }
+    if any(r.agent is not None for r in results):
+        summary["agent"] = _summarize_agent(results)
+    return summary
+
+
+def _summarize_agent(results: Sequence[AnswerResult]) -> dict[str, Any]:
+    """How S2's loops went: what the limits did, what was read, what caching saved (D-043)."""
+    agents = [r.agent for r in results if r.agent is not None]
+    steps = Counter(a["steps"] for a in agents)
+    return {
+        "steps": {str(n): steps[n] for n in sorted(steps)},
+        "stopped_by": dict(Counter(a["stopped_by"] for a in agents if a["stopped_by"])),
+        "mean_searches": _mean(len(a["queries"]) for a in agents),
+        "mean_reads": _mean(len(a["read_ids"]) for a in agents),
+        "tool_errors": sum(a["tool_errors"] for a in agents),
+        "mean_largest_prompt_tokens": _mean(max(a["prompt_tokens"]) for a in agents),
+        "mean_cached_input_tokens": _mean(
+            r.usage.get("cache_read_input_tokens", 0) for r in results
+        ),
+        "cost_without_caching_usd": round(sum(a["cost_without_caching_usd"] for a in agents), 4),
     }
 
 
@@ -200,18 +275,32 @@ def run_answers(
         run_config |= {"k": k, "unit": unit, **settings}
         reads = "" if unit == "article" else f"-{unit}"
         name = f"s1-{retriever_name}{reads}-k{k}-{effort}_{split}"
+    if strategy == "s2":
+        retriever, settings = answer_retriever(DEFAULT_RETRIEVER, "article", articles)
+        run_config |= {
+            "prompt_version": AGENT_PROMPT_VERSION,
+            "max_steps": MAX_STEPS,
+            "max_prompt_tokens": MAX_PROMPT_TOKENS,
+            "search_results": SEARCH_RESULTS,
+            "snippet_words": SNIPPET_WORDS,
+            **settings,
+        }
     run_dir = start_run(name, run_config, runs_dir)
 
     results = []
     with LLMCache() as cache:
         llm = LLMClient(cache)
         for question in questions:
-            context = context_for(
-                strategy, question, articles_by_id=articles_by_id, retriever=retriever, k=k
-            )
-            result = answer_question(
-                llm, question, context, effort=effort, sections=unit != "article"
-            )
+            if strategy == "s2":
+                toolbox = ToolBox(retriever, articles_by_id)
+                result = answer_with_agent(llm, question, toolbox, effort=effort)
+            else:
+                context = context_for(
+                    strategy, question, articles_by_id=articles_by_id, retriever=retriever, k=k
+                )
+                result = answer_question(
+                    llm, question, context, effort=effort, sections=unit != "article"
+                )
             append_result(run_dir, asdict(result))
             results.append(result)
     write_summary(run_dir, summarize_answers(results))

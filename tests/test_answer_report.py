@@ -1,7 +1,7 @@
 import pytest
 
 from support_rag.answer_report import compare_strategies, format_report, strategy_name
-from support_rag.runs import append_result, start_run, write_summary
+from support_rag.runs import append_result, load_config, load_summary, start_run, write_summary
 
 QUESTIONS = [f"q{i}" for i in range(10)]
 
@@ -50,6 +50,44 @@ def _runs(tmp_path, right_by_strategy, effort="high", failed=(), split="dev_real
             append_result(judge, {"question_id": question_id, "correctness": grade})
         judge_runs.append(judge)
     return judge_runs
+
+
+def test_s2_is_compared_with_s1(tmp_path):
+    result = compare_strategies(_runs(tmp_path, {"s1": 6, "s2": 8}), runs_dir=tmp_path)
+    (comparison,) = result["comparisons"]
+    assert (comparison["better"], comparison["base"]) == ("s2", "s1")
+    assert comparison["difference"] == 20.0
+
+
+def test_the_report_shows_how_s2s_loops_went(tmp_path):
+    runs = _runs(tmp_path, {"s1": 6, "s2": 8})
+    answers = tmp_path / load_config(runs[1])["answers_run"]
+    write_summary(
+        answers,
+        load_summary(answers)
+        | {
+            "agent": {
+                "steps": {"2": 7, "6": 3},
+                "stopped_by": {"steps": 3},
+                "mean_searches": 1.5,
+                "mean_reads": 2.5,
+                "tool_errors": 1,
+                "mean_largest_prompt_tokens": 6000.0,
+                "mean_cached_input_tokens": 80.0,
+                "cost_without_caching_usd": 0.02,
+            }
+        },
+    )
+    report = format_report(compare_strategies(runs, runs_dir=tmp_path))
+    assert "## S2's loop" in report
+    assert "7 took 2, 3 took 6" in report
+    assert "steps: 3" in report
+    assert "without caching" in report
+
+
+def test_a_report_without_s2_has_no_loop_section(tmp_path):
+    runs = _runs(tmp_path, {"s0": 2, "s1": 6})
+    assert "S2's loop" not in format_report(compare_strategies(runs, runs_dir=tmp_path))
 
 
 def test_each_strategy_gets_its_rate_and_an_interval(tmp_path):

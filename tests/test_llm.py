@@ -1,6 +1,6 @@
 import pytest
 
-from support_rag.llm import LLMClient, cost_usd, run_batch
+from support_rag.llm import LLMClient, cost_usd, cost_without_caching, prompt_tokens, run_batch
 from support_rag.llm_cache import LLMCache
 
 REQUEST = {"model": "claude-haiku-5-5", "max_tokens": 100, "messages": []}
@@ -88,6 +88,38 @@ def test_a_cut_off_or_refused_answer_is_not_cached(cache, stop_reason):
     client.complete(REQUEST)
     assert api.calls == 2
     assert len(cache) == 0
+
+
+def test_a_tool_turn_is_cached_and_keeps_its_blocks(cache):
+    api = FakeMessages("tool_use")
+    client = LLMClient(cache, api)
+    first = client.complete(REQUEST)
+    second = client.complete(REQUEST)
+    assert api.calls == 1
+    assert first.complete is True
+    assert [block["type"] for block in second.content] == ["thinking", "text"]
+
+
+def test_cached_haiku_tokens_cost_a_tenth_and_writes_a_premium():
+    read = {"cache_read_input_tokens": 100_000}
+    write = {"cache_creation_input_tokens": 100_000}
+    assert cost_usd("claude-haiku-5-5", read) == pytest.approx(0.001)
+    assert cost_usd("claude-haiku-5-5", write) == pytest.approx(0.0125)
+
+
+def test_the_prompt_is_all_three_kinds_of_input_token():
+    usage = {"input_tokens": 1, "cache_read_input_tokens": 20, "cache_creation_input_tokens": 300}
+    assert prompt_tokens(usage) == 321
+
+
+def test_cost_without_caching_charges_the_whole_prompt_at_the_input_price():
+    usage = {
+        "input_tokens": 100,
+        "cache_read_input_tokens": 90_000,
+        "cache_creation_input_tokens": 9_900,
+        "output_tokens": 0,
+    }
+    assert cost_without_caching("claude-haiku-5-5", usage) == pytest.approx(0.01)
 
 
 def test_cost_uses_the_models_prices():

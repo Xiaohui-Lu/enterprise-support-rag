@@ -16,10 +16,16 @@ from support_rag import config
 from support_rag.runs import load_config, load_results, load_summary
 from support_rag.stats import N_RESAMPLES, bootstrap_ci, holm, mcnemar_exact, paired_bootstrap_ci
 
-STRATEGY_NAMES = {"s0": "S0, closed book", "s1": "S1", "s_star": "S*, gold articles"}
+STRATEGY_NAMES = {
+    "s0": "S0, closed book",
+    "s1": "S1",
+    "s2": "S2, agentic search",
+    "s_star": "S*, gold articles",
+}
 RETRIEVER_NAMES = {"bm25": "BM25", "dense": "dense search"}
-# (better-expected, baseline): what retrieval adds, what better retrieval would add, both.
-COMPARISONS = (("s1", "s0"), ("s_star", "s1"), ("s_star", "s0"))
+# (better-expected, baseline): what retrieval adds, what better retrieval would add, both,
+# and what letting the model search adds.
+COMPARISONS = (("s1", "s0"), ("s_star", "s1"), ("s_star", "s0"), ("s2", "s1"))
 
 
 def strategy_name(strategy: str, answers_config: Mapping[str, Any]) -> str:
@@ -74,6 +80,7 @@ def compare_strategies(
             "commit": answers_config["git"]["commit"],
             "name": strategy_name(strategy, answers_config),
             "generator": (answers_config["model"], answers_config["effort"]),
+            "agent": answers.get("agent"),
         }
 
     comparisons = []
@@ -131,6 +138,29 @@ def _provenance(strategies: Mapping[str, Mapping[str, Any]]) -> str:
     )
 
 
+def _agent_section(row: Mapping[str, Any]) -> list[str]:
+    """How S2's loops went (D-043). Costs are for the whole run."""
+    agent = row["agent"]
+    n = sum(agent["steps"].values())
+    steps = ", ".join(f"{count} took {step}" for step, count in agent["steps"].items())
+    limits = ", ".join(f"{name}: {count}" for name, count in agent["stopped_by"].items())
+    paid = row["cost_per_answer_usd"] * n
+    uncached = agent["cost_without_caching_usd"]
+    return [
+        "",
+        "## S2's loop",
+        "",
+        f"- Tool steps per question: {steps}.",
+        f"- Questions a limit ended: {limits or 'none'}.",
+        f"- Per question: {agent['mean_searches']:.1f} searches and {agent['mean_reads']:.1f} "
+        f"reads. The largest prompt averaged {agent['mean_largest_prompt_tokens']:,.0f} tokens.",
+        f"- Tool calls that came back as errors: {agent['tool_errors']}.",
+        f"- Prompt caching: {agent['mean_cached_input_tokens']:,.0f} of "
+        f"{row['mean_input_tokens']:,.0f} input tokens per question were read from the cache. "
+        f"The run cost ${paid:.4f}, and would have cost ${uncached:.4f} without caching.",
+    ]
+
+
 def format_report(result: Mapping[str, Any]) -> str:
     judge = result["judge"]
     any_strategy = next(iter(result["strategies"].values()))
@@ -146,7 +176,7 @@ def format_report(result: Mapping[str, Any]) -> str:
         f"- 95% intervals come from resampling the questions {N_RESAMPLES:,} times. Comparisons "
         "are paired on the same questions: the difference has a paired-bootstrap interval, "
         "and McNemar's exact test uses only the questions where the two strategies differ. "
-        "The Holm p-value accounts for making three comparisons (D-032).",
+        f"The Holm p-value accounts for making {len(result['comparisons'])} comparisons (D-032).",
         _provenance(result["strategies"]),
         "",
         "## Strategies",
@@ -180,6 +210,9 @@ def format_report(result: Mapping[str, Any]) -> str:
             f"| {c['difference']:+.1f} [{low:+.1f}, {high:+.1f}] | {c['only_a']} "
             f"| {c['only_b']} | {_p(c['p_value'])} | {_p(c['p_holm'])} |"
         )
+    agent_row = result["strategies"].get("s2")
+    if agent_row is not None and agent_row["agent"] is not None:
+        lines += _agent_section(agent_row)
     lines += [
         "",
         "Runs: judge "
@@ -191,10 +224,15 @@ def format_report(result: Mapping[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write_report(judge_runs: Sequence[Path], reports_dir: Path = config.REPORTS_DIR) -> Path:
+def write_report(
+    judge_runs: Sequence[Path],
+    reports_dir: Path = config.REPORTS_DIR,
+    name: str | None = None,
+) -> Path:
+    """Write reports/answers_<name>.md; `name` defaults to the split."""
     result = compare_strategies(judge_runs)
     split = next(iter(result["strategies"].values()))["split"]
-    path = reports_dir / f"answers_{split}.md"
+    path = reports_dir / f"answers_{name or split}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(format_report(result), encoding="utf-8", newline="\n")
     return path

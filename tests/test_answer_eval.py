@@ -2,8 +2,10 @@ from dataclasses import replace
 
 import pytest
 
+from support_rag.agent import AgentRun, ToolBox, snippet
 from support_rag.answer_eval import (
     answer_question,
+    answer_with_agent,
     check_test_run,
     context_for,
     pick_evenly,
@@ -35,6 +37,61 @@ class FakeLLM:
         self.requests.append(request)
         usage = {"input_tokens": 1000, "output_tokens": 200}
         return LLMResult(self.text, "end_turn", usage, 1500.0, self.cached, request["model"])
+
+
+def _agent_answer(monkeypatch, text="Do this [2].", cached=False):
+    """One S2 question whose loop made two model calls: a search, then the answer."""
+    usage_1 = {"input_tokens": 1000, "output_tokens": 100}
+    usage_2 = {"input_tokens": 200, "cache_read_input_tokens": 1000, "output_tokens": 300}
+    calls = (
+        LLMResult("", "tool_use", usage_1, 1000.0, cached, "claude-haiku-5-5"),
+        LLMResult(text, "end_turn", usage_2, 2000.0, cached, "claude-haiku-5-5"),
+    )
+
+    def fake_loop(llm, toolbox, question, *, effort):
+        toolbox.call("search", {"query": "domains"})
+        return AgentRun(calls, None)
+
+    monkeypatch.setattr("support_rag.answer_eval.run_agent", fake_loop)
+    toolbox = ToolBox(FixedRetriever(), ARTICLES)
+    return answer_with_agent(None, QUESTION, toolbox, effort="medium")
+
+
+def test_an_agent_answer_adds_up_every_model_call(monkeypatch):
+    result = _agent_answer(monkeypatch)
+    assert result.usage == {
+        "input_tokens": 1200,
+        "cache_read_input_tokens": 1000,
+        "output_tokens": 400,
+    }
+    assert result.latency_ms >= 3000.0
+    assert result.agent["steps"] == 1
+    assert result.agent["model_calls"] == 2
+    assert result.agent["prompt_tokens"] == [1000, 1200]
+
+
+def test_an_agent_answers_citations_map_to_the_articles_it_saw(monkeypatch):
+    result = _agent_answer(monkeypatch)
+    assert result.context_ids == ("B", "C")
+    assert result.cited_ids == ("C",)
+    assert result.context_sections == (snippet(ARTICLES["B"]), snippet(ARTICLES["C"]))
+
+
+def test_an_agent_answer_records_what_it_would_have_cost_without_caching(monkeypatch):
+    result = _agent_answer(monkeypatch)
+    assert result.agent["cost_without_caching_usd"] > result.cost_usd
+
+
+def test_input_tokens_in_a_summary_include_cached_ones(monkeypatch):
+    summary = summarize_answers([_agent_answer(monkeypatch)])
+    assert summary["mean_input_tokens"] == 2200.0
+    assert summary["agent"]["steps"] == {"1": 1}
+    assert summary["agent"]["mean_searches"] == 1.0
+
+
+def test_a_summary_of_other_strategies_has_no_agent_section():
+    result = answer_question(FakeLLM("Do this [1]."), QUESTION, [ARTICLES["A"]], effort="medium")
+    assert "agent" not in summarize_answers([result])
 
 
 def test_each_strategy_shows_the_right_articles():

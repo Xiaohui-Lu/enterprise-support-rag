@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     answer = commands.add_parser(
         "answer", help="answer a split with one strategy (paid API calls, cached)"
     )
-    answer.add_argument("--strategy", choices=["s0", "s1", "s_star"], required=True)
+    answer.add_argument("--strategy", choices=["s0", "s1", "s2", "s_star"], required=True)
     answer.add_argument(
         "--split", choices=["dev_real", "test"], default="dev_real", help="test: milestones only"
     )
@@ -127,6 +127,7 @@ def main(argv: list[str] | None = None) -> None:
     report_answers = commands.add_parser(
         "report-answers", help="% correct per strategy with CIs and paired tests, to reports/"
     )
+    report_answers.add_argument("--name", help="report name; default: the split")
     report_answers.add_argument(
         "runs", nargs="+", type=Path, help="one judge run per strategy, same judge settings"
     )
@@ -323,7 +324,7 @@ def run(args: argparse.Namespace) -> None:
         case "report-answers":
             from support_rag.answer_report import write_report
 
-            path = write_report(args.runs)
+            path = write_report(args.runs, name=args.name)
             print(path.read_text(encoding="utf-8"))
         case "report-tuning":
             from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K
