@@ -1501,6 +1501,26 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "To test context rot, I buried each question's gold articles among distractors, either the most similar articles in the help center or random ones, and grew the pile to 10, 40 and 90 thousand tokens. I sized by tokens, not by article count, because look-alike articles are 23% longer, so counting articles would have mixed up similarity and length. Each gold article sits at the same random depth in every version, so position can't explain a gap between the lines. It ran on all 350 test questions through the batch API for about $17."
 
+**Pilot (2026-11-13): the harness builds what this decision describes; 10 questions say nothing about rot.** Results are in [reports/context_rot_dev.md](../reports/context_rot_dev.md).
+- **The contexts are right.** A one-off script over the six runs checked three things on every question, and all held:
+  - The gold depths were the same in every arm.
+  - Every gold article sat at round(depth × n) distractors, counting gold articles ahead of it.
+  - Each size held all of the smaller size's distractors.
+- **The depths are spread evenly.** Over all 488 gold depths of the 400 real questions, each tenth of the range holds 38 to 56, against 49 expected.
+- **The cap held.** No prompt went over 100,000 tokens; the largest was 92,201. The estimate was off by −5.7% to +3.0%.
+- **Distractor counts at the same size.**
+  - Hard: medians of 11.5, 50 and 113 distractors at 10K, 40K and 90K.
+  - Random: medians of 13, 57.5 and 122.5.
+  - The gap is smaller than 23%, because look-alike articles beyond the top 20 are shorter (D-044).
+- **Answers cite hard distractors.** 26 of the 30 answers in the hard arms cited a non-gold article, against 1 of 30 in the random arms. Look-alike articles get used, as the trade-offs above expected.
+- **The accuracy numbers are noise, and they show one weakness of the design.**
+  - Gold only scored 60% on these 10 questions, and every arm scored 80% or 90%.
+  - The arms' extra wins came from 3 questions, mostly close calls between partial and correct. For `sim-113` and `sim-165`, S\*'s answer and the arms' answers cite the same gold article and say nearly the same thing. `sim-113` has already flipped between partial and correct across S1, S2 and S3 (D-044).
+  - So the gold-only arm is a single sample that all six comparisons share. An unlucky draw of it moves all six together. Each paired interval is still valid on its own, but six differences in the same direction aren't six separate findings.
+  - A fresh gold-only sample isn't possible without bypassing the cache: for single-article questions, its prompt is identical to S\*'s.
+- **Cost.** $0.41: $0.15 for the answers and $0.26 for judging. Hard arms cost more to judge, because their answers cite more articles. At these rates, the M2 run comes to about $14: $5.10 for the answers and $9.20 for judging.
+- **Runs.** The answer runs are `20261113-152339_rot-hard-10k-medium_dev_real`, `20261113-152704_rot-hard-40k-medium_dev_real`, `20261113-153028_rot-hard-90k-medium_dev_real`, `20261113-153335_rot-random-10k-medium_dev_real`, `20261113-153542_rot-random-40k-medium_dev_real` and `20261113-153748_rot-random-90k-medium_dev_real`, all from commit `5ddf4c6` (the harness plus a fix to `--help` text) with a clean tree. Each has a `judge-high` run.
+
 ---
 
 ## Coming up
