@@ -106,11 +106,11 @@ Every strategy uses the same generator model and the same output format: an answ
 
 ## 9. Context-rot test (RQ5)
 
-- 60 test questions, stratified by single/multi-article.
-- Context = the gold article(s) + N distractor articles, N ∈ {0, 10, 50, 200}, which is ≈1K to ≈95K tokens by tiktoken's count. Step 6 checks the count with Claude's tokenizer, because Claude Haiku 5.5 charges more per token above 100K.
+- All 350 test questions, reported overall and by single/multi-article (D-045; the plan was 60).
+- Context = the gold article(s) + distractor articles up to an estimated 10K, 40K or 90K Claude tokens, and the gold only (S\*). Sized by tokens, not article count, because look-alike articles are 23% longer; 90K stays under the 100K price line (D-044, D-045).
 - Two distractor types: **hard** (top-ranked non-gold articles from the retriever, which look relevant but aren't) and **random** (any other articles).
-- Gold articles go at a random position, recorded per question, so position effects ("lost in the middle") can be checked.
-- Same model, prompt and judge as the main runs.
+- Distractors are shuffled. Each gold article gets one random depth per question, the same at every size and type, so position effects ("lost in the middle") can be checked without confounding the lines.
+- Same model, prompt and judge as the main runs; answers through the batch API.
 - Output: % correct against context size, one line per distractor type. If the hard line falls faster, similarity hurts more than length alone, as [Chroma's 2025 context-rot study](https://research.trychroma.com/context-rot) found, here checked on enterprise support data.
 
 ## 10. Router (RQ6)

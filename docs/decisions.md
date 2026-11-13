@@ -1439,6 +1439,70 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-045 · The context-rot test: sized by tokens, look-alike or random distractors, each gold article at one random depth (Step 6)
+
+**Context.**
+- **The question.** RQ5 asks how fast accuracy falls as look-alike articles are added to the context.
+- **The design (section 9).**
+  - 60 test questions, stratified by single- and multi-article.
+  - The gold articles plus N distractors, with N ∈ {0, 10, 50, 200}.
+  - Hard distractors (the retriever's top-ranked non-gold articles) or random ones.
+  - The gold at a random position, with the same model, prompt and judge as the main runs.
+- **Look-alike articles are longer.** On the real dev questions, dense search's top-ranked non-gold articles average 897 Claude tokens, against 727 for an article drawn at random: 23% longer. At the same N, a hard context is longer than a random one. N=200 comes to about 146K tokens with random distractors and 193K with hard ones, over the 100K price line (D-044).
+- **The test set.** 280 single-article and 70 multi-article questions. The gold articles come to 1.2K tokens at the median and 9.2K at most.
+- **Look-alike articles aren't pure noise.** S1 was graded correct on all 8 dev questions where its top 10 lacked a gold article (D-044).
+
+**Decision (written and committed before any context-rot run).**
+- **Sizes are set in tokens, not articles.** The arms are the gold only, then prompts of an estimated 10,000, 40,000 and 90,000 tokens. Distractors are added until the next one would pass the size, using D-044's cap and token estimate, so no prompt crosses the price line.
+- **The distractor pools.**
+  - **Hard:** the question's top 200 articles from dense search (voyage-4-nano, exact search in Postgres), without the gold articles, best first.
+  - **Random:** 400 non-gold articles drawn at random for each question.
+  - Each size takes its distractors from the start of the pool, so a larger context holds the smaller one's distractors plus more.
+  - Hard distractors aren't checked for the answer. Each run counts the answers that cite a distractor instead.
+- **Order and position.**
+  - The chosen distractors are shuffled.
+  - Each gold article gets one depth per question, drawn uniformly between 0 and 1: the share of the distractors placed in front of it. A gold article at depth 0.3 with 40 distractors has 12 in front of it.
+  - The depth is the same at every size and for both types, so position can't explain a gap between the lines.
+- **Randomness is seeded per question,** from a fixed seed, the question's ID and what's being drawn. A question's contexts don't depend on which other questions are in the run, so a pilot's contexts are exactly the full run's.
+- **The gold-only arm is S\*.** It uses the same prompt and model, so its answers and grades come from the existing S\* runs: M1's on test, and the dev run's on dev.
+- **The questions are all 350 real test questions,** run at M2 and reported overall and separately for single- and multi-article questions.
+- **The calls.**
+  - Every answer goes through the batch API, because latency isn't what this test measures. Each arm is its own batch, because the whole grid comes close to the batch API's 256 MB limit.
+  - The prompt is `answer-v1`, with Claude Haiku 5.5 at effort `medium`. The judge is judge-v1 at `high`, through the batch API.
+- **The analysis.**
+  - % correct per arm, with intervals.
+  - Each arm paired against the gold only, and hard against random at each size.
+  - Single- against multi-article questions.
+  - At 90K, the gold article's depth in thirds, as a direction only.
+  - The answers that cite a distractor.
+- **A dev pilot comes first:** 10 dev questions in all 6 arms, to check sizes, positions and costs. Nothing is tuned on it.
+- **Cost.** About $0.50 for the pilot. At M2, about $17: about $5.30 for 2,100 answers and $11.60 for grading them.
+
+**Alternatives.**
+- Article counts, as designed: hard contexts would be 23% longer than random ones, and N=200 would cross the price line.
+- Matching both tokens and article count: possible only by cutting articles, so they'd stop being real help-center articles.
+- Hard distractors from lower ranks, skipping the top 10 so they're less likely to hold the answer: the cut-off would be arbitrary, and less like what S3 actually sees.
+- Fixed positions (start, middle, end) as separate arms: the classic lost-in-the-middle test, but 3 times the runs.
+- Gold articles in rank order among hard distractors, as in S3: the gold's position would then differ between the hard and random lines.
+- 60 questions, as designed: only a drop of about 11 points could be seen. 140 (all 70 multi-article and 70 single) would cost about $6.70 and see about 7 points.
+- Real-time calls: twice the price, for a latency this test doesn't measure.
+
+**Why.**
+- Tokens are what "context length" means: they're what the model reads and what it costs.
+- With the same depths for both types and every size, the lines differ only in which distractors they hold and how many tokens they add up to.
+- 350 questions give paired intervals of roughly ±4.5 points overall and ±10 on the 70 multi-article questions, assuming about 18% of questions flip either way.
+
+**Trade-offs.**
+- At the same size, a random context holds more, shorter articles: about 53 against 43 at 40K. The lines still differ in article count.
+- Hard distractors can help. A hard line above the random one wouldn't mean that similarity is harmless.
+- Each arm runs once, and the generator isn't deterministic. The intervals cover which questions were drawn, not reruns.
+- With random depths, each third holds about a third of the questions, so the position result is only a direction.
+- The gold-only answers came from real-time calls, and the rest from the batch API. The requests have the same format and model, and the batch API doesn't change answers.
+
+**In short.** "To test context rot, I buried each question's gold articles among distractors, either the most similar articles in the help center or random ones, and grew the pile to 10, 40 and 90 thousand tokens. I sized by tokens, not by article count, because look-alike articles are 23% longer, so counting articles would have mixed up similarity and length. Each gold article sits at the same random depth in every version, so position can't explain a gap between the lines. It ran on all 350 test questions through the batch API for about $17."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
