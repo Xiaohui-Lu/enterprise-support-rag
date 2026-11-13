@@ -26,6 +26,8 @@ uv run srag answer --strategy s1 --limit 10       # answers on dev_real (paid, c
 uv run srag answer --strategy s1 --retriever dense --k 5   # S1 searches Postgres by default; or --unit h2, or --retriever bm25 (D-042)
 uv run srag answer --strategy s2 --limit 5        # S2, the agent loop over search and read; needs Postgres (D-043)
 uv run srag answer --strategy s3 --k 100          # S3, long context: K is required, capped below 90K tokens (D-044)
+uv run srag context-rot --distractors hard --size 40000 --limit 10   # one context-rot arm via the batch API; or random, 10000 or 90000 (D-045)
+uv run srag report-rot runs/<S* judge> runs/<arm judge runs>        # % correct by context size, to reports/context_rot_<split>.md
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)
 uv run srag judge runs/<answers> --effort high --batch   # grade an answer run (paid, cached)
 uv run srag validate-judge runs/<judge runs>      # judge vs labels: kappa, to reports/judge_validation.md

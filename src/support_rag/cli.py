@@ -119,6 +119,33 @@ def main(argv: list[str] | None = None) -> None:
         help="what S1 reads: whole articles (default) or each one's best h2 section (D-042)",
     )
     answer.add_argument("--limit", type=int, help="answer only this many questions (a pilot)")
+    rot = commands.add_parser(
+        "context-rot",
+        help="one context-rot arm: gold among distractors, via the batch API (paid, cached)",
+    )
+    rot.add_argument("--distractors", choices=["hard", "random"], required=True)
+    rot.add_argument(
+        "--size",
+        type=int,
+        choices=[10_000, 40_000, 90_000],
+        required=True,
+        help="estimated prompt tokens (D-045)",
+    )
+    rot.add_argument(
+        "--split", choices=["dev_real", "test"], default="dev_real", help="test: milestones only"
+    )
+    rot.add_argument(
+        "--milestone", choices=["M1", "M2", "M3"], help="required for the test split (D-034)"
+    )
+    rot.add_argument("--limit", type=int, help="answer only this many questions (a pilot)")
+    rot.add_argument("--batch-id", help="collect a batch submitted earlier; never pays twice")
+    report_rot = commands.add_parser(
+        "report-rot", help="%% correct by context size, hard vs random, to reports/ (D-045)"
+    )
+    report_rot.add_argument("--name", help="report name; default: the split")
+    report_rot.add_argument(
+        "runs", nargs="+", type=Path, help="judge runs: the gold only (S*) and each arm"
+    )
     judge = commands.add_parser("judge", help="grade an answer run with the judge (paid, cached)")
     judge.add_argument("answers_run", type=Path, help="the answer run directory to grade")
     judge.add_argument("--effort", choices=["low", "medium", "high"], required=True)
@@ -316,6 +343,27 @@ def run(args: argparse.Namespace) -> None:
             )
             print(f"wrote {run_dir}\n")
             print(json.dumps(load_summary(run_dir), indent=2))
+        case "context-rot":
+            import json
+
+            from support_rag.context_rot import run_context_rot
+            from support_rag.runs import load_summary
+
+            run_dir = run_context_rot(
+                args.distractors,
+                args.size,
+                args.split,
+                limit=args.limit,
+                milestone=args.milestone,
+                batch_id=args.batch_id,
+            )
+            print(f"wrote {run_dir}\n")
+            print(json.dumps(load_summary(run_dir), indent=2))
+        case "report-rot":
+            from support_rag.rot_report import write_rot_report
+
+            path = write_rot_report(args.runs, name=args.name)
+            print(path.read_text(encoding="utf-8"))
         case "judge":
             import json
 

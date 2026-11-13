@@ -78,6 +78,8 @@ class AnswerResult:
     agent: dict[str, Any] | None = None
     # S3 only: K, how many articles the token cap let through, and the estimate (D-044).
     long_context: dict[str, Any] | None = None
+    # The context-rot test only: the arm, the distractors and where the gold went (D-045).
+    rot: dict[str, Any] | None = None
 
 
 def reading_context(hits: Sequence[Hit], articles_by_id: Mapping[str, Article]) -> list[Article]:
@@ -243,26 +245,53 @@ def summarize_answers(results: Sequence[AnswerResult]) -> dict[str, Any]:
         summary["agent"] = _summarize_agent(results)
     if any(r.long_context is not None for r in results):
         summary["long_context"] = _summarize_long_context(results)
+    if any(r.rot is not None for r in results):
+        summary["rot"] = _summarize_rot(results)
     return summary
 
 
+def _spread(values: Sequence[float], digits: int | None = None) -> dict[str, float]:
+    ordered = sorted(values)
+    spread = {"min": ordered[0], "median": statistics.median(ordered), "max": ordered[-1]}
+    return spread if digits is None else {k: round(v, digits) for k, v in spread.items()}
+
+
+def _price_line_check(estimated: Sequence[int], real: Sequence[int]) -> dict[str, Any]:
+    """The check on the token cap: the API's real prompt sizes against the 100K price line,
+    and how far the local estimate was from them. An error above zero means the estimate
+    was low, the side that risks the price line (D-044)."""
+    return {
+        "max_prompt_tokens": max(real),
+        "over_price_line": sum(r > LONG_PROMPT_TOKENS for r in real),
+        "estimate_error": _spread([(r - e) / r for e, r in zip(estimated, real, strict=True)], 3),
+    }
+
+
 def _summarize_long_context(results: Sequence[AnswerResult]) -> dict[str, Any]:
-    """What S3's token cap did, and how far the local estimate was from the API's count.
-    An error above zero means the estimate was low, the side that risks the price line."""
+    """What S3's token cap did, and the check on it."""
     rows = [(r.long_context, prompt_tokens(r.usage)) for r in results if r.long_context]
-    sent = sorted(lc["sent"] for lc, _ in rows)
-    errors = sorted((real - lc["estimated_prompt_tokens"]) / real for lc, real in rows)
     return {
         "k": rows[0][0]["k"],
         "capped": sum(lc["capped"] for lc, _ in rows),
-        "articles_sent": {"min": sent[0], "median": statistics.median(sent), "max": sent[-1]},
-        "max_prompt_tokens": max(real for _, real in rows),
-        "over_price_line": sum(real > LONG_PROMPT_TOKENS for _, real in rows),
-        "estimate_error": {
-            "min": round(errors[0], 3),
-            "median": round(statistics.median(errors), 3),
-            "max": round(errors[-1], 3),
-        },
+        "articles_sent": _spread([lc["sent"] for lc, _ in rows]),
+        **_price_line_check(
+            [lc["estimated_prompt_tokens"] for lc, _ in rows], [real for _, real in rows]
+        ),
+    }
+
+
+def _summarize_rot(results: Sequence[AnswerResult]) -> dict[str, Any]:
+    """One context-rot arm: how many distractors went in, the check on the token cap, and
+    how many answers cited a distractor (D-045)."""
+    rows = [r for r in results if r.rot]
+    return {
+        "distractors": rows[0].rot["distractors"],
+        "size": rows[0].rot["size"],
+        "n_distractors": _spread([r.rot["n_distractors"] for r in rows]),
+        **_price_line_check(
+            [r.rot["estimated_prompt_tokens"] for r in rows], [prompt_tokens(r.usage) for r in rows]
+        ),
+        "cited_a_distractor": sum(any(c not in r.gold_ids for c in r.cited_ids) for r in rows),
     }
 
 
