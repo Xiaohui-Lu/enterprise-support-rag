@@ -162,7 +162,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | 3 | Generation and judge: S0, S1 on BM25, S*; judge validated on hand labels | LLM provider and models, judge rubric, cost tracking | Done |
 | ✅ M1 | Public repo; README with S0/S1/S* results and confidence intervals | | Done |
 | 4 | Postgres + pgvector, embeddings, hybrid fusion, reranker, chunking (RQ2) | Postgres vs a vector DB, keyword engine, embedding model, reranker | Done |
-| 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | In progress |
+| 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | Done |
 | 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | |
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | |
 | 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | |

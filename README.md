@@ -2,7 +2,7 @@
 
 A support assistant for a 6,221-article help center, built to answer one question with data: **when do retrieval, agentic search and long context each pay off?** Closed-book answering, single-pass RAG, agentic search and long-context prompting run on the [WixQA](https://huggingface.co/datasets/Wix/WixQA) benchmark with the model held constant, and are compared on correctness, cost and latency.
 
-> Work in progress: Step 3 of 10 is done (milestone M1). See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Work in progress: Steps 0 to 5 are done, and the last milestone reached is M1. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results so far (M1)
 
@@ -72,7 +72,7 @@ The dev/test split lives in `data/splits/splits.json`. It was generated once wit
 - [Experiment design](docs/experiment-design.md): research questions, splits, strategies, metrics, roadmap
 - [Decision log](docs/decisions.md): what was chosen, what else was considered, and why
 - [Porting to a new dataset](docs/porting.md): what to redo, including how many labels
-- Reports: [test answers (M1)](reports/answers_test.md), [dev answers](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md), [BM25 retrieval](reports/retrieval_bm25.md), [dense retrieval](reports/retrieval_dense.md), [hybrid retrieval](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [sections](reports/retrieval_sections.md), [reranking on sections](reports/retrieval_rerank_sections.md), [Postgres and HNSW](reports/retrieval_pgvector.md), [S1 on dense search](reports/tuning_s1_reading.md), [corpus statistics](reports/corpus_stats.md)
+- Reports: [test answers (M1)](reports/answers_test.md), [dev answers](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md), [BM25 retrieval](reports/retrieval_bm25.md), [dense retrieval](reports/retrieval_dense.md), [hybrid retrieval](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [sections](reports/retrieval_sections.md), [reranking on sections](reports/retrieval_rerank_sections.md), [Postgres and HNSW](reports/retrieval_pgvector.md), [S1 on dense search](reports/tuning_s1_reading.md), [S2 on dev](reports/answers_s2_dev.md), [corpus statistics](reports/corpus_stats.md)
 
 ## Data
 

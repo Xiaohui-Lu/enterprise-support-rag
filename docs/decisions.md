@@ -1327,6 +1327,30 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "S2 is a hand-written loop with two tools. Search returns numbered 50-word previews and read returns the full article, and the loop ends when the model writes its answer in the same format as every other strategy. I dropped the answer tool the design had, because tool input is JSON and streams badly. Two limits, 6 steps and 30,000 prompt tokens, bound the worst case at about a cent per question, and hitting one forces a final answer from what was read instead of throwing it away. Prompt caching halves the input cost, not 90%, because every token is still written once and the loops are short."
 
+**Outcome (2026-11-13): the loop works, no limit binds, and S2 trails S1 by 6 points on dev, within noise.** Results are in [reports/answers_s2_dev.md](../reports/answers_s2_dev.md).
+
+| 50 real dev questions | % correct [95% CI] | Against S1 [95% CI] | Only it right / only S1 right | Input tokens | Cost per answer | Latency p50 |
+|---|---:|---|---:|---:|---:|---:|
+| **S1, dense k=10 (the default)** | 90.0% [80, 98] | | | 8,758 | $0.00122 | 3.5 s |
+| S2, agentic search | 84.0% [74, 94] | −6 points [−16, +2] | 1 / 4 | 8,972 | $0.00098 | 4.7 s |
+
+- **The loop works.** All 50 questions ended with the model's own answer. No limit fired, no tool call failed, no citation was invalid, and one answer declined. In the 5-question pilot, the API accepted every re-sent turn, and the cache was read from the second call on.
+- **The limits stay.** None of the 50 questions hit one, against D-043's threshold of more than 5, so 6 steps and 30,000 tokens aren't tuned. The loops are short: 43 questions took 2 steps (search, then read), 6 took 3 and 1 took 4, with 1.7 searches and 2.0 reads per question. The largest prompt averaged 4,889 tokens.
+- **No verdict against S1, as planned.** The difference is −6 [−16, +2], McNemar p 0.375, and S1's 90% was tuned on these same questions (D-042). D-043 left this comparison to the test set at M2.
+- **S2 searched better but read less, and neither changed a grade.** Its searches surfaced every gold article in 45 questions, against 42 for S1's top 10: 3 that S1 missed, and none that S1 had and S2 didn't. But it read every gold article in only 37. On the 9 questions involved (3 found, 6 seen but not fully read), both strategies were graded correct.
+- **Why it lost 4.**
+  - Two come down to how the answer was written. S2 read the gold article and was graded partial, once for leaving out a note about name changes and once for giving a different fix from the reference's.
+  - The other two had no gold article in either strategy's context. S1 answered correctly from its 10 full articles. S2 read 2 and 4 articles, then answered for a different Wix product (`sim-064`), or said "yes, in some cases" where the answer is no (`sim-184`).
+  - Its one win, `sim-113`, had the gold article in both contexts.
+- **Caching is what makes S2 cheaper than S1.**
+  - S2 sends about as many input tokens over its 3 calls as S1 does in one, but 45% of them are cache reads at a tenth of the price. So it costs 20% less per answer. Without caching it would have cost $0.00122, exactly S1's figure.
+  - Caching cut the input cost by 27%, not the half the example above suggested. With 2 steps, most tokens arrive in the last tool result, so they're written once at 1.25 times the price and never read back.
+- **Latency.**
+  - S2 takes 1.2 s more than S1 at the median, for 3 model calls instead of 1. Its tools took 130 ms per question at the median.
+  - The first uncached question of each S2 run took 27 to 30 s, nearly all of it in model calls, while S1's first questions took 3 to 5 s. The cause isn't known yet. It affects the maximum, not the median, and goes to Step 8, where latency is measured.
+- **Where these numbers come from.** The tables are in the report. The search-and-read breakdown and the lost questions came from one-off scripts over the run records. The runs are `20261108-221507_s2-medium_dev_real` (the 5-question pilot) and `20261113-002731_s2-medium_dev_real`, both from commit `cd3117f` with a clean tree. The judge run is `20261113-003350_judge-high_20261113-002731_s2-medium_dev_real`.
+- **Cost.** $0.26 against the $0.50 estimate: $0.05 for the answers, including the pilot, and $0.21 for judging.
+
 ---
 
 ## Coming up
