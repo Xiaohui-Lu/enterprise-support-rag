@@ -64,7 +64,7 @@ Every strategy uses the same generator model and the same output format: an answ
 | S0 | Closed-book | The question only | 1 |
 | S1 | Single-pass RAG | Top-k results from the best retriever (RQ2) | 1 |
 | S2 | Agentic search | Tools: `search(query)` returns numbered 50-word previews; `read(number)` returns full text; the loop ends when the model writes its answer. Capped at 6 steps and a 30,000-token prompt (D-043) | Up to 7 |
-| S3 | Long context | Top-K retrieved full articles, K ∈ {20, 50, 100} | 1 |
+| S3 | Long context | Top-K retrieved full articles, K ∈ {20, 50, 100}, best first, stopping before an estimated 90,000-token prompt (D-044) | 1 |
 | S* | Oracle context | Exactly the gold articles | 1 |
 
 - **S0** is a baseline and a contamination check: newer models may have seen Wix's public help pages, or WixQA itself. It is never a production route.
@@ -163,7 +163,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | ✅ M1 | Public repo; README with S0/S1/S* results and confidence intervals | | Done |
 | 4 | Postgres + pgvector, embeddings, hybrid fusion, reranker, chunking (RQ2) | Postgres vs a vector DB, keyword engine, embedding model, reranker | Done |
 | 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | Done |
-| 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | |
+| 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | In progress |
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | |
 | 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | |
 | 8 | Service: FastAPI with streaming, React chat UI with citations, Redis cache and rate limit | FastAPI vs Django, Redis vs RabbitMQ (or neither), SSE vs WebSockets | |

@@ -1353,6 +1353,59 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-044 · S3: S1 with more articles, and a token cap below the 100K price line (Step 6)
+
+**Context.**
+- **What S3 is.** S3 tests the main alternative to precise retrieval: give the model a lot and let it find the answer. The help center is about 2.9M tokens by tiktoken's count and about 4.5M by Claude's, beyond Haiku 5.5's 1M-token window. So long context here means many retrieved articles in one prompt, and the design set K ∈ {20, 50, 100} (section 5).
+- **The price line.** Haiku 5.5 bills a prompt over 100,000 tokens at the higher rate for the whole request: input goes from $0.10 to $0.50 per million tokens, and output from $0.50 to $2.50.
+- **Claude's tokenizer counts more than tiktoken.** On 100 dev prompts (S1 dense k=10 and S\*), Claude's input tokens fit 143 + 1.536 × the articles' tiktoken count. On the 53 prompts over 3,000 tokens, the fit was off by −7.8% to +8.4%, median −0.4%. Those prompts were at most 21,591 tokens, so 90K is outside the fitted range.
+- **Estimated prompt sizes on the 50 real dev questions,** with dense search's ranking:
+
+| | Median | 95th percentile | Over 90K | Over 100K |
+|---|---:|---:|---:|---:|
+| K=20 | 17K | 30K | 0 | 0 |
+| K=50 | 46K | 59K | 0 | 0 |
+| K=100 | 94K | 107K | 38 | 12 |
+
+  The run records keep each question's top 20 only, so ranks 21 to 100 are estimated at the mean of ranks 11 to 20 (625 tiktoken tokens per article, against 472 for the corpus).
+
+**Decision (written and committed before any S3 run).**
+- **S3 is S1 with a larger K, and nothing else changes:** the same dense search (voyage-4-nano, exact search in Postgres), the same `answer-v1` prompt, whole articles, best first. S3 against S1 then measures only "more articles".
+- **K ∈ {20, 50, 100}, untuned.**
+- **A token cap of 90,000.** Articles are added in rank order, and the context stops at the first article that would take the estimated prompt past 90,000 tokens.
+  - The estimate is 1.54 × tiktoken's count of the system prompt, the question and each numbered article. It runs locally, so the cap adds no network call.
+  - The 10% margin covers the worst error seen: a prompt estimated at 90,000 tokens and 8.4% low is still about 98,300.
+  - The context is always the top n of the ranking. A lower-ranked article never takes the place of a better one that didn't fit.
+  - If the top article alone were over the budget, the question fails with an error instead of getting an empty context, which would silently turn it into closed book. The longest article is about 16,300 tokens, so this can't happen here.
+- **Every answer records** the estimate, how many articles were sent and whether the cap cut the list. The summary counts prompts over 100,000 tokens from the API's own usage, which is the check on the estimate. If any dev prompt goes over, the budget is lowered before M2, by enough that the worst error seen would have stayed under.
+- **What dev can say.** S1 is at 90% on dev, so S3 can win at most 5 questions, and it would need 4 fixed and 0 broken to clear D-036's bar. Dev checks that S3 works, what the cap does, what each K costs and how S3 fails. No K is chosen. All three run on test at M2, because the cost-vs-correctness chart needs every point.
+- **The judge doesn't change.** It reads only the articles an answer cites, so its cost doesn't grow with K.
+- **The runs.** A 5-question pilot at K=100, the only K the cap affects, then the 50 real dev questions at K=20, 50 and 100 in real time, because latency on a 90K-token prompt is part of S3's cost. Each is graded by judge-v1 at `high` through the batch API (D-031).
+- **Cost.** About $1.50: about $0.80 for the answers ($0.10, $0.25 and $0.46 for K=20, 50 and 100) and about $0.65 for judging 150 answers.
+
+**Alternatives.**
+- Paying the higher rate at K=100: exactly 100 articles every time, but 12 of 50 dev questions would cross the line, which roughly doubles K=100's cost (about $0.019 a question against $0.009). No service would ship that.
+- Anthropic's token-counting endpoint: exact and free, so the margin could shrink to almost nothing. But it adds a network call to every question, with its own rate limit, to gain about 10% more articles at K=100 only.
+- Truncating long articles so that 100 always fit: cuts text from the best-ranked articles too.
+- Skipping an article that doesn't fit and trying smaller ones further down: more articles under the same budget, but the context stops being the top n, so K no longer means a rank cutoff.
+- The best article last, next to the question: may help, since models use the ends of a long context best. But it changes two things against S1 at once, and the context-rot test measures position directly.
+- Dropping K=100: no cap is needed at all, since K=50 stays under 70K, but the curve would stop at about 46K tokens and couldn't say anything about long context near the price line.
+- Prompt caching: nothing to reuse, because each question's articles differ, and the system prompt is too short to cache.
+
+**Why.**
+- Changing one thing keeps the comparison clean: if S3 and S1 differ, it's because of how much the model read.
+- The cap is where the money is. For a question whose top 100 articles come to 104,000 tokens, sending all 100 costs about $0.052 in input. Sending the 86 or so that fit under 90,000 costs about $0.009. The articles dropped are the lowest-ranked ones, the least likely to hold the answer.
+
+**Trade-offs.**
+- "K=100" mostly means "about 90,000 tokens of articles": the cap is expected to shorten about 38 of the 50 dev questions. Each run reports how many articles were actually sent.
+- The ratio was fitted on prompts up to about 22K tokens and is used at 90K. The pilot checks it before the full runs.
+- K=50 and K=100's estimates assume ranks 21 to 100 look like ranks 11 to 20. The runs record the real sizes.
+- On 50 questions, S3's results can't separate the three K values from each other or from S1, unless the effect is large.
+
+**In short.** "S3 is S1 with more articles: the same search, the same prompt, best first, so the only thing that changes is how much the model reads. Haiku charges five times as much for the whole request once a prompt passes 100,000 tokens, so S3 adds articles in rank order and stops before an estimated 90,000. The 10% margin covers the error in my local token estimate, and every run checks the real count against the line. For a question whose top 100 articles come to 104,000 tokens, that's about a cent instead of five."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
