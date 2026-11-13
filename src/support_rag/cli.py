@@ -154,7 +154,7 @@ def main(argv: list[str] | None = None) -> None:
     )
     judge.add_argument("--batch-id", help="collect a batch submitted earlier; never pays twice")
     report_answers = commands.add_parser(
-        "report-answers", help="% correct per strategy with CIs and paired tests, to reports/"
+        "report-answers", help="%% correct per strategy with CIs and paired tests, to reports/"
     )
     report_answers.add_argument("--name", help="report name; default: the split")
     report_answers.add_argument(
