@@ -4,7 +4,8 @@ import pytest
 
 from support_rag.judge import SYSTEM, build_judge_request, parse_verdict
 from support_rag.judge_eval import judge_answer, judge_request, summarize_verdicts
-from support_rag.llm import LLMResult
+from support_rag.llm import LLMClient, LLMResult, run_batch
+from support_rag.llm_cache import LLMCache
 from support_rag.records import Article, Question
 
 ARTICLES = {
@@ -138,3 +139,53 @@ def test_another_model_can_be_asked_the_same_question():
     )
     assert other["model"] == "claude-opus-5-5"
     assert {**other, "model": judge["model"]} == judge
+
+
+# summarize_verdicts() after a batch
+
+
+class Obj:
+    def __init__(self, **fields):
+        self.__dict__.update(fields)
+
+
+class FakeBatches:
+    """Stands in for client.messages.batches: answers every request with a verdict."""
+
+    def create(self, requests):
+        self.requests = requests
+        return Obj(id="msgbatch_1")
+
+    def retrieve(self, batch_id):
+        return Obj(processing_status="ended")
+
+    def results(self, batch_id):
+        verdict = {"reasoning": "ok", "correctness": "correct", "grounded": "yes"}
+        for r in self.requests:
+            response = {
+                "model": r["params"]["model"],
+                "stop_reason": "end_turn",
+                "content": [{"type": "text", "text": json.dumps(verdict)}],
+                "usage": {"input_tokens": 4500, "output_tokens": 800},
+            }
+            message = Obj(to_dict=lambda response=response: response)
+            yield Obj(custom_id=r["custom_id"], result=Obj(type="succeeded", message=message))
+
+
+class NoRealTimeCalls:
+    def stream(self, **request):
+        raise AssertionError("every verdict should come from the cache")
+
+
+def test_paid_this_run_counts_this_runs_batch_but_not_earlier_cache_hits(tmp_path):
+    answers = [_answer("Answer [1].", ["A"]), _answer("Answer [2].", ["B"])]
+    requests = [judge_request(a, QUESTION, ARTICLES, effort="high") for a in answers]
+    with LLMCache(tmp_path / "cache.sqlite") as cache:
+        run_batch(requests[:1], cache, batches=FakeBatches(), poll_seconds=0, log=print)  # earlier
+        batch = run_batch(requests, cache, batches=FakeBatches(), poll_seconds=0, log=print)
+        llm = LLMClient(cache, NoRealTimeCalls())
+        results = [judge_answer(llm, a, QUESTION, ARTICLES, effort="high") for a in answers]
+    assert all(r.cached for r in results)  # both are replayed from the cache
+    summary = summarize_verdicts(results, batch_cost_usd=batch["cost_usd"])
+    assert summary["paid_this_run_usd"] == pytest.approx(results[1].cost_usd)
+    assert summary["paid_this_run_usd"] == pytest.approx(summary["cost_usd"] / 2)

@@ -117,7 +117,11 @@ def judge_answer(
     )
 
 
-def summarize_verdicts(results: Sequence[JudgedAnswer]) -> dict[str, Any]:
+def summarize_verdicts(
+    results: Sequence[JudgedAnswer], *, batch_cost_usd: float = 0.0
+) -> dict[str, Any]:
+    """`batch_cost_usd` is what this run's batch cost (`run_batch`'s `cost_usd`). Its results
+    reach the run through the cache, so they look cached, but this run paid for them."""
     n = len(results)
     grades = Counter(r.correctness for r in results)
     grounded = Counter(r.grounded for r in results if r.judged and r.grounded != "n/a")
@@ -131,7 +135,9 @@ def summarize_verdicts(results: Sequence[JudgedAnswer]) -> dict[str, Any]:
         "grounded": dict(grounded),
         "judge_calls": sum(r.judged for r in results),
         "cost_usd": round(sum(r.cost_usd for r in results), 4),
-        "paid_this_run_usd": round(sum(r.cost_usd for r in results if not r.cached), 4),
+        "paid_this_run_usd": round(
+            batch_cost_usd + sum(r.cost_usd for r in results if not r.cached), 4
+        ),
     }
 
 
@@ -183,5 +189,6 @@ def run_judge(
             result = judge_answer(llm, answer, question, articles_by_id, effort=effort)
             append_result(run_dir, asdict(result))
             results.append(result)
-    write_summary(run_dir, summarize_verdicts(results))
+    batch_cost = batch_summary["cost_usd"] if batch_summary else 0.0
+    write_summary(run_dir, summarize_verdicts(results, batch_cost_usd=batch_cost))
     return run_dir
