@@ -1404,6 +1404,39 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "S3 is S1 with more articles: the same search, the same prompt, best first, so the only thing that changes is how much the model reads. Haiku charges five times as much for the whole request once a prompt passes 100,000 tokens, so S3 adds articles in rank order and stops before an estimated 90,000. The 10% margin covers the error in my local token estimate, and every run checks the real count against the line. For a question whose top 100 articles come to 104,000 tokens, that's about a cent instead of five."
 
+**Outcome (2026-11-13): the cap held, and more articles bought nothing on dev: S3 scored 88% to 90% at every K, against S1's 90%.** Results are in [reports/answers_s3_dev.md](../reports/answers_s3_dev.md).
+
+| 50 real dev questions | % correct [95% CI] | Against S1 [95% CI] | Only S3 right / only S1 right | All gold in context | Input tokens | Cost per answer | Latency p50 |
+|---|---:|---|---:|---:|---:|---:|---:|
+| **S1, dense k=10 (the default)** | 90.0% [80, 98] | | | 42 | 8,758 | $0.00122 | 3.5 s |
+| S3, up to 20 | 88.0% [78, 96] | −2 points [−6, 0] | 0 / 1 | 47 | 18,258 | $0.00219 | 4.2 s |
+| S3, up to 50 | 88.0% [78, 96] | −2 points [−8, +4] | 1 / 2 | 48 | 43,996 | $0.00479 | 4.0 s |
+| S3, up to 100 | 90.0% [82, 98] | 0 points [−6, +6] | 1 / 1 | 49 | 76,830 | $0.00808 | 4.9 s |
+
+- **The cap held.**
+  - No prompt went over 100,000 tokens in the 150 answers or the pilot. The largest was 92,201.
+  - The estimate was off by −7.1% to +4.6%, so the 10% margin stays for M2.
+  - The cap cut fewer lists than estimated: 20 of 50 at K=100, not 38, and 1 at K=50. Articles ranked 21 to 100 turned out shorter than those ranked 11 to 20. The shortest K=100 context had 45 articles.
+  - One question got the same 45 articles at K=50 and at K=100. The two prompts were identical, so the K=100 run replayed that answer from the cache.
+- **More articles found more gold, but there was nothing left to fix.** Questions with every gold article in context rose from 42 for S1 to 47, 48 and 49. But S1 was already graded correct on all 8 questions where it lacked a gold article, so the extra gold changed no grade. S1's 5 partial answers all had the gold article in context: those are the generator's misses, not retrieval's.
+- **The few flips come down to how the answer was written.**
+  - K=20 lost `ew-171`, which S2 also lost: the answer told the customer to skip a troubleshooting step.
+  - K=50 lost `ew-171` and `ew-110`, and won `sim-113`.
+  - K=100 won `sim-113` and lost `sim-184`, which S2 also lost. The answer said "yes, in some parts" where the answer is no, and it didn't cite the gold article, ranked 19th.
+  - Every S3 run declined `ew-059`, which S1 answered and was graded partial on.
+- **Grounding slipped as the context grew.** Answers the judge graded only partly grounded: S1 2, K=20 0, K=50 3, K=100 6, out of 50. The judge's reasons were claims credited to the wrong article among many, or details that appear in no cited article. On 50 questions this is only a direction, worth watching at M2 and in the context-rot test.
+- **Cost grows with K; latency hardly does.**
+  - Per answer, S3 costs 1.8, 3.9 and 6.6 times what S1 does.
+  - The median latency is 4.0 to 4.9 s against S1's 3.5 s, and the 95th percentile is 6.4 to 7.8 s. Haiku reads 77K tokens of articles in about a second more than 9K.
+  - The 27-second first question appeared in the pilot only (`ew-000`, later replayed from the cache). The first questions of the K=20 and K=50 runs took 6 s, so it doesn't happen on every run. It stays with Step 8.
+- **No verdict, as planned.** All three intervals include zero, and McNemar's p is 1.0 for each. All three K values run on test at M2.
+- **The judge's cost did grow a little with K,** unlike what the decision expected: $0.0055, $0.0058 and $0.0061 per graded answer against S1's $0.0049. It reads only the cited articles, so 9 times the context cost up to 25% more to grade.
+- **Where these numbers come from.**
+  - The tables are in the report. The flips, declines and grounding reasons came from one-off scripts over the run records.
+  - Answer runs, all from commit `c63d824` with a clean tree: `20261113-135341_s3-k100-medium_dev_real` (the 5-question pilot), `20261113-135507_s3-k20-medium_dev_real`, `20261113-135901_s3-k50-medium_dev_real` and `20261113-140307_s3-k100-medium_dev_real`.
+  - Judge runs: `20261113-141009_judge-high_20261113-135507_s3-k20-medium_dev_real`, `20261113-141316_judge-high_20261113-135901_s3-k50-medium_dev_real` and `20261113-141522_judge-high_20261113-140307_s3-k100-medium_dev_real`.
+- **Cost.** $1.59 against the $1.50 estimate: $0.74 for the answers, including the pilot, and $0.84 for judging.
+
 ---
 
 ## Coming up
