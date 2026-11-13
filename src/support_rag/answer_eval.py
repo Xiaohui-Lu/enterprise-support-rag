@@ -23,8 +23,21 @@ from support_rag.agent import (
     ToolBox,
     run_agent,
 )
-from support_rag.answer import PROMPT_VERSION, build_request, parse_answer
-from support_rag.llm import LLMResult, cost_usd, cost_without_caching, prompt_tokens
+from support_rag.answer import PROMPT_VERSION, SYSTEM_WITH_ARTICLES, build_request, parse_answer
+from support_rag.llm import (
+    LONG_PROMPT_TOKENS,
+    LLMResult,
+    cost_usd,
+    cost_without_caching,
+    prompt_tokens,
+)
+from support_rag.long_context import (
+    CLAUDE_TOKENS_PER_TIKTOKEN,
+    PROMPT_BUDGET,
+    TokenCounter,
+    capped_context,
+    estimate_request_tokens,
+)
 from support_rag.records import Article, Hit, Question
 from support_rag.retrieval_eval import Retriever, answer_retriever, questions_for_split
 from support_rag.runs import append_result, git_state, start_run, write_summary
@@ -63,6 +76,8 @@ class AnswerResult:
     context_sections: tuple[str, ...] | None = None
     # S2 only: how the loop went (D-043).
     agent: dict[str, Any] | None = None
+    # S3 only: K, how many articles the token cap let through, and the estimate (D-044).
+    long_context: dict[str, Any] | None = None
 
 
 def reading_context(hits: Sequence[Hit], articles_by_id: Mapping[str, Article]) -> list[Article]:
@@ -86,8 +101,10 @@ def context_for(
     articles_by_id: Mapping[str, Article],
     retriever: Retriever | None = None,
     k: int = DEFAULT_K,
+    count: TokenCounter | None = None,
 ) -> list[Article]:
-    """What a strategy shows the model: nothing (S0), the top k hits (S1) or gold (S*)."""
+    """What a strategy shows the model: nothing (S0), the top k hits (S1), the top k hits
+    that fit under the token budget (S3), or gold (S*)."""
     match strategy:
         case "s0":
             return []
@@ -95,6 +112,15 @@ def context_for(
             if retriever is None:
                 raise ValueError("S1 needs a retriever")
             return reading_context(retriever.search(question.question, k), articles_by_id)
+        case "s3":
+            if retriever is None or count is None:
+                raise ValueError("S3 needs a retriever and a token counter")
+            ranked = reading_context(retriever.search(question.question, k), articles_by_id)
+            used = count(SYSTEM_WITH_ARTICLES) + count(question.question)
+            context = capped_context(ranked, budget=PROMPT_BUDGET, count=count, used=used)
+            if not context:  # an empty context would silently become closed book
+                raise ValueError(f"{question.id}: the top article alone is over the budget")
+            return context
         case "s_star":
             return [articles_by_id[article_id] for article_id in question.gold_ids]
     raise ValueError(f"unknown strategy {strategy!r}")
@@ -125,6 +151,30 @@ def answer_question(
         latency_ms=result.latency_ms,
         cached=result.cached,
         context_sections=tuple(article.contents for article in context) if sections else None,
+    )
+
+
+def answer_long_context(
+    llm: LLM,
+    question: Question,
+    context: Sequence[Article],
+    *,
+    k: int,
+    count: TokenCounter,
+    effort: str,
+) -> AnswerResult:
+    """Answer one question with S3, recording what the token cap did and the estimate the
+    run checks against the API's real count (D-044)."""
+    result = answer_question(llm, question, context, effort=effort)
+    estimate = estimate_request_tokens(build_request(question, context, effort=effort), count)
+    return replace(
+        result,
+        long_context={
+            "k": k,
+            "sent": len(context),
+            "capped": len(context) < k,
+            "estimated_prompt_tokens": estimate,
+        },
     )
 
 
@@ -191,7 +241,29 @@ def summarize_answers(results: Sequence[AnswerResult]) -> dict[str, Any]:
     }
     if any(r.agent is not None for r in results):
         summary["agent"] = _summarize_agent(results)
+    if any(r.long_context is not None for r in results):
+        summary["long_context"] = _summarize_long_context(results)
     return summary
+
+
+def _summarize_long_context(results: Sequence[AnswerResult]) -> dict[str, Any]:
+    """What S3's token cap did, and how far the local estimate was from the API's count.
+    An error above zero means the estimate was low, the side that risks the price line."""
+    rows = [(r.long_context, prompt_tokens(r.usage)) for r in results if r.long_context]
+    sent = sorted(lc["sent"] for lc, _ in rows)
+    errors = sorted((real - lc["estimated_prompt_tokens"]) / real for lc, real in rows)
+    return {
+        "k": rows[0][0]["k"],
+        "capped": sum(lc["capped"] for lc, _ in rows),
+        "articles_sent": {"min": sent[0], "median": statistics.median(sent), "max": sent[-1]},
+        "max_prompt_tokens": max(real for _, real in rows),
+        "over_price_line": sum(real > LONG_PROMPT_TOKENS for _, real in rows),
+        "estimate_error": {
+            "min": round(errors[0], 3),
+            "median": round(statistics.median(errors), 3),
+            "max": round(errors[-1], 3),
+        },
+    }
 
 
 def _summarize_agent(results: Sequence[AnswerResult]) -> dict[str, Any]:
@@ -269,6 +341,7 @@ def run_answers(
         "milestone": milestone,
     }
     retriever = None
+    count = None
     name = f"{strategy}-{effort}_{split}"
     if strategy == "s1":
         retriever, settings = answer_retriever(retriever_name, unit, articles)
@@ -285,6 +358,19 @@ def run_answers(
             "snippet_words": SNIPPET_WORDS,
             **settings,
         }
+    if strategy == "s3":
+        from support_rag.long_context import claude_token_estimator
+
+        retriever, settings = answer_retriever(DEFAULT_RETRIEVER, "article", articles)
+        count = claude_token_estimator()
+        run_config |= {
+            "k": k,
+            "unit": "article",
+            "prompt_budget": PROMPT_BUDGET,
+            "claude_tokens_per_tiktoken": CLAUDE_TOKENS_PER_TIKTOKEN,
+            **settings,
+        }
+        name = f"s3-k{k}-{effort}_{split}"
     run_dir = start_run(name, run_config, runs_dir)
 
     results = []
@@ -294,6 +380,18 @@ def run_answers(
             if strategy == "s2":
                 toolbox = ToolBox(retriever, articles_by_id)
                 result = answer_with_agent(llm, question, toolbox, effort=effort)
+            elif strategy == "s3":
+                context = context_for(
+                    strategy,
+                    question,
+                    articles_by_id=articles_by_id,
+                    retriever=retriever,
+                    k=k,
+                    count=count,
+                )
+                result = answer_long_context(
+                    llm, question, context, k=k, count=count, effort=effort
+                )
             else:
                 context = context_for(
                     strategy, question, articles_by_id=articles_by_id, retriever=retriever, k=k

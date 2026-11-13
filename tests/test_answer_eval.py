@@ -4,6 +4,7 @@ import pytest
 
 from support_rag.agent import AgentRun, ToolBox, snippet
 from support_rag.answer_eval import (
+    answer_long_context,
     answer_question,
     answer_with_agent,
     check_test_run,
@@ -111,6 +112,85 @@ def test_s1_without_a_retriever_is_an_error():
         context_for("s1", QUESTION, articles_by_id=ARTICLES)
 
 
+def _huge(text):
+    """Each article estimated at 50,000 tokens, everything else at nothing."""
+    return 50_000 if "Text" in text else 0
+
+
+def test_s3_stops_before_the_token_budget():
+    context = context_for(
+        "s3", QUESTION, articles_by_id=ARTICLES, retriever=FixedRetriever(), k=2, count=_huge
+    )
+    assert [a.id for a in context] == ["B"]  # two would be 100,000, over the 90,000 budget
+
+
+def test_s3_sends_every_article_that_fits():
+    context = context_for(
+        "s3", QUESTION, articles_by_id=ARTICLES, retriever=FixedRetriever(), k=2, count=len
+    )
+    assert [a.id for a in context] == ["B", "C"]
+
+
+def test_s3_refuses_an_empty_context_rather_than_answer_closed_book():
+    with pytest.raises(ValueError, match="over the budget"):
+        context_for(
+            "s3",
+            QUESTION,
+            articles_by_id=ARTICLES,
+            retriever=FixedRetriever(),
+            k=2,
+            count=lambda text: 95_000 if "Text" in text else 0,
+        )
+
+
+def test_s3_without_a_token_counter_is_an_error():
+    with pytest.raises(ValueError):
+        context_for("s3", QUESTION, articles_by_id=ARTICLES, retriever=FixedRetriever(), k=2)
+
+
+def _long_context_answer(context, k, usage=None):
+    llm = FakeLLM("Do this [1].")
+    if usage is not None:
+        llm.complete = lambda request: LLMResult(
+            "Do this [1].", "end_turn", usage, 9000.0, False, request["model"]
+        )
+    return answer_long_context(llm, QUESTION, context, k=k, count=len, effort="medium")
+
+
+def test_an_s3_answer_records_what_the_cap_did():
+    result = _long_context_answer([ARTICLES["B"]], k=100)
+    assert result.long_context["sent"] == 1
+    assert result.long_context["capped"] is True
+    assert result.long_context["estimated_prompt_tokens"] > 0
+    assert result.cited_ids == ("B",)
+
+
+def test_an_s3_answer_that_sent_all_k_was_not_capped():
+    result = _long_context_answer([ARTICLES["B"], ARTICLES["C"]], k=2)
+    assert result.long_context["capped"] is False
+
+
+def test_an_s3_summary_counts_prompts_over_the_price_line_from_real_usage():
+    over = _long_context_answer([ARTICLES["B"]], k=100, usage={"input_tokens": 100_001})
+    under = _long_context_answer([ARTICLES["B"]], k=100, usage={"input_tokens": 99_000})
+    summary = summarize_answers([over, under])["long_context"]
+    assert summary["over_price_line"] == 1
+    assert summary["max_prompt_tokens"] == 100_001
+    assert summary["capped"] == 2
+    assert summary["articles_sent"] == {"min": 1, "median": 1, "max": 1}
+
+
+def test_an_estimate_below_the_real_count_is_a_positive_error():
+    # `len` counts characters, far below a real count of 100,000 tokens.
+    result = _long_context_answer([ARTICLES["B"]], k=100, usage={"input_tokens": 100_000})
+    assert summarize_answers([result])["long_context"]["estimate_error"]["max"] > 0.9
+
+
+def test_a_summary_of_other_strategies_has_no_long_context_section():
+    result = answer_question(FakeLLM("Do this [1]."), QUESTION, [ARTICLES["A"]], effort="medium")
+    assert "long_context" not in summarize_answers([result])
+
+
 def test_a_hit_with_a_section_shows_only_that_section():
     hits = [Hit("B", 2.0, section="Title B\nJust this part."), Hit("C", 1.0)]
     context = reading_context(hits, ARTICLES)
@@ -147,6 +227,9 @@ def test_a_whole_article_answer_saves_no_sections():
         ["--strategy", "s0", "--retriever", "dense"],
         ["--strategy", "s_star", "--unit", "h2"],
         ["--strategy", "s1", "--retriever", "bm25", "--unit", "h2"],
+        ["--strategy", "s3"],  # S3 has no default K
+        ["--strategy", "s3", "--retriever", "bm25", "--k", "20"],
+        ["--strategy", "s0", "--k", "20"],
     ],
 )
 def test_the_cli_refuses_answer_options_that_would_be_ignored(flags):

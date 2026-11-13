@@ -1,9 +1,9 @@
 """Answer quality per strategy, with confidence intervals and paired comparisons (D-032).
 
-Input: one judge run per strategy, all with the same judge settings and over the same
-questions. Each judge run points to its answer run, which supplies tokens, cost and
-latency. A decline counts as incorrect (D-025); a judge failure leaves the question out of
-that strategy's numbers and out of any comparison that includes it.
+Input: one judge run per strategy (S3: one per K), all with the same judge settings and
+over the same questions. Each judge run points to its answer run, which supplies tokens,
+cost and latency. A decline counts as incorrect (D-025); a judge failure leaves the question
+out of that strategy's numbers and out of any comparison that includes it.
 """
 
 from __future__ import annotations
@@ -20,21 +20,35 @@ STRATEGY_NAMES = {
     "s0": "S0, closed book",
     "s1": "S1",
     "s2": "S2, agentic search",
+    "s3": "S3, long context",
     "s_star": "S*, gold articles",
 }
 RETRIEVER_NAMES = {"bm25": "BM25", "dense": "dense search"}
 # (better-expected, baseline): what retrieval adds, what better retrieval would add, both,
-# and what letting the model search adds.
+# and what letting the model search adds. Each S3 arm is also compared with S1.
 COMPARISONS = (("s1", "s0"), ("s_star", "s1"), ("s_star", "s0"), ("s2", "s1"))
 
 
+def arm(answers_config: Mapping[str, Any]) -> str:
+    """A run's place in the report: its strategy, or "s3-k50" for S3, which runs at several K."""
+    strategy = answers_config["strategy"]
+    return f"s3-k{answers_config['k']}" if strategy == "s3" else strategy
+
+
+def _arm_order(key: str) -> tuple[int, int]:
+    strategy, _, k = key.partition("-k")
+    return list(STRATEGY_NAMES).index(strategy), int(k or 0)
+
+
 def strategy_name(strategy: str, answers_config: Mapping[str, Any]) -> str:
-    """How a report names a run: "S1, dense search top 10", or just the strategy's name."""
+    """How a report names a run: "S1, dense search top 10", or just the strategy's name.
+    S3's K is a ceiling: the token cap can send fewer (D-044)."""
     name = STRATEGY_NAMES[strategy]
     k = answers_config.get("k")
     if not k:
         return name
-    name = f"{name}, {RETRIEVER_NAMES[answers_config['retriever']['name']]} top {k}"
+    top = "up to" if strategy == "s3" else "top"
+    name = f"{name}, {RETRIEVER_NAMES[answers_config['retriever']['name']]} {top} {k}"
     unit = answers_config.get("unit", "article")
     return name if unit == "article" else f"{name}, best {unit} section"
 
@@ -42,29 +56,35 @@ def strategy_name(strategy: str, answers_config: Mapping[str, Any]) -> str:
 def compare_strategies(
     judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR
 ) -> dict[str, Any]:
+    judge_configs = [load_config(run_dir) for run_dir in judge_runs]
+    if any(c.get("kind") != "judge" for c in judge_configs):
+        raise ValueError("give one judge run per strategy")
+    judges = {(c["model"], c["effort"], c["prompt_version"]) for c in judge_configs}
+    if len(judges) != 1:
+        raise ValueError("the judge runs use different judge settings")
+
     configs = {}
+    answers_configs = {}
     correct: dict[str, dict[str, bool | None]] = {}
-    for run_dir in judge_runs:
-        run_config = load_config(run_dir)
-        if run_config.get("kind") != "judge" or run_config["strategy"] in configs:
-            raise ValueError("give one judge run per strategy")
-        configs[run_config["strategy"]] = run_config
-        correct[run_config["strategy"]] = {
+    for run_dir, run_config in zip(judge_runs, judge_configs, strict=True):
+        answers_config = load_config(runs_dir / run_config["answers_run"])
+        key = arm(answers_config)
+        if key in configs:
+            raise ValueError("give one judge run per strategy (S3: one per K)")
+        configs[key], answers_configs[key] = run_config, answers_config
+        correct[key] = {
             r["question_id"]: None if r["correctness"] is None else r["correctness"] == "correct"
             for r in load_results(run_dir)
         }
-    judges = {(c["model"], c["effort"], c["prompt_version"]) for c in configs.values()}
-    if len(judges) != 1:
-        raise ValueError("the judge runs use different judge settings")
     if len({frozenset(questions) for questions in correct.values()}) != 1:
         raise ValueError("the judge runs cover different questions")
 
     strategies = {}
-    for strategy, by_question in correct.items():
+    for key, by_question in correct.items():
         graded = [float(c) for c in by_question.values() if c is not None]
-        answers_run = runs_dir / configs[strategy]["answers_run"]
-        answers, answers_config = load_summary(answers_run), load_config(answers_run)
-        strategies[strategy] = {
+        answers_config = answers_configs[key]
+        answers = load_summary(runs_dir / answers_config["run_id"])
+        strategies[key] = {
             "n": len(graded),
             "judge_failed": len(by_question) - len(graded),
             "pct_correct": 100 * sum(graded) / len(graded),
@@ -78,13 +98,15 @@ def compare_strategies(
             "split": answers_config["split"],
             "milestone": answers_config.get("milestone"),
             "commit": answers_config["git"]["commit"],
-            "name": strategy_name(strategy, answers_config),
+            "name": strategy_name(answers_config["strategy"], answers_config),
             "generator": (answers_config["model"], answers_config["effort"]),
             "agent": answers.get("agent"),
+            "long_context": answers.get("long_context"),
         }
 
     comparisons = []
-    for better, base in COMPARISONS:
+    s3_arms = sorted((key for key in correct if key.startswith("s3-")), key=_arm_order)
+    for better, base in (*COMPARISONS, *((key, "s1") for key in s3_arms)):
         if better not in correct or base not in correct:
             continue
         questions = sorted(
@@ -114,7 +136,7 @@ def compare_strategies(
     return {
         "judge": {"model": model, "effort": effort, "prompt_version": prompt_version},
         "judge_runs": sorted(c["run_id"] for c in configs.values()),
-        "strategies": {s: strategies[s] for s in STRATEGY_NAMES if s in strategies},
+        "strategies": {key: strategies[key] for key in sorted(strategies, key=_arm_order)},
         "comparisons": comparisons,
     }
 
@@ -159,6 +181,32 @@ def _agent_section(row: Mapping[str, Any]) -> list[str]:
         f"{row['mean_input_tokens']:,.0f} input tokens per question were read from the cache. "
         f"The run cost ${paid:.4f}, and would have cost ${uncached:.4f} without caching.",
     ]
+
+
+def _long_context_section(rows: Sequence[Mapping[str, Any]]) -> list[str]:
+    """What S3's token cap did at each K, and the check on the local estimate (D-044)."""
+    lines = [
+        "",
+        "## S3's token cap",
+        "",
+        "Articles go in best first, and the list stops before the estimated prompt passes "
+        "90,000 tokens, 10% under the 100,000-token price line (D-044). The estimate error is "
+        "(real − estimated) / real; above zero means the estimate was low.",
+        "",
+        "| Strategy | Cap cut the list | Articles sent, min / median / max | Largest prompt "
+        "| Over 100K | Estimate error, min / median / max |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for row in rows:
+        lc = row["long_context"]
+        sent, error = lc["articles_sent"], lc["estimate_error"]
+        lines.append(
+            f"| {row['name']} | {lc['capped']} of {row['n'] + row['judge_failed']} "
+            f"| {sent['min']} / {sent['median']:g} / {sent['max']} "
+            f"| {lc['max_prompt_tokens']:,} | {lc['over_price_line']} "
+            f"| {error['min']:+.1%} / {error['median']:+.1%} / {error['max']:+.1%} |"
+        )
+    return lines
 
 
 def format_report(result: Mapping[str, Any]) -> str:
@@ -213,6 +261,9 @@ def format_report(result: Mapping[str, Any]) -> str:
     agent_row = result["strategies"].get("s2")
     if agent_row is not None and agent_row["agent"] is not None:
         lines += _agent_section(agent_row)
+    long_context_rows = [r for r in result["strategies"].values() if r["long_context"]]
+    if long_context_rows:
+        lines += _long_context_section(long_context_rows)
     lines += [
         "",
         "Runs: judge "

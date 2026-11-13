@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     answer = commands.add_parser(
         "answer", help="answer a split with one strategy (paid API calls, cached)"
     )
-    answer.add_argument("--strategy", choices=["s0", "s1", "s2", "s_star"], required=True)
+    answer.add_argument("--strategy", choices=["s0", "s1", "s2", "s3", "s_star"], required=True)
     answer.add_argument(
         "--split", choices=["dev_real", "test"], default="dev_real", help="test: milestones only"
     )
@@ -104,7 +104,9 @@ def main(argv: list[str] | None = None) -> None:
         "--effort", choices=["low", "medium", "high"], help="default: the tuned value (D-033)"
     )
     answer.add_argument(
-        "--k", type=int, help="articles retrieved for S1; default: the tuned value (D-033)"
+        "--k",
+        type=int,
+        help="articles retrieved: for S1, default the tuned value (D-033); required for S3 (D-044)",
     )
     answer.add_argument(
         "--retriever",
@@ -293,6 +295,10 @@ def run(args: argparse.Namespace) -> None:
 
             if args.strategy != "s1" and (args.retriever or args.unit):
                 raise ValueError("--retriever and --unit work only with --strategy s1")
+            if args.strategy == "s3" and not args.k:
+                raise ValueError("S3 needs --k: 20, 50 or 100 (D-044)")
+            if args.k and args.strategy not in ("s1", "s3"):
+                raise ValueError("--k works only with --strategy s1 or s3")
             retriever = args.retriever or DEFAULT_RETRIEVER
             unit = args.unit or "article"
             if retriever == "bm25" and unit != "article":

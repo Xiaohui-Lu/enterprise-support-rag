@@ -1,4 +1,4 @@
-"""Answering strategies S0, S1 and S* (design section 5): build the request, parse the answer.
+"""Answering strategies S0, S1, S3 and S* (design section 5): build the request, parse the answer.
 
 Every strategy uses the same model and the same answer format (D-023): plain text with
 the articles it used cited inline as [1], [2], ..., or exactly NOT_FOUND. Articles are
@@ -17,7 +17,7 @@ from support_rag.llm import GENERATOR_MODEL
 from support_rag.records import Article, Question
 
 NOT_FOUND = "NOT_FOUND"
-STRATEGIES = ("s0", "s1", "s2", "s_star")
+STRATEGIES = ("s0", "s1", "s2", "s3", "s_star")
 
 # "[2]" or "[1, 3]": digits, then optionally ", digits" repeated. The group captures the
 # inside of the brackets. Text in brackets, like a Markdown link label, never matches.
@@ -56,6 +56,11 @@ class Answer:
     invalid_citations: int  # citation numbers that point to no article in the prompt
 
 
+def numbered(number: int, article: Article) -> str:
+    """One article as the prompt shows it: "[2] " and its text."""
+    return f"[{number}] {article.contents}"
+
+
 def build_request(
     question: Question,
     context: Sequence[Article],
@@ -67,7 +72,7 @@ def build_request(
     """The Messages API request for one question. An empty context means closed book (S0)."""
     if context:
         articles = "\n\n".join(
-            f"[{number}] {article.contents}" for number, article in enumerate(context, start=1)
+            numbered(number, article) for number, article in enumerate(context, start=1)
         )
         system = SYSTEM_WITH_ARTICLES
         content = f"<articles>\n{articles}\n</articles>\n\nQuestion: {question.question}"

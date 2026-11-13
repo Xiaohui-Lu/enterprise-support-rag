@@ -18,17 +18,20 @@ def test_s1_is_named_after_what_it_searched_and_read():
 
 def _runs(tmp_path, right_by_strategy, effort="high", failed=(), split="dev_real"):
     """An answer run and a judge run per strategy; right_by_strategy: how many of the 10
-    questions each gets right (the first N)."""
+    questions each gets right (the first N). A key like "s3-k20" is S3 with K=20."""
     judge_runs = []
-    for strategy, n_right in right_by_strategy.items():
+    for key, n_right in right_by_strategy.items():
+        strategy, _, k = key.partition("-k")
+        with_k = {"k": int(k), "retriever": {"name": "dense"}} if k else {}
         answers = start_run(
-            f"answers-{strategy}",
+            f"answers-{key}",
             {
                 "strategy": strategy,
                 "split": split,
                 "model": "haiku",
                 "effort": "medium",
                 "milestone": "M1" if split == "test" else None,
+                **with_k,
             },
             tmp_path,
         )
@@ -38,14 +41,14 @@ def _runs(tmp_path, right_by_strategy, effort="high", failed=(), split="dev_real
              "cost_of_answers_usd": 0.01, "latency_p50_ms": 3000.0},
         )  # fmt: skip
         judge = start_run(
-            f"judge-{strategy}",
+            f"judge-{key}",
             {"kind": "judge", "strategy": strategy, "answers_run": answers.name,
              "model": "sonnet", "effort": effort, "prompt_version": "judge-v1"},
             tmp_path,
         )  # fmt: skip
         for i, question_id in enumerate(QUESTIONS):
             grade = "correct" if i < n_right else "partial"
-            if (strategy, question_id) in failed:
+            if (key, question_id) in failed:
                 grade = None
             append_result(judge, {"question_id": question_id, "correctness": grade})
         judge_runs.append(judge)
@@ -83,6 +86,43 @@ def test_the_report_shows_how_s2s_loops_went(tmp_path):
     assert "7 took 2, 3 took 6" in report
     assert "steps: 3" in report
     assert "without caching" in report
+
+
+def test_each_s3_k_is_its_own_row_compared_with_s1(tmp_path):
+    runs = _runs(tmp_path, {"s3-k100": 5, "s1": 6, "s3-k20": 7})
+    result = compare_strategies(runs, runs_dir=tmp_path)
+    assert list(result["strategies"]) == ["s1", "s3-k20", "s3-k100"]
+    assert result["strategies"]["s3-k20"]["name"] == "S3, long context, dense search up to 20"
+    pairs = [(c["better"], c["base"], c["difference"]) for c in result["comparisons"]]
+    assert pairs == [("s3-k20", "s1", 10.0), ("s3-k100", "s1", -10.0)]
+
+
+def test_two_runs_of_s3_at_the_same_k_are_rejected(tmp_path):
+    runs = _runs(tmp_path, {"s3-k20": 5})
+    with pytest.raises(ValueError, match="one per K"):
+        compare_strategies(runs + runs, runs_dir=tmp_path)
+
+
+def test_the_report_shows_what_s3s_token_cap_did(tmp_path):
+    runs = _runs(tmp_path, {"s1": 6, "s3-k100": 5})
+    answers = tmp_path / load_config(runs[1])["answers_run"]
+    write_summary(
+        answers,
+        load_summary(answers)
+        | {
+            "long_context": {
+                "k": 100,
+                "capped": 7,
+                "articles_sent": {"min": 71, "median": 88.5, "max": 100},
+                "max_prompt_tokens": 91_234,
+                "over_price_line": 0,
+                "estimate_error": {"min": -0.05, "median": 0.0, "max": 0.031},
+            }
+        },
+    )
+    report = format_report(compare_strategies(runs, runs_dir=tmp_path))
+    assert "## S3's token cap" in report
+    assert "| 7 of 10 | 71 / 88.5 / 100 | 91,234 | 0 | -5.0% / +0.0% / +3.1% |" in report
 
 
 def test_a_report_without_s2_has_no_loop_section(tmp_path):
