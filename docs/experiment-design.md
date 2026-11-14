@@ -102,6 +102,8 @@ Every strategy uses the same generator model and the same output format: an answ
 - Every run stores per-question results, not just averages.
 - 95% confidence intervals by bootstrap (resample the questions 10,000 times).
 - Strategies are compared with paired tests on the same questions: a paired bootstrap of the difference, or McNemar's test on correct/incorrect.
+- RQ3 is answered by a cost frontier: the strategies no other beats on both cost and accuracy, and the cost per extra correct answer for each step along it, given only when the gain's interval is above zero (D-046).
+- M2's verdicts are five comparisons with the default S1 (S1 on BM25, S2, S3 at three K), each needing a paired interval above zero and a Holm-adjusted p below 0.05 over the five. Everything else is descriptive (D-046).
 - Expected precision: on 350 test questions a single accuracy is about ±5 points; on the ≈70 multi-article test questions, about ±12. Paired differences are tighter. Subgroup results are reported as directional.
 
 ## 9. Context-rot test (RQ5)

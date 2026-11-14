@@ -1530,6 +1530,67 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-046 · The full comparison: a cost frontier instead of a score, M2's verdicts written in advance, and the charts (Step 6)
+
+**Context.**
+- **RQ3 asks which strategy gets the most questions right per dollar and per second.** M2 puts eight answer runs side by side on the 350 test questions: S0, S1 on BM25 and S\* from M1, plus S1 on dense search, S2, and S3 at K=20, 50 and 100.
+- **One number can't answer it.** On M1's test runs, S0 scored 33.4% at $0.00036 per answer, and S1 on BM25 scored 64.0% at $0.00177.
+  - % correct per dollar: about 93,000 for S0, against 36,000 for S1.
+  - Cost per correct answer: $0.0011 for S0, against $0.0028 for S1.
+  - Both rank closed book first, though it gets two answers in three wrong. Both treat a wrong answer as free.
+- **The test set runs once.** Which comparisons decide what, and by what bar, has to be written down before M2.
+- **Dev already has every run the report needs,** so the report and the charts are built and checked on dev first.
+
+**Decision (written and committed before any M2 run).**
+- **The answer to RQ3 is a frontier, not a score.**
+  - A strategy is on the cost frontier if no other strategy costs no more and scores at least as well. Along the frontier, accuracy rises with cost.
+  - Each step along the frontier reports what it adds: the extra cost per question, the extra % correct with its paired interval, and their ratio, the cost per extra correct answer. On M1's numbers, S0 to S1 costs $0.00141 ÷ 0.306 ≈ $0.0046.
+  - The ratio is given only when the gain's interval lies entirely above zero. Otherwise the step reads "not shown to add correct answers": a ratio whose denominator may be zero has no upper bound.
+  - The same frontier is drawn against median latency, for "per second".
+  - S\* is drawn as a hollow marker and kept off the frontier, because it needs the answer key.
+- **Cost means the generator's cost per answer, as paid,** prompt caching included, at real-time prices. The judge is left out: it's what measuring costs, not what serving costs. The cost axis is logarithmic, because S0 and S3 at K=100 differ about 20-fold.
+- **M2's verdicts are five comparisons with the default, S1 on dense search at k=10 (D-042):**
+  - S1 on BM25, to check on test what Step 4 bought.
+  - S2.
+  - S3 at K=20, 50 and 100.
+  - A strategy replaces the default only if its paired 95% interval lies entirely above zero (D-036) and its McNemar p, Holm-adjusted over these five, is below 0.05.
+  - S2 doesn't get D-042's non-inferiority bar. D-042 calls a candidate cheaper when it reads fewer input tokens. S2 reads more and takes longer; it's cheaper in dollars only because of prompt caching.
+  - What retrieval adds (S1 against S0, S\* against S1, S\* against S0) is reported as at M1, with Holm over its own three. It decides nothing.
+- **Question types (RQ4) are directional.** % correct, cost per answer and the frontier, separately for single- and multi-article questions and for expert-written and simulated ones. No verdicts: about 70 test questions need several articles, so one strategy's rate on them is about ±12 points (section 8). They feed Step 7's router.
+- **Context rot (RQ5) keeps D-045's analysis.** "Accuracy falls" is claimed for a type only if its 90K-against-10K interval lies entirely below zero, with Holm over the two types. The chart shows % correct against prompt tokens, one line per type, both starting from the gold only.
+- **The charts** are SVG files drawn by matplotlib into `reports/figures/`, written by `srag report-answers` and `srag report-rot` and shown in their reports.
+  - A rerun gives a byte-identical file (no date stamp, fixed IDs), so a diff shows only real changes.
+  - matplotlib is a dev dependency, so the Step 8 service doesn't carry it.
+  - Each chart sits above its table, which is the accessible version of it.
+- **The M2 runs, a separate go.**
+  - S1 on dense search, S2, and S3 at K=20, 50 and 100 on the 350 test questions, in real time, because latency is on the chart.
+  - The six context-rot arms through the batch API.
+  - Every judge run through the batch API.
+  - S0, S1 on BM25 and S\* come from M1: same model, prompt and judge, and a rerun would only replay the cache.
+  - About $30: about $6 for the answers, $9.50 for judging them and $14 for context rot. An exact estimate comes before the go.
+
+**Alternatives.**
+- % correct per dollar, or cost per correct answer: one number, but both favor the cheapest strategy, whatever its accuracy.
+- The cheapest strategy above a fixed accuracy bar: simple, but only as good as the bar, and there's no principled bar here.
+- A value model: a dollar value for a correct answer (a ticket a person doesn't have to handle) and a cost for a wrong one, then maximize the net. The right idea for a business, but the numbers would be made up. The cost per extra correct answer lets a reader apply their own.
+- Frontier membership by intervals instead of point estimates: more honest about noise, but with overlapping intervals almost nothing would be beaten. The steps' intervals carry the uncertainty instead.
+- Holm over every comparison in the report, eight at M2: stricter, but it mixes the comparisons that decide with the ones that only describe.
+- Plotly: interactive, but GitHub doesn't render its HTML in a README. Mermaid charts render on GitHub but can't draw error bars or a log axis. Hand-written SVG needs no library, at several times the code.
+
+**Why.**
+- A frontier is how cost-against-quality choices are made in practice: drop whatever is beaten on both, then ask whether each step up is worth its price.
+- The cost per extra correct answer is in units a support team already uses: it reads straight against what a ticket handled by a person costs.
+- Writing the five comparisons and their bar down before the test run keeps them from being chosen after seeing the results.
+
+**Trade-offs.**
+- The frontier uses point estimates, so a strategy can sit on it by noise. The step's interval shows when that's the case.
+- Leaving the judge out understates what the experiment cost, not what serving costs. Every judge run still records its own cost.
+- This was written after seeing dev, where S3 tied S1 and S2 trailed it. The family and the bar follow D-036 and D-042 rather than anything tuned on those results.
+
+**In short.** "There's no single accuracy-per-dollar number: ratios rank closed book first, because they treat a wrong answer as free. So I plot cost against accuracy, keep the strategies nothing else beats on both, and price each step along that frontier as a cost per extra correct answer, but only when the gain's confidence interval is above zero. Going from closed book to retrieval cost about half a cent per extra correct answer. The five comparisons that could change the default, and their bar, were written down before the test run."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
