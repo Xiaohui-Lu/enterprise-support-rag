@@ -166,7 +166,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | 4 | Postgres + pgvector, embeddings, hybrid fusion, reranker, chunking (RQ2) | Postgres vs a vector DB, keyword engine, embedding model, reranker | Done |
 | 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | Done |
 | 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | Done |
-| ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | |
+| ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | Done |
 | 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | |
 | 8 | Service: FastAPI with streaming, React chat UI with citations, Redis cache and rate limit | FastAPI vs Django, Redis vs RabbitMQ (or neither), SSE vs WebSockets | |
 | 9 | Deployment: Docker, Helm on k3s, OpenTelemetry tracing, Prometheus/Grafana | k3s vs managed Kubernetes vs PaaS, what to trace | |
