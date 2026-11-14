@@ -213,6 +213,11 @@ def main(argv: list[str] | None = None) -> None:
     )
     panel_labels.add_argument("runs", nargs=4, type=Path, help="the four full panel runs")
     args = parser.parse_args(argv)
+    # Reports hold characters such as "→" and "−". On Windows, output sent to a pipe or a file
+    # defaults to the ANSI code page, which can't encode them.
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding="utf-8")
 
     try:
         run(args)
