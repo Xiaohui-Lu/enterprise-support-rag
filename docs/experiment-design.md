@@ -68,7 +68,7 @@ Every strategy uses the same generator model and the same output format: an answ
 | S* | Oracle context | Exactly the gold articles | 1 |
 
 - **S0** is a baseline and a contamination check: newer models may have seen Wix's public help pages, or WixQA itself. It is never a production route.
-- **S\*** isn't a real strategy. It's the ceiling for answer generation when retrieval is perfect. If S1 is far below S\*, retrieval is the bottleneck; if S\* is low too, the generator or the prompt is. This is the most useful diagnostic in the project. It isn't a strict ceiling: on dev, S1 on dense search scored above it, because ten related articles can answer more completely than the gold ones alone (D-042).
+- **S\*** isn't a real strategy. It's the ceiling for answer generation when retrieval is perfect. If S1 is far below S\*, retrieval is the bottleneck; if S\* is low too, the generator or the prompt is. This is the most useful diagnostic in the project. It isn't a strict ceiling: S1 on dense search scored above it on dev and by 8.3 points on test, because ten related articles can answer more completely than the gold ones alone (D-042, D-046).
 
 ## 6. Metrics
 
@@ -165,7 +165,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | ✅ M1 | Public repo; README with S0/S1/S* results and confidence intervals | | Done |
 | 4 | Postgres + pgvector, embeddings, hybrid fusion, reranker, chunking (RQ2) | Postgres vs a vector DB, keyword engine, embedding model, reranker | Done |
 | 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | Done |
-| 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | In progress |
+| 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | Done |
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | |
 | 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | |
 | 8 | Service: FastAPI with streaming, React chat UI with citations, Redis cache and rate limit | FastAPI vs Django, Redis vs RabbitMQ (or neither), SSE vs WebSockets | |

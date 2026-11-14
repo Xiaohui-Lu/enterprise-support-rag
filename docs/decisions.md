@@ -1351,6 +1351,8 @@ The last row's range assumes each best section is of average size at one end and
 - **Where these numbers come from.** The tables are in the report. The search-and-read breakdown and the lost questions came from one-off scripts over the run records. The runs are `20261108-221507_s2-medium_dev_real` (the 5-question pilot) and `20261113-002731_s2-medium_dev_real`, both from commit `cd3117f` with a clean tree. The judge run is `20261113-003350_judge-high_20261113-002731_s2-medium_dev_real`.
 - **Cost.** $0.26 against the $0.50 estimate: $0.05 for the answers, including the pilot, and $0.21 for judging.
 
+**At M2 (2026-11-14): S2 doesn't replace S1.** On the 350 test questions, S2 scored 81.1% against S1's 82.9%: −1.7 points [−5.7, +2.0], 21 won and 27 lost. It cost $0.00105 per answer against $0.00127, with a median latency of 5.1 s against 3.7 s. No limit fired: 291 of 350 questions took 2 steps. See D-046's outcome.
+
 ---
 
 ## D-044 · S3: S1 with more articles, and a token cap below the 100K price line (Step 6)
@@ -1436,6 +1438,14 @@ The last row's range assumes each best section is of average size at one end and
   - Answer runs, all from commit `c63d824` with a clean tree: `20261113-135341_s3-k100-medium_dev_real` (the 5-question pilot), `20261113-135507_s3-k20-medium_dev_real`, `20261113-135901_s3-k50-medium_dev_real` and `20261113-140307_s3-k100-medium_dev_real`.
   - Judge runs: `20261113-141009_judge-high_20261113-135507_s3-k20-medium_dev_real`, `20261113-141316_judge-high_20261113-135901_s3-k50-medium_dev_real` and `20261113-141522_judge-high_20261113-140307_s3-k100-medium_dev_real`.
 - **Cost.** $1.59 against the $1.50 estimate: $0.74 for the answers, including the pilot, and $0.84 for judging.
+
+**At M2 (2026-11-14): S3 rises with K on test, but no K clears the bar, and the cap held.**
+- S3 scored 82.9%, 85.1% and 86.6% at K=20, 50 and 100, against S1's 82.9%.
+- K=100 is +3.7 points [+0.6, +7.1] (25 won, 12 lost). McNemar's p is 0.047, and 0.19 after Holm over D-046's five comparisons, so it doesn't replace S1. See D-046's outcome.
+- No prompt went over 100,000 tokens in 1,050 answers. The largest was 94,514.
+  - The cap cut 0, 6 and 141 of the 350 lists.
+  - The estimate was off by −7.4% to +9.0%, widest at K=20, where prompts are small.
+- Answers graded only partly grounded: 29, 37 and 32, against S1's 22.
 
 ---
 
@@ -1528,6 +1538,34 @@ The last row's range assumes each best section is of average size at one end and
 - **Honesty note.** The change was made after seeing the pilot's accuracy, but on dev, and it changes the analysis only, not the runs. The test set hasn't been run.
 - **On the pilot:** no question changed grade between 10K and 90K, in either type.
 
+**Outcome at M2 (2026-11-14): no context rot up to 90,000 tokens, and look-alike articles helped rather than hurt.** Results are in [reports/context_rot_test.md](../reports/context_rot_test.md), on all 350 test questions.
+
+| Arm | % correct [95% CI] | Prompt tokens | Distractors | Answers citing a distractor |
+|---|---:|---:|---:|---:|
+| Gold only (S\*, M1) | 74.6% [69.7, 78.9] | 1,785 | 0 | 0 |
+| Hard, 10K / 40K / 90K | 84.9% / 84.0% / 87.1% | 8,988 / 38,794 / 88,493 | 10.8 / 48.5 / 109.3 | 256 / 267 / 273 |
+| Random, 10K / 40K / 90K | 76.9% / 77.1% / 76.3% | 8,930 / 38,761 / 88,587 | 11.6 / 52.6 / 121.2 | 6 / 20 / 40 |
+
+- **Neither line falls, so rot isn't claimed for either type.**
+  - Hard 90K against hard 10K: +2.3 points [−0.9, +5.7] (22 won, 14 lost).
+  - Random 90K against random 10K: −0.6 [−4.0, +2.6] (16 won, 18 lost).
+  - Holm's p over the two is 0.49 and 0.86.
+- **Hard distractors helped.**
+  - Hard beat random at every size: +8.0 [+3.7, +12.6], +6.9 [+2.6, +11.1] and +10.9 [+6.3, +15.7] points at 10K, 40K and 90K, all with Holm's p at 0.003 or below.
+  - Against the gold only, hard was +9.4 to +12.6 points, and random +1.7 to +2.6.
+  - 73% to 78% of the hard answers cited a look-alike article. As the trade-offs above warned, this doesn't show that similarity is harmless. It shows that most of these look-alikes carry part of the answer: WixQA's gold articles aren't the only place an answer lives. That's the same reason S1 on dense search beat S\* (D-042, D-046).
+- **Position, directional.** At hard 90K, single-article questions scored 80.2% with the gold in the first third of the context, 91.5% in the middle third and 84.0% in the last third (81, 118 and 81 questions). Random 90K was flat at 74% to 77%. There's no sign of "lost in the middle".
+- **Against Chroma's 2025 study,** which found that similar distractors hurt more: not reproduced here, with Claude Haiku 5.5 on support articles up to 90,000 tokens. Their distractors were built to mislead; these are real neighbouring help-center articles, which often help. The result is for this model, this corpus and these sizes.
+- **The prompts.**
+  - None went over 100,000 tokens; the largest was 94,611.
+  - The estimate was off by −10.0% to +11.8% at 10K, where prompts are small, but by no more than ±5.8% at 90K.
+  - One hard 90K question used up its 200-article pool, so its prompt stayed under 80,000 tokens.
+  - One random 10K question had a gold article that filled the budget alone. It got no distractors, and its answer was replayed from S\*'s cache.
+- **Runs.** All from commit `9d1b5fa` with a clean tree, milestone M2:
+  - Answers: `20261114-010851_rot-hard-10k-medium_test`, `20261114-010858_rot-hard-40k-medium_test`, `20261114-010906_rot-hard-90k-medium_test`, `20261114-010713_rot-random-10k-medium_test`, `20261114-010720_rot-random-40k-medium_test` and `20261114-010729_rot-random-90k-medium_test`.
+  - Each has a `judge-high` run. The gold only is M1's S\* judge run `20261103-115433_judge-high_20261103-113403_s_star-medium_test`.
+- **Cost.** $14.35 against the $14.63 estimate: $5.12 for the answers and $9.24 for judging.
+
 ---
 
 ## D-046 · The full comparison: a cost frontier instead of a score, M2's verdicts written in advance, and the charts (Step 6)
@@ -1600,6 +1638,45 @@ The last row's range assumes each best section is of average size at one end and
 - **By question type,** single-article, multi-article and expert-written questions have the overall frontier. On simulated questions, S3 at K=50 joins it at 92% against S1's 88%, a difference of one question.
 - **The charts come out byte-identical on a rerun.** This was checked by hashing two runs, and a test checks it too. Each SVG is under 40 KB.
 - **Charts and the Windows console.** The reports now contain "→", and printing them failed on Windows, where output sent to a pipe uses the ANSI code page. `srag` now writes UTF-8 to standard output.
+
+**Outcome at M2 (2026-11-14): dense S1 stays the default. Nothing beats it under the bar, and the frontier says why.** Results are in [reports/answers_comparison_test.md](../reports/answers_comparison_test.md).
+
+| 350 test questions | % correct [95% CI] | Against S1, dense [95% CI] | Cost per answer | Latency p50 |
+|---|---:|---|---:|---:|
+| S0, closed book (M1) | 33.4% [28.6, 38.3] | | $0.00036 | 4.2 s |
+| S1, BM25 top 10 (M1) | 64.0% [59.1, 68.9] | −18.9 [−23.7, −14.0] | $0.00177 | 3.8 s |
+| **S1, dense search top 10** | **82.9% [78.9, 86.6]** | | **$0.00127** | **3.7 s** |
+| S2, agentic search | 81.1% [76.9, 85.1] | −1.7 [−5.7, +2.0] | $0.00105 | 5.1 s |
+| S3, up to 20 | 82.9% [78.9, 86.6] | 0.0 [−3.7, +3.7] | $0.00215 | 4.0 s |
+| S3, up to 50 | 85.1% [81.4, 88.9] | +2.3 [−0.9, +5.7] | $0.00474 | 4.4 s |
+| S3, up to 100 | 86.6% [82.9, 90.0] | +3.7 [+0.6, +7.1] | $0.00807 | 4.9 s |
+| S\*, gold articles (M1) | 74.6% [69.7, 78.9] | −8.3 [−12.9, −3.7] | $0.00043 | 2.7 s |
+
+- **The cost frontier is S0 → S2 → S1 dense → S3 K=50 → S3 K=100.**
+  - Only the first step is shown to add correct answers: S0 to S2 adds 47.7 points [+41.4, +53.7] at $0.0014 per extra correct answer.
+  - Each later step adds 1.4 to 2.3 points with an interval that includes zero.
+  - S2 is on the frontier only because prompt caching makes it 17% cheaper than S1. It is slower (5.1 s against 3.7 s) and 1.7 points less accurate.
+- **No strategy replaces the default.**
+  - S3 at K=100 came closest: its interval lies above zero, but McNemar's p is 0.047, and 0.19 after Holm over the five. This is the case the bar was written for: one comparison out of five scraping past 0.05.
+  - If the 3.7 points are real, they cost $0.0068 more per answer, about $0.18 per extra correct answer. That's cheap next to a ticket handled by a person, so S3 at K=100 is worth a confirmatory test on fresh questions, not a switch on this one.
+- **Step 4 holds on test, and more strongly than on dev.**
+  - Dense search beats BM25 by 18.9 points (80 questions fixed, 14 broken). On dev it was 14 points.
+  - Retrieval now adds 49.4 points over closed book [+43.4, +55.4], against 30.6 with BM25 at M1.
+  - Declines fell from 37 to 11.
+- **S\* is no ceiling on test either.** Dense S1 beat the gold articles alone by 8.3 points [+3.7, +12.9], as it did on dev (D-042). Ten related articles answer more completely than the gold ones alone.
+- **Dev flattered again.** Dense S1 scored 90% on 50 dev questions and 82.9% on test, as BM25 went from 76% to 64% at M1.
+- **By question type (directional):**
+  - Multi-article questions: S3 at K=20 scored 87.1% against S1's 78.6% (70 questions). That's the strongest lead for Step 7's router.
+  - Expert-written questions: S3 at K=100 scored 93.1% against 88.0%.
+  - S2 is ahead of S1 on no type by more than 1.1 points. Section 10's skip condition ("if S2 doesn't beat S1 on any question type, there is nothing to route") is close to firing, so Step 7 starts from that.
+- **Latency.** S1's first question took 26.6 s again (`ew-001`), the first-call effect left for Step 8. Every other answer in all five runs took under 18 s.
+- **Runs.** All from commit `9d1b5fa` with a clean tree, milestone M2:
+  - Answers: `20261113-224600_s1-dense-k10-medium_test`, `20261113-230937_s2-medium_test`, `20261113-234118_s3-k20-medium_test`, `20261114-000653_s3-k50-medium_test` and `20261114-003505_s3-k100-medium_test`.
+  - Each has a `judge-high` run.
+  - S0, S1 on BM25 and S\* are M1's runs, from commit `eadbd6a`.
+- **Cost.** M2 came to $29.35 against the $30.76 estimate:
+  - $5.99 for the five strategies' answers and $9.00 for judging them.
+  - $14.35 for context rot (D-045).
 
 ---
 
