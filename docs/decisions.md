@@ -1589,6 +1589,18 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "There's no single accuracy-per-dollar number: ratios rank closed book first, because they treat a wrong answer as free. So I plot cost against accuracy, keep the strategies nothing else beats on both, and price each step along that frontier as a cost per extra correct answer, but only when the gain's confidence interval is above zero. Going from closed book to retrieval cost about half a cent per extra correct answer. The five comparisons that could change the default, and their bar, were written down before the test run."
 
+**Dev check (2026-11-13): the report and charts work, and on dev the cost frontier is S0 → S2 → S1 on dense search.** The report is [reports/answers_comparison_dev.md](../reports/answers_comparison_dev.md). The context-rot chart is now in [reports/context_rot_dev.md](../reports/context_rot_dev.md). Nothing is decided on dev.
+- **The cost frontier:**
+  - S0 → S2 adds 60 points [+44, +74] for $0.00062 more per answer: $0.0010 per extra correct answer.
+  - S2 → S1 on dense search adds 6 points [−2, +16] for $0.00024 more, so it reads "not shown to add correct answers".
+  - S2 is on the frontier only because prompt caching makes it cheaper than S1 ($0.00098 against $0.00122, D-043).
+  - S1 on BM25 and all three S3 runs are beaten on both counts.
+- **The latency frontier is S1 on dense search alone.** It has the lowest median latency of the real strategies (3.5 s) and the top score (90%, tied with S3 at K=100).
+- **Against the default, nothing passes,** as expected on 50 questions. S1 on BM25 scores −14 [−26, −2]: the interval is below zero, but McNemar's p is 0.065 (2 won, 9 lost) and 0.33 after Holm. On 50 questions the bootstrap and McNemar can disagree, which is why the bar asks for both.
+- **By question type,** single-article, multi-article and expert-written questions have the overall frontier. On simulated questions, S3 at K=50 joins it at 92% against S1's 88%, a difference of one question.
+- **The charts come out byte-identical on a rerun.** This was checked by hashing two runs, and a test checks it too. Each SVG is under 40 KB.
+- **Charts and the Windows console.** The reports now contain "→", and printing them failed on Windows, where output sent to a pipe uses the ANSI code page. `srag` now writes UTF-8 to standard output.
+
 ---
 
 ## Coming up

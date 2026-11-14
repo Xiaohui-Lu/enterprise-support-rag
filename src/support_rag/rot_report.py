@@ -16,7 +16,7 @@ from typing import Any
 from support_rag import config
 from support_rag.llm import LONG_PROMPT_TOKENS, prompt_tokens
 from support_rag.runs import load_config, load_results
-from support_rag.stats import bootstrap_ci, holm, mcnemar_exact, paired_bootstrap_ci
+from support_rag.stats import bootstrap_ci, paired_comparison, with_holm
 
 GOLD_ONLY = ("gold only", 0)
 TYPE_ORDER = {"gold only": 0, "hard": 1, "random": 2}
@@ -38,27 +38,6 @@ def _rate(values: Sequence[bool]) -> dict[str, Any]:
     floats = [float(v) for v in values]
     low, high = bootstrap_ci(floats)
     return {"n": len(floats), "pct": 100 * statistics.fmean(floats), "ci": (100 * low, 100 * high)}
-
-
-def _paired(a: Mapping[str, bool | None], b: Mapping[str, bool | None]) -> dict[str, Any]:
-    questions = sorted(q for q in a if a[q] is not None and b.get(q) is not None)
-    first = [bool(a[q]) for q in questions]
-    second = [bool(b[q]) for q in questions]
-    low, high = paired_bootstrap_ci([float(x) for x in first], [float(x) for x in second])
-    return {
-        "n": len(questions),
-        "difference": 100 * (sum(first) - sum(second)) / len(questions),
-        "ci": (100 * low, 100 * high),
-        **mcnemar_exact(first, second),
-    }
-
-
-def _with_holm(comparisons: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    for comparison, adjusted in zip(
-        comparisons, holm([c["p_value"] for c in comparisons]), strict=True
-    ):
-        comparison["p_holm"] = adjusted
-    return comparisons
 
 
 def compare_rot(judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR) -> dict[str, Any]:
@@ -130,12 +109,14 @@ def compare_rot(judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR)
     # two arms hold the same gold at the same depth, and the smaller one's distractors are a
     # subset of the larger one's, so the only difference is the extra distractors. Unlike the
     # comparisons with the gold only, the types don't share one sample (D-045).
-    within_type = _with_holm(
+    within_type = with_holm(
         [
             {
                 "distractors": distractors,
                 "sizes": (sizes[-1], sizes[0]),
-                **_paired(correct[(distractors, sizes[-1])], correct[(distractors, sizes[0])]),
+                **paired_comparison(
+                    correct[(distractors, sizes[-1])], correct[(distractors, sizes[0])]
+                ),
             }
             for distractors in ("hard", "random")
             if len(sizes) > 1
@@ -143,12 +124,12 @@ def compare_rot(judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR)
             and (distractors, sizes[0]) in correct
         ]
     )
-    against_gold = _with_holm(
-        [{"arm": arm, **_paired(correct[arm], correct[GOLD_ONLY])} for arm in rot_arms]
+    against_gold = with_holm(
+        [{"arm": arm, **paired_comparison(correct[arm], correct[GOLD_ONLY])} for arm in rot_arms]
     )
-    hard_vs_random = _with_holm(
+    hard_vs_random = with_holm(
         [
-            {"size": size, **_paired(correct[("hard", size)], correct[("random", size)])}
+            {"size": size, **paired_comparison(correct[("hard", size)], correct[("random", size)])}
             for size in sizes
             if ("hard", size) in correct and ("random", size) in correct
         ]
@@ -215,7 +196,8 @@ def _comparison_line(label: str, c: Mapping[str, Any]) -> str:
     )
 
 
-def format_rot_report(result: Mapping[str, Any]) -> str:
+def format_rot_report(result: Mapping[str, Any], *, figure: str | None = None) -> str:
+    """The report as Markdown; `figure` is the chart's path relative to the report."""
     judge = result["judge"]
     lines = [
         f"# Context rot on {result['split']}",
@@ -233,6 +215,11 @@ def format_rot_report(result: Mapping[str, Any]) -> str:
         "",
         "## % correct by context size",
         "",
+        *(
+            [f"![% correct against prompt tokens, hard and random distractors]({figure})", ""]
+            if figure
+            else []
+        ),
         "| Arm | Questions | % correct [95% CI] | Prompt tokens | Distractors | Cited a distractor "
         "| Over 100K | Cost per answer |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
@@ -331,9 +318,15 @@ def format_rot_report(result: Mapping[str, Any]) -> str:
 def write_rot_report(
     judge_runs: Sequence[Path], reports_dir: Path = config.REPORTS_DIR, name: str | None = None
 ) -> Path:
-    """Write reports/context_rot_<name>.md; `name` defaults to the split."""
+    """Write reports/context_rot_<name>.md and its chart, reports/figures/context_rot_<name>.svg;
+    `name` defaults to the split."""
+    from support_rag.charts import rot_chart  # matplotlib is a dev dependency
+
     result = compare_rot(judge_runs)
-    path = reports_dir / f"context_rot_{name or result['split']}.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(format_rot_report(result), encoding="utf-8", newline="\n")
+    stem = f"context_rot_{name or result['split']}"
+    rot_chart(result, reports_dir / "figures" / f"{stem}.svg")
+    path = reports_dir / f"{stem}.md"
+    path.write_text(
+        format_rot_report(result, figure=f"figures/{stem}.svg"), encoding="utf-8", newline="\n"
+    )
     return path
