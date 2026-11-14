@@ -111,7 +111,7 @@ Every strategy uses the same generator model and the same output format: an answ
 - Two distractor types: **hard** (top-ranked non-gold articles from the retriever, which look relevant but aren't) and **random** (any other articles).
 - Distractors are shuffled. Each gold article gets one random depth per question, the same at every size and type, so position effects ("lost in the middle") can be checked without confounding the lines.
 - Same model, prompt and judge as the main runs; answers through the batch API.
-- Output: % correct against context size, one line per distractor type. If the hard line falls faster, similarity hurts more than length alone, as [Chroma's 2025 context-rot study](https://research.trychroma.com/context-rot) found, here checked on enterprise support data.
+- Output: % correct against context size, one line per distractor type. The main measure of rot is each type's 90K arm against its own 10K arm: the same gold at the same depth, with more distractors, and no sample shared with the other type (D-045). If the hard line falls faster, similarity hurts more than length alone, as [Chroma's 2025 context-rot study](https://research.trychroma.com/context-rot) found, here checked on enterprise support data.
 
 ## 10. Router (RQ6)
 

@@ -1521,6 +1521,13 @@ The last row's range assumes each best section is of average size at one end and
 - **Cost.** $0.41: $0.15 for the answers and $0.26 for judging. Hard arms cost more to judge, because their answers cite more articles. At these rates, the M2 run comes to about $14: $5.10 for the answers and $9.20 for judging.
 - **Runs.** The answer runs are `20261113-152339_rot-hard-10k-medium_dev_real`, `20261113-152704_rot-hard-40k-medium_dev_real`, `20261113-153028_rot-hard-90k-medium_dev_real`, `20261113-153335_rot-random-10k-medium_dev_real`, `20261113-153542_rot-random-40k-medium_dev_real` and `20261113-153748_rot-random-90k-medium_dev_real`, all from commit `5ddf4c6` (the harness plus a fix to `--help` text) with a clean tree. Each has a `judge-high` run.
 
+**Amendment (2026-11-13, after the pilot and before any test run): the main measure of rot is each type's 90K arm against its own 10K arm.**
+- **Why.** The pilot showed that the six comparisons with the gold only share one sample. Within a type, the 90K and 10K arms hold the same gold articles at the same depths, and the 10K distractors are a subset of the 90K ones. The only difference is about 80,000 tokens of extra distractors. Hard and random each use their own two arms, so the two comparisons don't share a sample.
+- **What changes.** The report shows this table first, with Holm's adjustment over the two types. The comparisons with the gold only and hard against random stay, and the report notes that the gold-only ones move together. No run changes, and nothing is added to the cost.
+- **What it gives up.** It can't see a drop that happens before 10K. The comparisons with the gold only still cover that, with their caveat.
+- **Honesty note.** The change was made after seeing the pilot's accuracy, but on dev, and it changes the analysis only, not the runs. The test set hasn't been run.
+- **On the pilot:** no question changed grade between 10K and 90K, in either type.
+
 ---
 
 ## Coming up

@@ -1,8 +1,9 @@
 """The context-rot report (RQ5, D-045): % correct as distractors fill the context.
 
 Input: the gold-only judge run (S*) and one judge run per arm, all with the same judge
-settings. Every arm is paired with the gold only on the same questions, and hard with random
-at each size. A judge failure leaves the question out of that arm and its comparisons.
+settings. Within each type the largest size is paired with the smallest; every arm is also
+paired with the gold only, and hard with random at each size, all on the same questions. A
+judge failure leaves the question out of that arm and its comparisons.
 """
 
 from __future__ import annotations
@@ -124,10 +125,27 @@ def compare_rot(judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR)
             }
         )
 
+    sizes = sorted({size for _, size in rot_arms})
+    # The main measure of rot: within each type, the largest size against the smallest. The
+    # two arms hold the same gold at the same depth, and the smaller one's distractors are a
+    # subset of the larger one's, so the only difference is the extra distractors. Unlike the
+    # comparisons with the gold only, the types don't share one sample (D-045).
+    within_type = _with_holm(
+        [
+            {
+                "distractors": distractors,
+                "sizes": (sizes[-1], sizes[0]),
+                **_paired(correct[(distractors, sizes[-1])], correct[(distractors, sizes[0])]),
+            }
+            for distractors in ("hard", "random")
+            if len(sizes) > 1
+            and (distractors, sizes[-1]) in correct
+            and (distractors, sizes[0]) in correct
+        ]
+    )
     against_gold = _with_holm(
         [{"arm": arm, **_paired(correct[arm], correct[GOLD_ONLY])} for arm in rot_arms]
     )
-    sizes = sorted({size for _, size in rot_arms})
     hard_vs_random = _with_holm(
         [
             {"size": size, **_paired(correct[("hard", size)], correct[("random", size)])}
@@ -173,6 +191,7 @@ def compare_rot(judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR)
         "judge": {"model": model, "effort": effort, "prompt_version": prompt_version},
         "n_questions": len(questions),
         "rows": rows,
+        "within_type": within_type,
         "against_gold": against_gold,
         "hard_vs_random": hard_vs_random,
         "by_kind": by_kind,
@@ -230,7 +249,31 @@ def format_rot_report(result: Mapping[str, Any]) -> str:
         "| Comparison | Questions | Difference, points [95% CI] | Only the first right "
         "| Only the second right | McNemar p | Holm p |"
     )
-    lines += ["", "## Against the gold only", "", header, "|---|---:|---:|---:|---:|---:|---:|"]
+    if result["within_type"]:
+        lines += [
+            "",
+            "## Largest against smallest, same type",
+            "",
+            "The main measure of rot: the same gold at the same depth, with more distractors.",
+            "",
+            header,
+            "|---|---:|---:|---:|---:|---:|---:|",
+        ]
+        lines += [
+            _comparison_line(
+                f"{c['distractors']}, {c['sizes'][0] // 1000}K vs {c['sizes'][1] // 1000}K", c
+            )
+            for c in result["within_type"]
+        ]
+    lines += [
+        "",
+        "## Against the gold only",
+        "",
+        "All of these share one gold-only sample, so their differences move together.",
+        "",
+        header,
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
     lines += [
         _comparison_line(f"{_name(c['arm'])} vs gold only", c) for c in result["against_gold"]
     ]

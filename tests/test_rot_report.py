@@ -62,6 +62,22 @@ def test_hard_and_random_are_compared_at_the_same_size(tmp_path):
     assert comparison["difference"] == -30.0
 
 
+def test_each_type_pairs_its_largest_size_with_its_smallest(tmp_path):
+    runs = [
+        _arm(tmp_path, "gold", {"strategy": "s_star"}, 9),
+        _arm(tmp_path, "hard-10k", _rot(10_000), 8),
+        _arm(tmp_path, "hard-40k", _rot(40_000), 7),
+        _arm(tmp_path, "hard-90k", _rot(90_000), 5),
+        _arm(tmp_path, "random-90k", _rot(90_000, "random"), 6),
+    ]
+    result = compare_rot(runs, runs_dir=tmp_path)
+    (comparison,) = result["within_type"]  # random has no 10K arm
+    assert comparison["distractors"] == "hard"
+    assert comparison["sizes"] == (90_000, 10_000)
+    assert comparison["difference"] == -30.0
+    assert "| hard, 90K vs 10K | 10 |" in format_rot_report(result)
+
+
 def test_the_gold_only_run_is_cut_to_the_pilots_questions(tmp_path):
     runs = [
         _arm(tmp_path, "gold", {"strategy": "s_star"}, 9),
