@@ -8,6 +8,7 @@ a table with the same numbers, which is its accessible version.
 
 from __future__ import annotations
 
+import io
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -70,15 +71,19 @@ def _figure(width: float, height: float, rows: int = 1) -> tuple[Any, Any]:
 
 
 def _save(figure: Any, path: Path) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    """Write the SVG through a byte buffer: given a path, matplotlib writes text mode, which
+    turns newlines into CRLF on Windows, so the file would differ by OS."""
+    buffer = io.BytesIO()
     figure.savefig(
-        path,
+        buffer,
         format="svg",
         metadata={"Date": None},  # no timestamp, so a rerun gives the same file
         facecolor=SURFACE,
         bbox_inches="tight",
         pad_inches=0.15,
     )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(buffer.getvalue())
     return path
 
 

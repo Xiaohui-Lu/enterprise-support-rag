@@ -37,6 +37,7 @@ def test_a_rerun_draws_the_same_answers_chart(tmp_path):
     second = answers_chart(ANSWERS, tmp_path / "b.svg").read_bytes()
     assert first == second
     assert b"S1 dense" in first  # names stay text
+    assert b"\r\n" not in first  # LF on every OS
 
 
 def test_a_rerun_draws_the_same_rot_chart(tmp_path):
