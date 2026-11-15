@@ -1790,6 +1790,22 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "My router sends a question straight to long context when dense search's best match is weak, and escalates when the cheap answer declines. Its threshold is a 20% budget fixed on dev, not tuned. The test that matters is against random escalation at the same rate. Long context fixes more questions than it breaks, so sending any 20% there helps a little, and the router has to beat that to show its signal means something."
 
+**Dev check (2026-11-14): the router runs end to end from the cache, and on dev it loses one question.** The report is [reports/router_dev_real.md](../reports/router_dev_real.md). Nothing on dev decides anything.
+- **The plumbing.**
+  - Every call on the 50 real dev questions came from the call cache, and so did every grade, so nothing was paid.
+  - The run agrees with a replay of its rule on S1's and S3's dev runs: the same route on all 50 questions, and the same grade on all 50.
+- **The routes.**
+  - Postgres's top scores put exactly 10 of the 50 questions below 0.5615, as the budget intended.
+  - S1 declined none of the 40 it answered, so the decline path never ran.
+- **The result.**
+  - R2 scored 88% against S1's 90%: −2 points [−6, 0]. Of the 10 questions sent to S3, it gained none and lost one.
+  - `sim-113`, the one question routing could fix, wasn't sent, because its top score is high.
+  - Multi-article questions were sent at the same rate as the rest: 2 of 9, against 8 of 41.
+- **Cost and latency.**
+  - $0.00264 per answer, 33% of S3 at K=100's.
+  - A composed median latency of 3.6 s, against S1's 3.5 s.
+- **The run:** `20261114-195916_r2-medium_dev_real` from commit `dd712f0`, and its `judge-high` run.
+
 ---
 
 ## Coming up
