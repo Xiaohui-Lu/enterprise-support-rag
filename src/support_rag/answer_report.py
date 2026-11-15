@@ -26,6 +26,7 @@ STRATEGY_NAMES = {
     "s1": "S1",
     "s2": "S2, agentic search",
     "s3": "S3, long context",
+    "r2": "R2, router",
     "s_star": "S*, gold articles",
 }
 RETRIEVER_NAMES = {"bm25": "BM25", "dense": "dense search"}
@@ -86,6 +87,8 @@ def strategy_name(strategy: str, answers_config: Mapping[str, Any]) -> str:
     S3's K is a ceiling: the token cap can send fewer (D-044)."""
     name = STRATEGY_NAMES[strategy]
     k = answers_config.get("k")
+    if strategy == "r2":
+        return f"{name}: S1 top {k}, or S3 up to {answers_config['escalation_k']}"
     if not k:
         return name
     top = "up to" if strategy == "s3" else "top"
@@ -96,8 +99,12 @@ def strategy_name(strategy: str, answers_config: Mapping[str, Any]) -> str:
 
 def _latency(records: Iterable[Mapping[str, Any]]) -> tuple[float | None, float | None]:
     """Median and 95th percentile over the answers paid for in the run: a cache hit takes no
-    time, so it says nothing about latency (D-020, D-022)."""
-    values = sorted(r["latency_ms"] for r in records if not r["cached"])
+    time, so it says nothing about latency (D-020, D-022). The router is the exception: its
+    calls repeat earlier real-time ones, and its latency adds up their original latencies,
+    which the cache keeps (D-048)."""
+    values = sorted(
+        r["latency_ms"] for r in records if not r["cached"] or r.get("router") is not None
+    )
     if not values:
         return None, None
     if len(values) == 1:
@@ -171,9 +178,13 @@ def _by_type(
     return result
 
 
-def compare_strategies(
+def load_judged(
     judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR
-) -> dict[str, Any]:
+) -> dict[str, dict[str, Any]]:
+    """Each judge run under its strategy's key: the judge's config, the answer run's config,
+    the grades (question ID -> correct, not correct, or None for a judge failure) and the
+    answer records by question ID. Every run must use the same judge and cover the same
+    questions."""
     judge_configs = [load_config(run_dir) for run_dir in judge_runs]
     if any(c.get("kind") != "judge" for c in judge_configs):
         raise ValueError("give one judge run per strategy")
@@ -181,31 +192,49 @@ def compare_strategies(
     if len(judges) != 1:
         raise ValueError("the judge runs use different judge settings")
 
-    configs = {}
-    answers_configs = {}
-    correct: dict[str, dict[str, bool | None]] = {}
-    for run_dir, run_config in zip(judge_runs, judge_configs, strict=True):
-        answers_config = load_config(runs_dir / run_config["answers_run"])
+    judged: dict[str, dict[str, Any]] = {}
+    for run_dir, judge_config in zip(judge_runs, judge_configs, strict=True):
+        answers_config = load_config(runs_dir / judge_config["answers_run"])
         key = arm(answers_config)
-        if key in configs:
+        if key in judged:
             raise ValueError("give one judge run per strategy (S1: one per retriever; S3: per K)")
-        configs[key], answers_configs[key] = run_config, answers_config
-        correct[key] = {
-            r["question_id"]: None if r["correctness"] is None else r["correctness"] == "correct"
-            for r in load_results(run_dir)
+        judged[key] = {
+            "judge_config": judge_config,
+            "answers_config": answers_config,
+            "correct": {
+                r["question_id"]: None
+                if r["correctness"] is None
+                else r["correctness"] == "correct"
+                for r in load_results(run_dir)
+            },
+            "records": {
+                r["question_id"]: r for r in load_results(runs_dir / answers_config["run_id"])
+            },
         }
-    if len({frozenset(questions) for questions in correct.values()}) != 1:
+    if len({frozenset(arm["correct"]) for arm in judged.values()}) != 1:
         raise ValueError("the judge runs cover different questions")
+    return judged
+
+
+def compare_strategies(
+    judge_runs: Sequence[Path], *, runs_dir: Path = config.RUNS_DIR
+) -> dict[str, Any]:
+    judged = load_judged(judge_runs, runs_dir=runs_dir)
+    configs = {key: arm["judge_config"] for key, arm in judged.items()}
+    answers_configs = {key: arm["answers_config"] for key, arm in judged.items()}
+    correct: dict[str, dict[str, bool | None]] = {
+        key: arm["correct"] for key, arm in judged.items()
+    }
+    records: dict[str, dict[str, dict[str, Any]]] = {
+        key: arm["records"] for key, arm in judged.items()
+    }
 
     strategies = {}
-    records: dict[str, dict[str, dict[str, Any]]] = {}
     for key in sorted(correct, key=_arm_order):
         by_question = correct[key]
         graded = [float(c) for c in by_question.values() if c is not None]
         answers_config = answers_configs[key]
-        run_dir = runs_dir / answers_config["run_id"]
-        answers = load_summary(run_dir)
-        records[key] = {r["question_id"]: r for r in load_results(run_dir)}
+        answers = load_summary(runs_dir / answers_config["run_id"])
         latency_p50, latency_p95 = _latency(records[key].values())
         strategies[key] = {
             "n": len(graded),
@@ -245,7 +274,9 @@ def compare_strategies(
             if better in correct and against in correct
         ]
     )
-    candidates = [key for key in strategies if base and key not in ("s0", "s_star", base)]
+    # M2's verdict family (D-046). The router has its own verdicts, against S1 and against
+    # random escalation (D-048), so it stays out of this one.
+    candidates = [key for key in strategies if base and key not in ("s0", "s_star", "r2", base)]
     against_default = with_holm(
         [
             {"better": key, "base": base, **paired_comparison(correct[key], correct[base])}
@@ -257,7 +288,8 @@ def compare_strategies(
             comparison["ci"][0] > 0 and comparison["p_holm"] < VERDICT_P
         )
 
-    model, effort, prompt_version = judges.pop()
+    judge = next(iter(configs.values()))
+    model, effort, prompt_version = judge["model"], judge["effort"], judge["prompt_version"]
     return {
         "judge": {"model": model, "effort": effort, "prompt_version": prompt_version},
         "judge_runs": sorted(c["run_id"] for c in configs.values()),

@@ -93,7 +93,12 @@ def main(argv: list[str] | None = None) -> None:
     answer = commands.add_parser(
         "answer", help="answer a split with one strategy (paid API calls, cached)"
     )
-    answer.add_argument("--strategy", choices=["s0", "s1", "s2", "s3", "s_star"], required=True)
+    answer.add_argument(
+        "--strategy",
+        choices=["s0", "s1", "s2", "s3", "s_star", "r2"],
+        required=True,
+        help="r2 is the router: S1, or S3 at K=100 when retrieval is weak or S1 declines (D-048)",
+    )
     answer.add_argument(
         "--split", choices=["dev_real", "test"], default="dev_real", help="test: milestones only"
     )
@@ -159,6 +164,17 @@ def main(argv: list[str] | None = None) -> None:
     report_answers.add_argument("--name", help="report name; default: the split")
     report_answers.add_argument(
         "runs", nargs="+", type=Path, help="one judge run per strategy, same judge settings"
+    )
+    report_router = commands.add_parser(
+        "report-router",
+        help="the router against S1 and random escalation, to reports/router_<name>.md (D-048)",
+    )
+    report_router.add_argument("--name", help="report name; default: the split")
+    report_router.add_argument(
+        "runs",
+        nargs="+",
+        type=Path,
+        help="judge runs: R2, S1 on dense search and S3 at K=100, plus any others for the frontier",
     )
     report_tuning = commands.add_parser(
         "report-tuning", help="candidate settings vs the default on dev, to reports/"
@@ -384,6 +400,11 @@ def run(args: argparse.Namespace) -> None:
             from support_rag.answer_report import write_report
 
             path = write_report(args.runs, name=args.name)
+            print(path.read_text(encoding="utf-8"))
+        case "report-router":
+            from support_rag.router_report import write_router_report
+
+            path = write_router_report(args.runs, name=args.name)
             print(path.read_text(encoding="utf-8"))
         case "report-tuning":
             from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K

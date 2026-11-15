@@ -40,6 +40,7 @@ from support_rag.long_context import (
 )
 from support_rag.records import Article, Hit, Question
 from support_rag.retrieval_eval import Retriever, answer_retriever, questions_for_split
+from support_rag.router import BUDGET, ESCALATION_K, THRESHOLD, route, skips_s1
 from support_rag.runs import append_result, git_state, start_run, write_summary
 
 # The generator's settings after tuning on dev (D-033): Haiku's default effort, and how
@@ -80,6 +81,8 @@ class AnswerResult:
     long_context: dict[str, Any] | None = None
     # The context-rot test only: the arm, the distractors and where the gold went (D-045).
     rot: dict[str, Any] | None = None
+    # R2 only: the route, the top score it was decided on, and each model call (D-048).
+    router: dict[str, Any] | None = None
 
 
 def reading_context(hits: Sequence[Hit], articles_by_id: Mapping[str, Article]) -> list[Article]:
@@ -117,15 +120,27 @@ def context_for(
         case "s3":
             if retriever is None or count is None:
                 raise ValueError("S3 needs a retriever and a token counter")
-            ranked = reading_context(retriever.search(question.question, k), articles_by_id)
-            used = count(SYSTEM_WITH_ARTICLES) + count(question.question)
-            context = capped_context(ranked, budget=PROMPT_BUDGET, count=count, used=used)
-            if not context:  # an empty context would silently become closed book
-                raise ValueError(f"{question.id}: the top article alone is over the budget")
-            return context
+            return long_context(
+                retriever.search(question.question, k), question, articles_by_id, count
+            )
         case "s_star":
             return [articles_by_id[article_id] for article_id in question.gold_ids]
     raise ValueError(f"unknown strategy {strategy!r}")
+
+
+def long_context(
+    hits: Sequence[Hit],
+    question: Question,
+    articles_by_id: Mapping[str, Article],
+    count: TokenCounter,
+) -> list[Article]:
+    """S3's context: the hits, best first, while the estimated prompt fits the budget (D-044)."""
+    ranked = reading_context(hits, articles_by_id)
+    used = count(SYSTEM_WITH_ARTICLES) + count(question.question)
+    context = capped_context(ranked, budget=PROMPT_BUDGET, count=count, used=used)
+    if not context:  # an empty context would silently become closed book
+        raise ValueError(f"{question.id}: the top article alone is over the budget")
+    return context
 
 
 def answer_question(
@@ -222,6 +237,71 @@ def answer_with_agent(
     )
 
 
+def answer_with_router(
+    llm: LLM,
+    question: Question,
+    *,
+    retriever: Retriever,
+    articles_by_id: Mapping[str, Article],
+    count: TokenCounter,
+    effort: str,
+    k: int = DEFAULT_K,
+    threshold: float = THRESHOLD,
+) -> AnswerResult:
+    """Answer one question with R2 (D-048).
+
+    Dense search ranks the articles once, and S1 and S3 both read from that ranking: S1 its
+    top k, S3 its top ESCALATION_K under the token cap. So each request is exactly the one
+    S1 or S3 sends on its own, and for a question answered before, the call cache answers it.
+
+    The result is the answer that stands. Its tokens, cost and latency add up every model
+    call, so a question that escalated after a decline pays for both.
+    """
+    hits = retriever.search(question.question, ESCALATION_K)
+    top_score = hits[0].score
+
+    def escalate() -> AnswerResult:
+        context = long_context(hits, question, articles_by_id, count)
+        return answer_long_context(
+            llm, question, context, k=ESCALATION_K, count=count, effort=effort
+        )
+
+    s1 = None
+    if skips_s1(top_score, threshold):
+        final = escalate()
+    else:
+        s1 = answer_question(
+            llm, question, reading_context(hits[:k], articles_by_id), effort=effort
+        )
+        final = escalate() if s1.declined else s1
+    calls = ([s1] if s1 is not None else []) + ([final] if final is not s1 else [])
+    usage: Counter[str] = Counter()
+    for call in calls:
+        usage.update(call.usage)
+    return replace(
+        final,
+        usage=dict(usage),
+        cost_usd=round(sum(call.cost_usd for call in calls), 6),
+        latency_ms=round(sum(call.latency_ms for call in calls), 1),
+        cached=all(call.cached for call in calls),
+        router={
+            "route": route(top_score, s1 is not None and s1.declined, threshold=threshold),
+            "top_score": round(top_score, 6),
+            "threshold": threshold,
+            "calls": [
+                {
+                    "strategy": "s1" if call is s1 else f"s3-k{ESCALATION_K}",
+                    "declined": call.declined,
+                    "cost_usd": call.cost_usd,
+                    "latency_ms": call.latency_ms,
+                    "cached": call.cached,
+                }
+                for call in calls
+            ],
+        },
+    )
+
+
 def summarize_answers(results: Sequence[AnswerResult]) -> dict[str, Any]:
     """Format and cost figures for a run. Correctness comes later, from the judge."""
     paid = [r for r in results if not r.cached]
@@ -247,6 +327,8 @@ def summarize_answers(results: Sequence[AnswerResult]) -> dict[str, Any]:
         summary["long_context"] = _summarize_long_context(results)
     if any(r.rot is not None for r in results):
         summary["rot"] = _summarize_rot(results)
+    if any(r.router is not None for r in results):
+        summary["router"] = _summarize_router(results)
     return summary
 
 
@@ -310,6 +392,22 @@ def _summarize_agent(results: Sequence[AnswerResult]) -> dict[str, Any]:
             r.usage.get("cache_read_input_tokens", 0) for r in results
         ),
         "cost_without_caching_usd": round(sum(a["cost_without_caching_usd"] for a in agents), 4),
+    }
+
+
+def _summarize_router(results: Sequence[AnswerResult]) -> dict[str, Any]:
+    """Where R2 sent the questions, and what this run paid: a question's answer is "cached"
+    only if every call it made was, so paid calls are counted call by call (D-048)."""
+    rows = [r.router for r in results if r.router is not None]
+    routes = Counter(row["route"] for row in rows)
+    calls = [call for row in rows for call in row["calls"]]
+    return {
+        "threshold": rows[0]["threshold"],
+        "routes": {name: routes[name] for name in ("s1", "score", "decline")},
+        "escalated": routes["score"] + routes["decline"],
+        "model_calls": len(calls),
+        "calls_not_cached": sum(not call["cached"] for call in calls),
+        "paid_this_run_usd": round(sum(c["cost_usd"] for c in calls if not c["cached"]), 4),
     }
 
 
@@ -400,6 +498,21 @@ def run_answers(
             **settings,
         }
         name = f"s3-k{k}-{effort}_{split}"
+    if strategy == "r2":
+        from support_rag.long_context import claude_token_estimator
+
+        retriever, settings = answer_retriever(DEFAULT_RETRIEVER, "article", articles)
+        count = claude_token_estimator()
+        run_config |= {
+            "k": k,
+            "unit": "article",
+            "escalation_k": ESCALATION_K,
+            "budget": BUDGET,
+            "threshold": THRESHOLD,
+            "prompt_budget": PROMPT_BUDGET,
+            "claude_tokens_per_tiktoken": CLAUDE_TOKENS_PER_TIKTOKEN,
+            **settings,
+        }
     run_dir = start_run(name, run_config, runs_dir)
 
     results = []
@@ -409,6 +522,16 @@ def run_answers(
             if strategy == "s2":
                 toolbox = ToolBox(retriever, articles_by_id)
                 result = answer_with_agent(llm, question, toolbox, effort=effort)
+            elif strategy == "r2":
+                result = answer_with_router(
+                    llm,
+                    question,
+                    retriever=retriever,
+                    articles_by_id=articles_by_id,
+                    count=count,
+                    effort=effort,
+                    k=k,
+                )
             elif strategy == "s3":
                 context = context_for(
                     strategy,
