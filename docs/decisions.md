@@ -1720,6 +1720,78 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-048 · The router: weak retrieval goes straight to long context, a decline escalates, and random escalation is the control (Step 7)
+
+**Context.**
+- **D-047 fixed the method:** no grades in the design, a budget instead of tuning, and one scoring on test, tagged M3. This entry sets the rules. It's committed before anything about routing is computed on test.
+- **Where to escalate, from M2:**
+  - S3 at K=100 was the most accurate strategy: 86.6% against S1's 82.9%, +3.7 points [+0.6, +7.1], Holm p 0.19. It costs 6.4 times as much per answer.
+  - S2 beat S1 on no question type by more than 1.1 points, so section 10's skip condition applies to S2.
+- **Free signals, checked on the 50 real dev questions:**
+  - **Dense search's top score**, the cosine similarity of the question and its best article.
+    - The weakest 20% sit below 0.5615.
+    - It doesn't flag `sim-113`, the one question routing could fix: that question is 40th weakest of 50.
+    - Multi-article questions don't score lower: their median is 0.653, against 0.635 for single-article ones.
+    - Fifty questions is thin evidence either way.
+  - **S1 declining:** 0 of 50 on dev, and 11 of 350 on test at M2.
+
+**Decision.**
+- **The router, `r2`:**
+  1. Dense search ranks the articles once.
+  2. If the top score is below 0.5615, answer with S3 at K=100 straight away, without calling S1. 0.5615 is the 11th-lowest top score of the 50 real dev questions, so 10 of them (20%) fall below it.
+  3. Otherwise, answer with S1, top 10. If S1 declines, answer again with S3 at K=100, and that answer stands.
+- **Why these settings:**
+  - **20% is a budget, not a fitted value.** It's about the share of multi-article questions (70 of 350 on test, 9 of 50 on dev), the type where S3 helped at M2.
+  - **K=100** was the most accurate S3 at M2, and its token cap keeps every prompt under the 100K price line (D-044).
+  - **Routing on the score before answering** means a question sent to S3 that way is paid for once. A decline can only be seen after S1 has answered, so that path pays for both.
+  - **Expected cost** at M2's per-answer costs: about $0.0028 per answer, 35% of S3 at K=100's.
+- **The control: random escalation at the router's rate.** Let m be the number of test questions the router sends to S3, for either reason. The control sends m randomly chosen questions to S3 at K=100 and the rest to S1. It's computed from M2's grades for each question, with no new calls.
+- **The verdict: two comparisons, with Holm over the two.** Each needs a paired 95% interval entirely above zero and a Holm-adjusted p below 0.05.
+  1. **The router against random escalation:** does the signal choose better than chance?
+     - The difference is the router's % correct minus the control's expected % correct. On each question, the control's expected grade is S1's, plus m/n of the difference between S3's grade and S1's. Its interval comes from a paired bootstrap.
+     - Its p comes from a permutation test: the share of 10,000 random sets of m questions, with a fixed seed, that score at least as well as the router.
+  2. **The router against S1:** does routing add correct answers? This uses a paired bootstrap and McNemar's test, as in D-046.
+  - **The router becomes the service's default only if both pass.** If only the second passes, sending more questions to S3 helps, but a random choice would do about as well. In that case S1 stays the default, and the write-up says what a bigger budget would cost.
+- **Reported, deciding nothing:**
+  - % correct, cost per answer and latency for the router, the control, S1 and S3 at K=100, and the router's place on M2's cost frontier.
+  - The share of S3 at K=100's gain over S1 that the router keeps, and its cost as a share of S3's.
+  - Each signal alone: the score rule without the decline step, and the decline step without the score rule.
+  - The same rules at other budgets, with thresholds fixed now from the same dev scores:
+    - 10%: below 0.5313, the 6th-lowest.
+    - 30%: below 0.5889, the 16th-lowest.
+    - 50%: below 0.6415, the 26th-lowest.
+  - The hindsight oracle over S1 and S3 at K=100 (the router's own ceiling), and over S1, S2 and S3 at every K.
+  - Where questions went, by type, including how many escalated questions need several articles.
+- **Cost and latency of the router.**
+  - A question's cost is what its calls cost: S1, S3, or both.
+  - Every call comes from the cache. The cache keeps each call's original real-time latency from M2, so the router's latency is built from those, summed when both calls ran. The report says it's composed this way.
+  - Thresholds compare against the score Postgres returns. These constants are the rule, rounded as written here.
+- **The runs:**
+  - **On dev first,** to check the plumbing: `srag answer --strategy r2` on the 50 real dev questions, then judged. Dev's S1 and S3 at K=100 answers are in the cache. Nothing on dev decides anything.
+  - **Then once on test,** tagged M3, from a clean commit, and judged through the batch API.
+  - **Expected cost: about $0,** because every request repeats one made at M2. If nothing were cached, it would be under $3. The run reports how many calls weren't cached.
+
+**Alternatives.**
+- **A pure cascade:** always run S1, then escalate on a weak score or a decline. It's simpler, but every escalated question pays for both calls.
+- **Escalating to S2, or to S3 at K=20 or 50.** S2 beat S1 on no type at M2. K=20 was best on multi-article questions but tied S1 overall. K=100 had the largest overall gain.
+- **An LLM self-check as the signal**, asking "does this context answer the question?". It would likely be more informative. But it re-reads S1's ~9,000-token context, costing nearly an S1 answer again, and its prompt would need checking on dev, where only one question can be fixed.
+- **Question length or wording rules,** section 10's R1. Expert-written questions are long emails, and S3 did best on them at M2. But length marks which dataset a question came from, not whether it needs more articles. Such rules would be invented with no data to check them.
+- **The score margin, the top score minus the second, as the signal.** On dev, multi-article and single-article questions have nearly the same median margin: 0.019 against 0.021.
+- **No control,** judging the router against S1 only. A router that sends questions to a stronger strategy beats S1 whether or not its signal means anything.
+
+**Why.**
+- **The control isolates what the signal adds.** S3 at K=100 is right on 25 questions S1 missed and wrong on 12 S1 got right. So sending a random 20% to S3 already gains about 2.6 questions, 0.7 points.
+- **Free signals keep the router at zero extra calls.** A cheap router has to show it works without them.
+
+**Trade-offs.**
+- **Dev hints that the score signal is weak.** If comparison 1 fails, RQ6's answer is "free signals don't route better than chance on this data". That is still an answer.
+- **One Holm family holds two kinds of p:** a permutation p and a McNemar p. They test different things, but each is a valid p-value, and Holm needs nothing more.
+- **The control matches the router's number of escalations, not its mix of paid paths,** so their costs differ slightly. The report gives both.
+
+**In short.** "My router sends a question straight to long context when dense search's best match is weak, and escalates when the cheap answer declines. Its threshold is a 20% budget fixed on dev, not tuned. The test that matters is against random escalation at the same rate. Long context fixes more questions than it breaks, so sending any 20% there helps a little, and the router has to beat that to show its signal means something."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

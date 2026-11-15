@@ -117,20 +117,19 @@ Every strategy uses the same generator model and the same output format: an answ
 
 ## 10. Router (RQ6)
 
-The router chooses between S1 (fast) and S2 (agentic). S3 joins only if Step 6 finds a question type where it wins.
+The original plan chose between S1 and S2, with S3 joining only if Step 6 found a question type where it won. It did: on multi-article questions at M2, S3 at K=20 scored 87.1% against S1's 78.6%. Meanwhile S2 beat S1 on no type by more than 1.1 points, so the skip condition ("if S2 doesn't beat S1 on any question type, there is nothing to route") applies to S2, and the router chooses between S1 and S3.
 
-| Router | How it decides | Tuned on |
+Only one of the 50 real dev questions can be fixed by routing, so nothing is tuned on dev. Thresholds are set by an escalation budget instead, the planned classifier (R3) and rules router (R1) are dropped, and the router is scored once on test, tagged M3 (D-047).
+
+| Router | How it decides | Set by |
 |---|---|---|
-| R1 Rules | Question length, troubleshooting phrases, several products named | Dev |
-| R2 Cascade | Run S1; escalate to S2 if the top retrieval score is low or S1 declines | Dev (thresholds) |
-| R3 Classifier (optional) | A small model predicts the route from the question; label = cheapest strategy that got it right | 5-fold cross-validation over the 400 real questions |
+| R2 | Dense search's top score below 0.5615: S3 at K=100 directly. Otherwise S1, escalating to S3 at K=100 if S1 declines | A 20% budget over the real dev questions' top scores (D-048) |
+| Random escalation (the control) | The same number of questions as R2 sends to S3, chosen at random | R2's rate |
 | Oracle | Hindsight: the cheapest strategy that got each question right | Nothing; it's the ceiling |
 
-Output: cost per question against % correct for always-S1, always-S2, R1–R3 and the oracle.
+Verdicts: R2 against the control (does the signal beat chance?) and against S1 (does routing add correct answers?), each needing an interval above zero and a Holm p below 0.05 over the two. R2 becomes the default only if both pass (D-048).
 
-Skip condition: if S2 doesn't beat S1 on any question type, there is nothing to route. Ship S1 and write that up.
-
-Update for Step 7 (D-047): only one dev question can be fixed by routing, so nothing is tuned on dev. Thresholds are set by an escalation budget instead, R3 is dropped, and the router is scored once on test, tagged M3. D-048 sets the rules.
+Output: R2, the control, the oracle and the fixed strategies on M2's cost frontier, plus each signal alone and the same rules at 10%, 30% and 50% budgets, reported without verdicts.
 
 ## 11. Reproducibility and cost
 
