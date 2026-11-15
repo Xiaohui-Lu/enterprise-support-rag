@@ -2094,6 +2094,16 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "My eval gate first checks whether a change alters what the model is sent. If no request changed, the cached answers are identical by construction, so it passes for free with no noise. Only the questions whose requests changed are re-answered and graded, and the change must stay within a 10-point non-inferiority margin. It runs locally from a clean commit, and CI fails any code whose source tree has no passing gate result, so nothing merges unchecked and CI never needs the API key."
 
+**Outcome (2026-11-14): both layers and CI work.**
+- **The first `srag gate` run set the baseline.** 45 of the 50 dev questions were answered correctly, and the gold article was among S1's 10 on 44. It paid $0, because every answer and grade was already in the cache.
+- **The drift check passed with no API call.** The next change to `src/` touched only the CLI's output, and all 50 requests were identical.
+- **CI's first run passed on GitHub.** It ran:
+  - 420 Python tests, none skipped (the 6 database tests ran against the pgvector service);
+  - lint;
+  - the page's 9 tests and its build;
+  - the gate check.
+  - The Python job took 39 s, and the page's job 8 s.
+
 ---
 
 ## Coming up

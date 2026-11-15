@@ -1,8 +1,10 @@
 # Enterprise support RAG
 
+[![CI](https://github.com/Xiaohui-Lu/enterprise-support-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/Xiaohui-Lu/enterprise-support-rag/actions/workflows/ci.yml)
+
 A support assistant for a 6,221-article help center, built to answer one question with data: **when do retrieval, agentic search and long context each pay off?** Closed-book answering, single-pass RAG, agentic search and long-context prompting run on the [WixQA](https://huggingface.co/datasets/Wix/WixQA) benchmark with the model held constant, and are compared on correctness, cost and latency.
 
-> Work in progress: Steps 0 to 9 are done, and the last milestone reached is M2. Next is Step 10, a CI eval gate and the final README. See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Steps 0 to 10 are done. What's left for the last milestone, M3, is a demo recording, an architecture diagram and a write-up. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -106,6 +108,23 @@ M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points ov
 - Latency comes from one machine at one time. The first real-time answer of each run also counted a cold import of the Anthropic SDK, up to about 23 s. That was found and fixed in Step 8 (D-050). Every other M2 answer took under 18 s.
 - "Correct" means "agrees with WixQA's reference answer", and a reference can itself be incomplete.
 
+## How it's built
+
+- **One package and one CLI.** Every step is an `srag` command (D-010).
+  - The evaluation calls the same functions the service runs, so the numbers above describe what the service does (D-008).
+  - There's no LangChain or LlamaIndex: provider SDKs are called through thin interfaces, so every token and call is counted (D-003).
+- **Retrieval:** voyage-4-nano embeddings, searched exactly in Postgres with pgvector (D-035, D-041).
+- **Generation:** Claude Haiku 5.5, through a client that caches every call by its full request (D-020) and streams answers (D-050).
+- **The service:** FastAPI streams S1's answer as Server-Sent Events, and a React and TypeScript page shows it with each citation linked (D-050, D-051).
+- **Deployment:** Docker Compose runs Postgres and the service (D-049, D-052).
+  - The articles and the model are baked into the image at their pinned revisions.
+  - Secrets arrive only at run time.
+  - Each answer logs one JSON line with the time for each stage.
+- **The quality gate (D-053).** CI runs lint, the tests (with a Postgres container), and the page's tests and build. `srag gate` checks every code change against the 50 real dev questions:
+  - First, an exact check that S1's requests haven't changed. If none did, the change passes for free, with no noise.
+  - Then a paired check on the questions whose requests did change, against a 10-point non-inferiority margin.
+  - CI fails any code without a passing gate result.
+
 ## Quick start
 
 Needs [uv](https://docs.astral.sh/uv/), which installs the right Python version by itself.
@@ -153,6 +172,12 @@ docker compose --profile app up --build
 
 Each answer logs one JSON line with the time for each stage: embedding the question, the SQL search, the first text and the total. `docker compose logs app` shows them (D-052).
 
+Before pushing a change to `src/`, commit it and run the eval gate, then commit its result. CI fails otherwise (D-053). If no request changed, the gate makes no API call.
+
+```bash
+uv run srag gate
+```
+
 The dev/test split lives in `data/splits/splits.json`. It was generated once with `srag splits` and is never regenerated, so the test set can't drift. The test set runs only with `--split test --milestone M1` (or M2, M3) from a clean commit.
 
 ## Docs
@@ -163,7 +188,7 @@ The dev/test split lives in `data/splits/splits.json`. It was generated once wit
 - Reports on test: [every strategy (M2)](reports/answers_comparison_test.md), [context rot (M2)](reports/context_rot_test.md), [the router](reports/router_test.md), [S0, S1 on BM25 and S\* (M1)](reports/answers_test.md)
 - Reports on dev: [every strategy](reports/answers_comparison_dev.md), [the router](reports/router_dev_real.md), [context-rot pilot](reports/context_rot_dev.md), [S2](reports/answers_s2_dev.md), [S3](reports/answers_s3_dev.md), [S1 on dense search](reports/tuning_s1_reading.md), [answers at M1](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md)
 - Retrieval on dev: [BM25](reports/retrieval_bm25.md), [dense](reports/retrieval_dense.md), [hybrid](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [sections](reports/retrieval_sections.md), [reranking on sections](reports/retrieval_rerank_sections.md), [Postgres and HNSW](reports/retrieval_pgvector.md)
-- [Corpus statistics](reports/corpus_stats.md)
+- [Corpus statistics](reports/corpus_stats.md), and the [eval gate's last result](reports/gate.json)
 
 ## Data
 
