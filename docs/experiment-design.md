@@ -174,7 +174,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | 8 | Service: FastAPI streaming S1's answer to a small chat UI with citations; no Redis (D-049) | FastAPI vs Django, SSE vs WebSockets, the UI (D-050, D-051) | Done |
 | 9 | Deployment: Docker Compose for the whole stack, a timing log per request stage (D-049) | What goes in the image, what to log (D-052) | Done |
 | 10 | CI eval gate on pull requests, final README | Gate size and thresholds, handling noisy evals (D-053) | Done |
-| ✅ M3 | Local demo with one command, a recording in the README, architecture diagram, write-up (D-049) | | |
+| ✅ M3 | Local demo with one command, a recording in the README, architecture diagram, write-up (D-049) | | In progress: the hand audit of panel labels is left (D-028) |
 
 ## 13. Risks
 

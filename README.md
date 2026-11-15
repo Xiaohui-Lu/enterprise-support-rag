@@ -8,7 +8,9 @@ A support assistant for a 6,221-article help center, built to answer one questio
 
 *A real answer from the Docker Compose stack, at about real speed: the articles it read appear first, then the answer streams in, with each citation linked to its article. First words at 0.6 s, done at 1.3 s, for $0.0006.*
 
-> Steps 0 to 10 are done. What's left for the last milestone, M3, is a write-up. See the [roadmap](docs/experiment-design.md#12-roadmap).
+**[Read the write-up](docs/writeup.md)**: what was found, and why, in a few minutes.
+
+> Steps 0 to 10 are done, and so are M3's demo, diagrams and write-up. One item is left before the results are final: a hand audit of the judge's panel labels (D-028). See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -196,6 +198,7 @@ The dev/test split lives in `data/splits/splits.json`. It was generated once wit
 
 ## Docs
 
+- [Write-up](docs/writeup.md): the findings and what the method taught, in one page
 - [Experiment design](docs/experiment-design.md): research questions, splits, strategies, metrics, roadmap
 - [Decision log](docs/decisions.md): what was chosen, what else was considered, and why
 - [Porting to a new dataset](docs/porting.md): what to redo, including how many labels
