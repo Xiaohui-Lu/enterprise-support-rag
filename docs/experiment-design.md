@@ -131,6 +131,8 @@ Verdicts: R2 against the control (does the signal beat chance?) and against S1 (
 
 Output: R2, the control, the oracle and the fixed strategies on M2's cost frontier, plus each signal alone and the same rules at 10%, 30% and 50% budgets, reported without verdicts.
 
+Result on test (D-048, [reports/router_test.md](../reports/router_test.md)): R2 scored 84.9% against S1's 82.9%, at $0.00351 per answer (44% of S3 at K=100's), keeping 54% of S3's gain. Neither verdict passed: +2.0 [+0.0, +4.3] against S1 and +0.7 [−0.9, +2.5] against random escalation, so S1 stays the default. The hindsight oracle over S1 and S3 at K=100 reaches 90.0%, so there's room, but the free signals don't find it.
+
 ## 11. Reproducibility and cost
 
 - Each run records its config (strategy, models, k, prompt version, git commit, dataset revision), per-question outputs, scores, tokens and latency.
@@ -168,7 +170,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | Done |
 | 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | Done |
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | Done |
-| 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | In progress |
+| 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | Done |
 | 8 | Service: FastAPI with streaming, React chat UI with citations, Redis cache and rate limit | FastAPI vs Django, Redis vs RabbitMQ (or neither), SSE vs WebSockets | |
 | 9 | Deployment: Docker, Helm on k3s, OpenTelemetry tracing, Prometheus/Grafana | k3s vs managed Kubernetes vs PaaS, what to trace | |
 | 10 | CI eval gate on pull requests, final README | Gate size and thresholds, handling noisy evals | |

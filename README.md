@@ -2,7 +2,7 @@
 
 A support assistant for a 6,221-article help center, built to answer one question with data: **when do retrieval, agentic search and long context each pay off?** Closed-book answering, single-pass RAG, agentic search and long-context prompting run on the [WixQA](https://huggingface.co/datasets/Wix/WixQA) benchmark with the model held constant, and are compared on correctness, cost and latency.
 
-> Work in progress: Steps 0 to 6 are done, and the last milestone reached is M2. Next is Step 7, a router that picks a strategy per question. See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Work in progress: Steps 0 to 7 are done, and the last milestone reached is M2. Next is Step 8, the service. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -56,6 +56,29 @@ Context rot is accuracy falling as the prompt grows, even though the answer is i
 
 Full tables: [reports/context_rot_test.md](reports/context_rot_test.md).
 
+### Does a router pay?
+
+The router, R2, answers with S1 by default. It sends a question to S3 at K=100 instead when dense search's best match is weak, or when S1 declines.
+- Only one dev question could be fixed by routing, so the threshold wasn't tuned. It was set by a 20% escalation budget on dev (D-047, D-048).
+- It ran once on test. Every call came from the call cache, so the run cost nothing.
+
+| 350 test questions | % correct [95% CI] | Cost per answer |
+|---|---:|---:|
+| S1, dense search | 82.9% [78.9, 86.6] | $0.00127 |
+| R2, router | 84.9% [81.1, 88.6] | $0.00351 |
+| Random escalation at R2's rate | 84.1% (expected) | $0.00356 |
+| S3, K=100 | 86.6% [82.9, 90.0] | $0.00807 |
+| Hindsight oracle over S1 and S3 | 90.0% | $0.00176 |
+
+- **R2 keeps about half of long context's gain, at 44% of its cost, but that gain isn't shown to be real.** Against S1, R2 is +2.0 points [+0.0, +4.3], and its Holm-adjusted p is 0.24.
+- **Its signal barely beats chance.**
+  - Sending a random 34% of questions to S3 would score 84.1%. R2 is only +0.7 points [−0.9, +2.5] above that.
+  - The weak-score rule alone adds +0.2. S1's decline carries real information, but it fires on only 3% of questions.
+- **The room exists, but cheap signals don't find it.** Choosing between S1 and S3 per question with hindsight would score 90.0% at $0.00176 per answer.
+- **The dev budget didn't carry over.** Test questions score lower on dense search than dev's. So 34% were escalated instead of 20%, and the cost rose with them. A deployed router would need its escalation rate monitored.
+
+Full tables: [reports/router_test.md](reports/router_test.md).
+
 ### Earlier: M1
 
 M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points over closed book [+23.7, +37.1], and perfect retrieval would have added another 10.6 [+4.9, +16.3]: a gold article was in BM25's top 10 for only 57% of test questions. That gap set Step 4's target, and dense search more than closed it. The 50 dev questions couldn't see the gap (+2 [−14, +18]); the test set is 7 times larger, so its intervals are about 2.6 times narrower. See [reports/answers_test.md](reports/answers_test.md).
@@ -70,7 +93,7 @@ M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points ov
 - **Grading:** Claude Sonnet 5.5 at high effort compares each answer with the reference and grades it correct, partial or incorrect. Only correct counts, and a decline counts as incorrect (D-025).
 - **The judge was validated before use** against 80 labels on dev answers: Cohen's kappa 0.82 on the three grades and 0.92 on correct vs not (D-031). 65 labels are the unanimous votes of a panel of four Claude configurations; a person labeled the 15 items the panel split on (D-028). See [reports/judge_validation.md](reports/judge_validation.md).
 - **Statistics:** 95% intervals come from a bootstrap over questions. Comparisons use a paired bootstrap and McNemar's exact test, with Holm's adjustment over each table of comparisons (D-032). M2's verdict rule, the frontier and the context-rot measure were all written down before any M2 run (D-045, D-046).
-- **Tuning happened on dev only.** Every setting was chosen on 50 dev questions (D-033, D-036, D-042). The test set runs only at a named milestone and from a clean commit, enforced in code. M1 ran from commit `eadbd6a` and M2 from `9d1b5fa`, each once, and nothing was changed after seeing the results (D-034).
+- **Tuning happened on dev only.** Every setting was chosen on 50 dev questions (D-033, D-036, D-042). The test set runs only at a named milestone and from a clean commit, enforced in code. M1 ran from commit `eadbd6a`, M2 from `9d1b5fa` and the router from `d544f94` (tagged M3), each once, and nothing was changed after seeing the results (D-034).
 - **Cost:** M1 cost about $4.60 and M2 $29.35: about $15 for the five new strategies and $14.35 for context rot. The strategies' answers ran in real time, so their latency is real. Context-rot answers and all grading went through the batch API.
 
 ### Caveats
@@ -119,8 +142,8 @@ The dev/test split lives in `data/splits/splits.json`. It was generated once wit
 - [Experiment design](docs/experiment-design.md): research questions, splits, strategies, metrics, roadmap
 - [Decision log](docs/decisions.md): what was chosen, what else was considered, and why
 - [Porting to a new dataset](docs/porting.md): what to redo, including how many labels
-- Reports on test: [every strategy (M2)](reports/answers_comparison_test.md), [context rot (M2)](reports/context_rot_test.md), [S0, S1 on BM25 and S\* (M1)](reports/answers_test.md)
-- Reports on dev: [every strategy](reports/answers_comparison_dev.md), [context-rot pilot](reports/context_rot_dev.md), [S2](reports/answers_s2_dev.md), [S3](reports/answers_s3_dev.md), [S1 on dense search](reports/tuning_s1_reading.md), [answers at M1](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md)
+- Reports on test: [every strategy (M2)](reports/answers_comparison_test.md), [context rot (M2)](reports/context_rot_test.md), [the router](reports/router_test.md), [S0, S1 on BM25 and S\* (M1)](reports/answers_test.md)
+- Reports on dev: [every strategy](reports/answers_comparison_dev.md), [the router](reports/router_dev_real.md), [context-rot pilot](reports/context_rot_dev.md), [S2](reports/answers_s2_dev.md), [S3](reports/answers_s3_dev.md), [S1 on dense search](reports/tuning_s1_reading.md), [answers at M1](reports/answers_dev_real.md), [judge validation](reports/judge_validation.md), tuning of [effort](reports/tuning_effort.md) and [k](reports/tuning_k.md)
 - Retrieval on dev: [BM25](reports/retrieval_bm25.md), [dense](reports/retrieval_dense.md), [hybrid](reports/retrieval_hybrid.md), [reranking](reports/retrieval_rerank.md), [sections](reports/retrieval_sections.md), [reranking on sections](reports/retrieval_rerank_sections.md), [Postgres and HNSW](reports/retrieval_pgvector.md)
 - [Corpus statistics](reports/corpus_stats.md)
 

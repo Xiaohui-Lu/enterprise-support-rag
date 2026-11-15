@@ -1806,6 +1806,38 @@ The last row's range assumes each best section is of average size at one end and
   - A composed median latency of 3.6 s, against S1's 3.5 s.
 - **The run:** `20261114-195916_r2-medium_dev_real` from commit `dd712f0`, and its `judge-high` run.
 
+**Outcome on test (2026-11-14, tagged M3): R2 doesn't replace S1. It beats neither bar, and its signal does little better than chance.** The report is [reports/router_test.md](../reports/router_test.md), on all 350 test questions.
+
+| 350 test questions | % correct [95% CI] | Cost per answer | Latency p50 |
+|---|---:|---:|---:|
+| S1, dense search top 10 | 82.9% [78.9, 86.6] | $0.00127 | 3.7 s |
+| **R2** | **84.9% [81.1, 88.6]** | **$0.00351** | **4.0 s** |
+| Random escalation at R2's rate, expected | 84.1% | $0.00356 | |
+| S3, up to 100 | 86.6% [82.9, 90.0] | $0.00807 | 4.9 s |
+
+- **Neither verdict passes, so S1 on dense search stays the default.**
+  - Against random escalation: +0.7 points [−0.9, +2.5]. R2's 118 escalated questions gained 7 net, against 4.4 for a random 118. The permutation p is 0.225, and 0.237 after Holm.
+  - Against S1: +2.0 [+0.0, +4.3], with 11 questions only R2 got right and 4 only S1 did. McNemar's p is 0.118, and 0.237 after Holm.
+- **The budget didn't carry over from dev.**
+  - Test questions' top scores run lower than dev's: a median of 0.607 against 0.638.
+  - So 114 of 350 questions (33%) fell below 0.5615, not 20%. With 4 declines, R2 sent 118 questions (34%) to S3.
+  - That raised its cost to $0.00351 per answer, against the $0.0028 expected. A percentile taken from 50 questions is a rough estimate, and a deployed router would need its escalation rate watched.
+- **Of the two signals, only the decline carries information, and it rarely fires.** These replays decide nothing.
+  - The weak-score rule alone is +0.2 points over random escalation.
+  - S1's decline alone sends 11 questions, gains +1.1 points over S1 (+1.0 over random), and costs $0.00151 per answer.
+  - Larger budgets climb toward S3 at about random's rate: +0.6 to +0.8 points over random at 30% and 50%.
+- **RQ6, descriptively:**
+  - R2 keeps 54% of S3 at K=100's gain over S1, at 44% of its cost.
+  - It sits on both frontiers, cost (S1 dense → R2 → S3 K=50) and latency, but no step to it is shown to add correct answers.
+- **The room is real; cheap signals don't find it.**
+  - The hindsight oracle over S1 and S3 at K=100 scores 90.0% at $0.00176 per answer. Over S1, S2 and every S3, it scores 93.7% at $0.00112.
+  - The weak-score rule didn't single out multi-article questions, where S3 helped most: it sent 20 of 70 (29%), against 98 of 280 single-article ones (35%).
+- **Integrity:**
+  - The run agrees with a replay of its rule on all 350 routes and all 350 grades.
+  - All 354 model calls and all 341 judge calls came from the cache, so nothing was paid. Nine answers were declines, which aren't sent to the judge.
+  - No request crossed 100K tokens: these are M2's S3 requests, whose largest was 94,514. The run summary's price-line check showed 96,829, because on the decline route it counted S1's tokens as part of S3's prompt. That was a reporting bug, fixed in `8117969`.
+- **The runs:** `20261114-200420_r2-medium_test` from commit `d544f94`, with a clean tree, milestone M3, and its judge run `20261114-200500_judge-high_20261114-200420_r2-medium_test`.
+
 ---
 
 ## Coming up
