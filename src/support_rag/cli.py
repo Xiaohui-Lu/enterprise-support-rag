@@ -176,6 +176,11 @@ def main(argv: list[str] | None = None) -> None:
         type=Path,
         help="judge runs: R2, S1 on dense search and S3 at K=100, plus any others for the frontier",
     )
+    serve = commands.add_parser(
+        "serve", help="the assistant as a web service: S1's answers streamed as SSE (D-050)"
+    )
+    serve.add_argument("--host", default="127.0.0.1", help="default: this machine only")
+    serve.add_argument("--port", type=int, default=8000)
     report_tuning = commands.add_parser(
         "report-tuning", help="candidate settings vs the default on dev, to reports/"
     )
@@ -406,6 +411,17 @@ def run(args: argparse.Namespace) -> None:
 
             path = write_router_report(args.runs, name=args.name)
             print(path.read_text(encoding="utf-8"))
+        case "serve":
+            import logging
+
+            import uvicorn
+
+            from support_rag import config
+            from support_rag.service import create_app
+
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+            app = create_app(static_dir=config.ROOT / "web" / "dist")
+            uvicorn.run(app, host=args.host, port=args.port)
         case "report-tuning":
             from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K
             from support_rag.tuning import write_report

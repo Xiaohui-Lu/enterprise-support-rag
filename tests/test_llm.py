@@ -38,6 +38,11 @@ class FakeStream:
     def __exit__(self, *exc_info):
         return False
 
+    @property
+    def text_stream(self):
+        yield "Go to "
+        yield "Settings [1]."
+
     def get_final_message(self):
         return self.message
 
@@ -67,6 +72,39 @@ def test_a_complete_answer_is_returned_and_cached(cache):
     assert result.usage == {"input_tokens": 4500, "output_tokens": 800}
     assert result.cached is False
     assert len(cache) == 1
+
+
+def _drain(stream):
+    """The pieces a stream yields, and the result it returns."""
+    pieces = []
+    while True:
+        try:
+            pieces.append(next(stream))
+        except StopIteration as stop:
+            return pieces, stop.value
+
+
+def test_a_streamed_answer_arrives_in_pieces_and_is_cached(cache):
+    pieces, result = _drain(LLMClient(cache, FakeMessages()).stream(REQUEST))
+    assert pieces == ["Go to ", "Settings [1]."]
+    assert result.text == "Go to Settings [1]."
+    assert result.cached is False
+    assert len(cache) == 1
+
+
+def test_a_streamed_request_shares_the_cache_with_complete(cache):
+    api = FakeMessages()
+    client = LLMClient(cache, api)
+    client.complete(REQUEST)
+    pieces, result = _drain(client.stream(REQUEST))
+    assert pieces == ["Go to Settings [1]."]  # all at once
+    assert result.cached is True
+    assert api.calls == 1
+
+
+def test_a_cut_off_stream_is_not_cached(cache):
+    _drain(LLMClient(cache, FakeMessages(stop_reason="max_tokens")).stream(REQUEST))
+    assert len(cache) == 0
 
 
 def test_a_repeated_request_is_served_from_the_cache(cache):
@@ -206,3 +244,15 @@ def test_an_incomplete_batch_result_is_not_cached(cache):
     )
     assert (summary["cached"], summary["not_cached"]) == (0, 2)
     assert len(cache) == 0
+
+
+def test_latency_leaves_out_building_the_client(cache):
+    """A cold SDK import took 23 s; it isn't the API's latency (D-050)."""
+    import time
+
+    class SlowToBuild(LLMClient):
+        def _api(self):
+            time.sleep(0.3)  # the import and the client
+            return FakeMessages()
+
+    assert SlowToBuild(cache).complete(REQUEST).latency_ms < 300

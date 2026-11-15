@@ -103,7 +103,7 @@ M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points ov
 - The judge also leans lenient. On the 80 labels, it graded 3 not-correct answers correct and never the reverse (55% correct against the labels' 51%). Absolute rates may run a few points high; differences between strategies are affected less.
 - Each strategy was run once, and the generator isn't deterministic. The intervals cover which questions were drawn, not which answers the model happened to write.
 - Dev runs high. Settings were picked on dev, which flatters it: dense S1 scored 90% on dev and 82.9% on test, as BM25 went from 76% to 64% at M1.
-- Latency comes from one machine at one time. The first answer of a real-time run can take 27 to 30 s, for a reason not yet found (Step 8); every other M2 answer took under 18 s.
+- Latency comes from one machine at one time. The first real-time answer of each run also counted a cold import of the Anthropic SDK, up to about 23 s. That was found and fixed in Step 8 (D-050). Every other M2 answer took under 18 s.
 - "Correct" means "agrees with WixQA's reference answer", and a reference can itself be incomplete.
 
 ## Quick start

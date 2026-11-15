@@ -8,7 +8,7 @@ run record and the API call all see exactly the same thing.
 from __future__ import annotations
 
 import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -72,14 +72,45 @@ class LLMClient:
         # Streamed, so long thinking never meets the SDK's limit on non-streaming calls. The
         # whole message is collected before returning, so latency stays end-to-end. The
         # transport isn't part of the request, so cached calls stay valid.
+        api = self._api()  # outside the timing: a cold SDK import can take 20 s (D-050)
         start = time.perf_counter()
-        with self._api().stream(**request) as stream:
+        with api.stream(**request) as stream:
             response = stream.get_final_message().to_dict()
         latency_ms = round((time.perf_counter() - start) * 1000, 1)
         result = _result(response, latency_ms, cached=False)
         if result.complete:
             self._cache.put(request, response, result.usage, latency_ms)
         return result
+
+    def stream(self, request: dict[str, Any]) -> Generator[str, None, LLMResult]:
+        """Like `complete`, but yields the text as it arrives and returns the result at the
+        end, for a service that shows the answer while it's written (D-050).
+
+        The complete message is cached exactly as `complete` caches it, so the two share
+        entries. A cache hit yields its whole text at once.
+        """
+        hit = self._cache.get(request)
+        if hit is not None:
+            result = _result(hit.response, hit.latency_ms, cached=True, batch=hit.batch)
+            if result.text:
+                yield result.text
+            return result
+
+        api = self._api()  # outside the timing: a cold SDK import can take 20 s (D-050)
+        start = time.perf_counter()
+        with api.stream(**request) as stream:
+            yield from stream.text_stream
+            response = stream.get_final_message().to_dict()
+        latency_ms = round((time.perf_counter() - start) * 1000, 1)
+        result = _result(response, latency_ms, cached=False)
+        if result.complete:
+            self._cache.put(request, response, result.usage, latency_ms)
+        return result
+
+    def warm_up(self) -> None:
+        """Import the SDK and build the client now, so the first real call doesn't wait for
+        it. A service calls this at startup (D-050)."""
+        self._api()
 
     def _api(self) -> MessagesAPI:
         if self._messages is None:  # created on first real call, so cache hits need no key

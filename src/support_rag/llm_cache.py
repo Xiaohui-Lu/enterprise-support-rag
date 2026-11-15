@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -59,7 +60,9 @@ class CachedCall:
 class LLMCache:
     def __init__(self, path: Path = CACHE_PATH) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(path)
+        # The service answers from a thread pool (D-050): one connection, shared under a lock.
+        self._db = sqlite3.connect(path, check_same_thread=False)
+        self._lock = threading.Lock()
         self._db.execute(_SCHEMA)
         columns = {row[1] for row in self._db.execute("PRAGMA table_info(calls)")}
         if "batch" not in columns:  # caches created before batch calls existed
@@ -67,10 +70,11 @@ class LLMCache:
         self._db.commit()
 
     def get(self, request: dict[str, Any]) -> CachedCall | None:
-        row = self._db.execute(
-            "SELECT response, usage, latency_ms, created_at, batch FROM calls WHERE key = ?",
-            (cache_key(request),),
-        ).fetchone()
+        with self._lock:
+            row = self._db.execute(
+                "SELECT response, usage, latency_ms, created_at, batch FROM calls WHERE key = ?",
+                (cache_key(request),),
+            ).fetchone()
         if row is None:
             return None
         response, usage, latency_ms, created_at, batch = row
@@ -89,24 +93,26 @@ class LLMCache:
     ) -> None:
         """Save a successful call. If the key is already saved, the first response stays,
         so a replay always returns the same answer."""
-        self._db.execute(
-            "INSERT OR IGNORE INTO calls "
-            "(key, request, response, usage, latency_ms, created_at, batch) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (
-                cache_key(request),
-                json.dumps(request, ensure_ascii=False),
-                json.dumps(response, ensure_ascii=False),
-                json.dumps(usage),
-                latency_ms,
-                datetime.now().astimezone().isoformat(timespec="seconds"),
-                int(batch),
-            ),
-        )
-        self._db.commit()
+        with self._lock:
+            self._db.execute(
+                "INSERT OR IGNORE INTO calls "
+                "(key, request, response, usage, latency_ms, created_at, batch) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    cache_key(request),
+                    json.dumps(request, ensure_ascii=False),
+                    json.dumps(response, ensure_ascii=False),
+                    json.dumps(usage),
+                    latency_ms,
+                    datetime.now().astimezone().isoformat(timespec="seconds"),
+                    int(batch),
+                ),
+            )
+            self._db.commit()
 
     def __len__(self) -> int:
-        return self._db.execute("SELECT COUNT(*) FROM calls").fetchone()[0]
+        with self._lock:
+            return self._db.execute("SELECT COUNT(*) FROM calls").fetchone()[0]
 
     def close(self) -> None:
         self._db.close()

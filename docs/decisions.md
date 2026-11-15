@@ -1919,6 +1919,16 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "The service is FastAPI streaming S1's answer as Server-Sent Events: the sources first, then the text as it's written, then the citations and the cost. It's a POST read with fetch, because EventSource only does GET, and a question doesn't belong in a URL. It runs the exact functions the evaluation measured, in a thread pool, so the README's numbers describe what the service does."
 
+**The first-call delay, found (2026-11-14).** The 26.6 s first answer at M2, and the 27 to 30 s first S2 answers on dev, weren't the API.
+- **The cause:** the client imports the Anthropic SDK on its first real call, and that import sat inside the timed region.
+  - In a fresh process, `import anthropic` took 23.5 s cold and 3.0 s warm on this machine.
+  - DNS took 55 ms, and the TCP connect 7 ms over IPv4. IPv6 fails at once rather than hanging, so it isn't D-041's `localhost` problem.
+- **The fix:**
+  - The client is now built before the timer starts.
+  - The service builds it at startup, so the first question doesn't wait for it.
+  - A test checks that latency leaves out building the client.
+- **Past runs keep their records.** Only the first real-time answer of each run is inflated, by up to about 23 s. That barely moves a median or a 95th percentile.
+
 ---
 
 ## Coming up

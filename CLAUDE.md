@@ -30,6 +30,7 @@ uv run srag context-rot --distractors hard --size 40000 --limit 10   # one conte
 uv run srag report-rot runs/<S* judge> runs/<arm judge runs>        # % correct by context size, to reports/context_rot_<split>.md, chart in reports/figures/
 uv run srag answer --strategy r2 --split dev_real   # the router: S1, or S3 at K=100 on a weak top score or a decline; replays the cache (D-048)
 uv run srag report-router runs/<R2 judge> runs/<S1 judge> runs/<S3 K=100 judge> runs/<others>   # vs S1 and random escalation, to reports/router_<split>.md
+uv run srag serve       # the assistant at http://127.0.0.1:8000: S1's answers streamed as SSE; needs Postgres (D-050)
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)
 uv run srag judge runs/<answers> --effort high --batch   # grade an answer run (paid, cached)
 uv run srag validate-judge runs/<judge runs>      # judge vs labels: kappa, to reports/judge_validation.md
