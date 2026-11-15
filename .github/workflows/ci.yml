@@ -1,0 +1,66 @@
+# Basic CI and the eval gate's check (D-053). Free, and no secrets: the eval itself runs
+# locally with `srag gate`, and this only checks that it passed for the src/ being built.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    services:
+      # For the database tests, which are skipped without SRAG_TEST_DATABASE_URL (D-041).
+      postgres:
+        image: pgvector/pgvector:0.8.6-pg17
+        env:
+          POSTGRES_USER: srag
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: srag_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U srag -d srag_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SRAG_TEST_DATABASE_URL: postgresql://srag:ci-only@127.0.0.1:5432/srag_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.0"
+          enable-cache: true
+      - name: Install the locked environment
+        run: uv sync --frozen
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Tests
+        run: uv run pytest
+      - name: The eval gate passed for this src/ (D-053)
+        run: uv run srag gate --check
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build

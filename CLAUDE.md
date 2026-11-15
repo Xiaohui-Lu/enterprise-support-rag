@@ -9,6 +9,7 @@ Before starting a roadmap step, read its row in `docs/experiment-design.md` (sec
 ```bash
 uv sync                # environment from uv.lock (Python 3.12)
 uv run pytest          # tests; must pass before every commit
+uv run srag gate        # the eval gate, from a clean commit, before pushing any src/ change; commit reports/gate.json (D-053)
 uv run ruff check .    # lint
 uv run ruff format .   # format
 uv run srag download   # WixQA at the pinned revision, into data/raw/
@@ -57,6 +58,7 @@ uv run srag label --adjudicate                    # hand-label only what the pan
 - `runs/`: run records (config, per-question results, summary), git-ignored; reports cite run IDs (D-018).
 - `cache/`: the LLM response cache (SQLite), git-ignored (D-020).
 - `compose.yaml`: Postgres with pgvector for the article vectors, open to this machine only (D-041).
+- `.github/workflows/ci.yml`: CI on pushes and pull requests: lint, tests with a pgvector service, the page's tests and build, and `srag gate --check` (D-053).
 - `web/`: the chat UI, React and TypeScript built with Vite; `srag serve` serves its build (D-051).
 
 ## Rules
@@ -65,6 +67,7 @@ uv run srag label --adjudicate                    # hand-label only what the pan
 - Don't change `DATASET_REVISION` in `src/support_rag/config.py`. Every result depends on it.
 - No LangChain, LlamaIndex or similar frameworks. Call provider SDKs through this repo's own thin interfaces, so every token and call can be counted (D-003).
 - Evaluation calls the same code paths the service uses; there is no separate eval pipeline (D-008).
+- Before pushing any change to `src/`, commit it, run `uv run srag gate`, and commit `reports/gate.json`. CI fails code whose `src/` has no passing gate result (D-053).
 - Record significant choices in `docs/decisions.md` in the existing format, and keep the roadmap's Status column current.
 - Secrets live in `.env`, which is git-ignored. Never commit, log or print API keys.
 

@@ -176,6 +176,18 @@ def main(argv: list[str] | None = None) -> None:
         type=Path,
         help="judge runs: R2, S1 on dense search and S3 at K=100, plus any others for the frontier",
     )
+    gate = commands.add_parser(
+        "gate", help="the eval gate: S1's requests on dev against the baseline (D-053)"
+    )
+    gate.add_argument(
+        "--check", action="store_true", help="for CI: fail unless the gate passed for this src/"
+    )
+    gate.add_argument(
+        "--max-usd", type=float, default=1.0, help="stop before paying more than this (default 1)"
+    )
+    gate.add_argument(
+        "--accept", action="store_true", help="record a deliberate change that misses the margin"
+    )
     serve = commands.add_parser(
         "serve", help="the assistant as a web service: S1's answers streamed as SSE (D-050)"
     )
@@ -411,6 +423,22 @@ def run(args: argparse.Namespace) -> None:
 
             path = write_router_report(args.runs, name=args.name)
             print(path.read_text(encoding="utf-8"))
+        case "gate":
+            import json
+
+            from support_rag.gate import check, load_gate, run_gate, src_tree
+
+            if args.check:
+                problem = check(load_gate(), src_tree())
+                if problem is not None:
+                    raise ValueError(problem)
+                print("the eval gate passed for this src/")
+                return
+            result = run_gate(max_usd=args.max_usd, accept=args.accept)
+            summary = {k: v for k, v in result.items() if k != "questions"}
+            print(json.dumps(summary, indent=2))
+            if not result["decision"]["passed"]:
+                raise ValueError(f"the gate failed: {result['decision']['reason']}")
         case "serve":
             import uvicorn
 
