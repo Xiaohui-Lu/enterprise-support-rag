@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor U as Browser (React page)
+    participant A as FastAPI service
+    participant P as Postgres + pgvector
+    participant C as Call cache (SQLite)
+    participant H as Claude Haiku 5.5
+    U->>A: POST /api/answer with the question
+    A->>A: embed the question (voyage-4-nano)
+    A->>P: exact search over 6,221 article vectors
+    P-->>A: the top 10 articles
+    A-->>U: event sources: the 10 titles and links
+    A->>C: was this exact request answered before?
+    alt cached
+        C-->>A: the saved answer, free
+        A-->>U: event delta: the whole text at once
+    else new
+        A->>H: S1 prompt: the question and 10 numbered articles
+        H-->>A: the answer, streamed
+        A-->>U: event delta: each piece as it arrives
+        A->>C: save the complete answer
+    end
+    A-->>U: event done: citations, cost, timings
+    A->>A: log one JSON timing line, never the question

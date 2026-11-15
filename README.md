@@ -116,63 +116,13 @@ M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points ov
 
 How a question is answered (D-050):
 
-```mermaid
-sequenceDiagram
-    actor U as Browser (React page)
-    participant A as FastAPI service
-    participant P as Postgres + pgvector
-    participant C as Call cache (SQLite)
-    participant H as Claude Haiku 5.5
-    U->>A: POST /api/answer with the question
-    A->>A: embed the question (voyage-4-nano)
-    A->>P: exact search over 6,221 article vectors
-    P-->>A: the top 10 articles
-    A-->>U: event sources: the 10 titles and links
-    A->>C: was this exact request answered before?
-    alt cached
-        C-->>A: the saved answer, free
-        A-->>U: event delta: the whole text at once
-    else new
-        A->>H: S1 prompt: the question and 10 numbered articles
-        H-->>A: the answer, streamed
-        A-->>U: event delta: each piece as it arrives
-        A->>C: save the complete answer
-    end
-    A-->>U: event done: citations, cost, timings
-    A->>A: log one JSON timing line, never the question
-```
+![A sequence diagram. The browser posts the question to the FastAPI service, which embeds it with voyage-4-nano, searches Postgres with pgvector for the top 10 articles, and sends the sources event. If the call cache has the same request, the saved answer returns at once and free; otherwise Claude Haiku 5.5 streams the answer, each piece is sent as a delta event, and the complete answer is cached. A done event carries citations, cost and timings, and one JSON timing line is logged.](docs/diagrams/answer.svg)
 
 Where it runs, and how a change is checked (D-052, D-053):
 
-```mermaid
-flowchart TB
-    subgraph machine["Your machine"]
-        subgraph compose["Docker Compose"]
-            direction LR
-            app["app container<br/>FastAPI service and built page<br/>articles and voyage-4-nano baked in"]
-            db[("db container<br/>Postgres + pgvector")]
-            servicecache[("servicecache volume<br/>the service's call cache")]
-            app --- db
-            app --- servicecache
-        end
-        subgraph study["The study"]
-            direction LR
-            cli["srag CLI<br/>answer, judge, report, gate"]
-            studycache[("cache/<br/>the study's call cache<br/>and article vectors")]
-            cli --- studycache
-        end
-        secrets[".env: keys, never in an image"]
-    end
-    anthropic["Anthropic API<br/>Haiku 5.5 answers, Sonnet 5.5 grades"]
-    ci["GitHub Actions<br/>lint, tests, page build, srag gate --check"]
+![A system diagram. On your machine, Docker Compose runs the app container (FastAPI service and built page, with the articles and voyage-4-nano baked in), the db container (Postgres with pgvector) and a volume for the service's own call cache. The study's srag CLI uses the same database and its own cache of paid calls and article vectors, which the app reads read-only. Keys come from .env at run time. Both call the Anthropic API: Haiku 5.5 answers and Sonnet 5.5 grades. The CLI's committed reports/gate.json is checked by GitHub Actions, along with lint, tests and the page build.](docs/diagrams/system.svg)
 
-    secrets -. "at run time" .-> app
-    studycache -. "vectors, read-only" .-> app
-    cli --- db
-    app --> anthropic
-    cli --> anthropic
-    cli -- "reports/gate.json, committed" --> ci
-```
+The diagrams are drawn with Mermaid from [docs/diagrams](docs/diagrams); each `.mmd` file is the source of its `.svg`.
 
 - **One package and one CLI.** Every step is an `srag` command (D-010).
   - The evaluation calls the same functions the service runs, so the numbers above describe what the service does (D-008).

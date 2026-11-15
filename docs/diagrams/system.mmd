@@ -1,0 +1,27 @@
+flowchart TB
+    subgraph machine["Your machine"]
+        subgraph compose["Docker Compose"]
+            direction LR
+            app["app container<br/>FastAPI service and built page<br/>articles and voyage-4-nano baked in"]
+            db[("db container<br/>Postgres + pgvector")]
+            servicecache[("servicecache volume<br/>the service's call cache")]
+            app --- db
+            app --- servicecache
+        end
+        subgraph study["The study"]
+            direction LR
+            cli["srag CLI<br/>answer, judge, report, gate"]
+            studycache[("cache/<br/>the study's call cache<br/>and article vectors")]
+            cli --- studycache
+        end
+        secrets[".env: keys, never in an image"]
+    end
+    anthropic["Anthropic API<br/>Haiku 5.5 answers,<br/>Sonnet 5.5 grades"]
+    ci["GitHub Actions<br/>lint, tests, page build,<br/>srag gate --check"]
+
+    secrets -. "at run time" .-> app
+    studycache -. "vectors, read-only" .-> app
+    cli --- db
+    app --> anthropic
+    cli --> anthropic
+    cli -- "reports/gate.json, committed" --> ci
