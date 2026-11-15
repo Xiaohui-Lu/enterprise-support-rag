@@ -2051,6 +2051,51 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-053 · The eval gate: an exact drift check, a paired check on what changed, run locally and enforced by CI (Step 10)
+
+**Context.**
+- **The repo has no CI.** Lint and tests run by hand.
+- **A gate has to stop a change that makes answers worse.** Two things make that hard here:
+  - **Noise.** Re-answering the 50 real dev questions adds sampling noise even when nothing changed, so "% correct must not drop" would fail at random.
+  - **Cost and secrets.** Running the eval in GitHub Actions needs the API key on a public repo. It also needs the 672 MB model, the article vectors (slow to embed on CI's CPUs) and Postgres, and with no cache every run pays.
+- **The call cache makes an unchanged request exact (D-020).** The same request gets the same answer, and the same answer gets the same grade.
+
+**Decision.**
+- **Basic CI** on every push to main and every pull request, in GitHub Actions. It's free and needs no secrets:
+  - `ruff check` and `ruff format --check`;
+  - `pytest`, including the database tests, against a pgvector service container;
+  - the page's tests and build.
+- **`srag gate`, run locally from a clean commit,** in two layers:
+  1. **The drift check.** For each of the 50 real dev questions, it builds S1's request with the service's own code (`context_for("s1")`, `build_request`). It compares the request's hash with the baseline's. If they're all identical, the gate passes without an API call.
+  2. **The quality check, on what changed.**
+     - Only the questions whose requests changed are answered and graded, through the evaluation's code and the validated judge (judge-v1 at high effort, D-031). The unchanged ones keep their baseline grades.
+     - The change passes if the paired difference against the baseline keeps its 95% interval above −10 points (D-042's bar).
+     - Before any call, the gate estimates the cost of the uncached questions, and stops above $1 unless told otherwise.
+  - A pass writes `reports/gate.json`. It records the git tree of `src/` it ran on, the result, and each question's request hash and grade, which become the next baseline. A failure writes nothing.
+  - `--accept` records a deliberate change that misses the margin. The file then says so, and the reason belongs in a decision entry.
+- **CI enforces it.** `srag gate --check` fails unless `reports/gate.json` passed for exactly the `src/` being built. So code the gate hasn't seen can't pass CI.
+
+**Alternatives.**
+- **Running the gate in CI.** The most conventional option. But it needs the key as a secret, plus caches for the model, the vectors and the call cache, and Postgres in CI. The first run embeds the corpus on a CPU, and every pipeline bug means a push-and-wait cycle.
+- **Retrieval only, in CI.** Free and deterministic, but blind to any change in the prompt or the generator.
+- **Re-answering everything and comparing % correct.** Noisy even when nothing changed, and it pays for every question on every run.
+- **A bar that blocks only a clear regression** (an interval entirely below zero). It rarely fails on noise, but on 50 questions it lets an 8-point drop through. D-042's bar puts the burden of proof on the change instead.
+
+**Why.**
+- **The drift check is exact.** Identical requests mean identical answers by construction, so most changes pass for free and without noise.
+- **When answers do change, only the changed questions are paid for, and only they can move.**
+- **CI's check is cheap, and needs no secrets.**
+
+**Trade-offs.**
+- **The gate trusts the developer's machine.** The result is a committed file, not a CI run. The file names the commit and the `src/` tree it checked, and the run is reproducible from that commit.
+- **Any change to `src/` needs a gate run, even a refactor of report code.** That run is free and takes about a minute, but it's one more step before pushing.
+- **50 questions catch large regressions only.** Small ones are the test set's job, at milestones (D-034).
+- **Pull requests must be rebased onto the latest main.** CI checks the merged `src/`, so they must be up to date with main and gated again.
+
+**In short.** "My eval gate first checks whether a change alters what the model is sent. If no request changed, the cached answers are identical by construction, so it passes for free with no noise. Only the questions whose requests changed are re-answered and graded, and the change must stay within a 10-point non-inferiority margin. It runs locally from a clean commit, and CI fails any code whose source tree has no passing gate result, so nothing merges unchecked and CI never needs the API key."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
