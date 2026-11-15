@@ -110,7 +110,7 @@ The evaluation calls the same functions the service runs, so the numbers describ
 
 - **One generator, one judge, one corpus.**
 - **The judge leans lenient,** by about 4 points in absolute terms. Differences between strategies are affected less.
-- **Some validation labels aren't audited yet.** 65 of the judge's 80 validation labels came from a unanimous panel of models, and haven't been audited by hand.
+- **Some validation labels weren't audited.** 65 of the judge's 80 validation labels came from a unanimous panel of Claude models, which can share the judge's blind spots, and weren't checked by hand.
 - **Each strategy ran once.** The intervals cover which questions were drawn, not the model's sampling.
 - **"Correct" means agreeing with WixQA's reference answer,** and a reference can itself be incomplete.
 - **Results by question type are directional.** They rest on 70 to 175 questions each.

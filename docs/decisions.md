@@ -644,6 +644,13 @@ Recall@5 on real questions: 2 helped, 2 hurt. The losses come from over-stemming
 - The random audit of unanimous items is deferred to the end of the project, by choice, together with the 2 groundedness splits outside the 15. Until then the 65 panel labels are unaudited, so the judge's agreement is reported separately on them and on the 15 hand labels.
 - Without audit items mixed in, the labeler knows every item shown is one the panel split on.
 
+**Update (2026-11-15).** The project closed without the audit, by choice.
+- No result depends on it. Every verdict compares strategies graded by the same judge, and the judge's agreement is already reported apart on the 15 hand labels.
+- What stays unmeasured is how often a unanimous panel is wrong. Kappa on the 65 panel labels (0.97 on the three grades) may be optimistic, and the README and write-up say so.
+- The 2 groundedness splits stay unlabeled. They don't enter the correctness kappa.
+
+**In short.** "I skipped the final audit of the panel's labels and said so. It would have measured how often four agreeing Claude models are wrong, which matters for the judge's kappa on easy items, but not for any comparison between strategies, since they share one judge."
+
 ---
 
 ## D-029 · Real-time LLM calls stream (Step 3)

@@ -10,7 +10,7 @@ A support assistant for a 6,221-article help center, built to answer one questio
 
 **[Read the write-up](docs/writeup.md)**: what was found, and why, in a few minutes.
 
-> Steps 0 to 10 are done, and so are M3's demo, diagrams and write-up. One item is left before the results are final: a hand audit of the judge's panel labels (D-028). See the [roadmap](docs/experiment-design.md#12-roadmap).
+> The project is complete: Steps 0 to 10 and milestones M1 to M3 are done. One planned check was left undone, a hand audit of the judge's panel labels (see [Caveats](#caveats)). See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -106,7 +106,7 @@ M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points ov
 
 ### Caveats
 
-- The 65 panel labels haven't been audited by hand yet. A random audit is planned before the final write-up (D-028).
+- The 65 panel labels weren't audited by hand. They come from Claude models, which can share the judge's blind spots, and a planned random audit of about 12 was left undone when the project closed (D-028). The judge's agreement is reported separately on them and on the 15 hand labels.
 - The judge is weakest where people disagree too. On the 15 borderline items, it matched the human label on only 8 (kappa 0.33 on correct vs not).
 - The judge also leans lenient. On the 80 labels, it graded 3 not-correct answers correct and never the reverse (55% correct against the labels' 51%). Absolute rates may run a few points high; differences between strategies are affected less.
 - Each strategy was run once, and the generator isn't deterministic. The intervals cover which questions were drawn, not which answers the model happened to write.
