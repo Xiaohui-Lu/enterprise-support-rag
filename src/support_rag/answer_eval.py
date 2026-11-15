@@ -292,6 +292,7 @@ def answer_with_router(
                 {
                     "strategy": "s1" if call is s1 else f"s3-k{ESCALATION_K}",
                     "declined": call.declined,
+                    "prompt_tokens": prompt_tokens(call.usage),
                     "cost_usd": call.cost_usd,
                     "latency_ms": call.latency_ms,
                     "cached": call.cached,
@@ -350,8 +351,15 @@ def _price_line_check(estimated: Sequence[int], real: Sequence[int]) -> dict[str
 
 
 def _summarize_long_context(results: Sequence[AnswerResult]) -> dict[str, Any]:
-    """What S3's token cap did, and the check on it."""
-    rows = [(r.long_context, prompt_tokens(r.usage)) for r in results if r.long_context]
+    """What S3's token cap did, and the check on it. A router answer's usage adds up S1's
+    call too, so the check takes the S3 call's own prompt, its last call (D-048)."""
+
+    def s3_prompt(r: AnswerResult) -> int:
+        if r.router is not None:
+            return r.router["calls"][-1]["prompt_tokens"]
+        return prompt_tokens(r.usage)
+
+    rows = [(r.long_context, s3_prompt(r)) for r in results if r.long_context]
     return {
         "k": rows[0][0]["k"],
         "capped": sum(lc["capped"] for lc, _ in rows),

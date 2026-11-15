@@ -157,3 +157,10 @@ def test_a_router_summary_counts_routes_and_paid_calls():
     assert summary["model_calls"] == 4
     assert summary["calls_not_cached"] == 2
     assert summary["paid_this_run_usd"] == pytest.approx(kept.cost_usd + skipped.cost_usd, abs=1e-4)
+
+
+def test_a_router_summary_checks_s3s_own_prompt_not_both_calls():
+    _, escalated = _routed(0.70, "NOT_FOUND", "Do this [1].")
+    summary = summarize_answers([escalated])
+    assert escalated.usage["input_tokens"] == 2000  # S1's and S3's together
+    assert summary["long_context"]["max_prompt_tokens"] == 1000  # S3's alone
