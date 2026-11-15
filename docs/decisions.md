@@ -1876,14 +1876,59 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-050 · The service: FastAPI streams S1's answer as Server-Sent Events over a POST, running the evaluated code unchanged (Step 8)
+
+**Context.**
+- **D-049 cut Step 8 to one service.** It answers with S1 on dense search, top 10 (D-042), because the router didn't replace it (D-048).
+- **S1 is slow to wait for in one piece.** At M2 its median answer took 3.7 s, and its 95th percentile 6.3 s. With one response at the end, a user stares at a spinner that long.
+- **The code is synchronous.** The retriever, the Postgres client and the Anthropic SDK are all synchronous, and the evaluation measured exactly that code (D-008).
+- **An open question from Step 6:** the first real-time call of a run took 26.6 s at M2, and 27 to 30 s for S2 on dev.
+
+**Decision.**
+- **FastAPI,** started by `srag serve` with uvicorn and bound to 127.0.0.1.
+- **One endpoint, `POST /api/answer`,** taking a JSON body `{"question": "..."}` and answering with Server-Sent Events:
+  1. `sources`: the numbered articles S1 reads, with each one's title and URL.
+  2. `delta`: each piece of text as the model writes it.
+  3. `done`: the cited article numbers, whether it declined, the cost, whether it came from the cache, and the timings.
+  - `error`, if anything fails once the stream has started.
+- **The code the evaluation ran:** `context_for("s1")`, `build_request` and `parse_answer` (D-008).
+  - The one new piece is a streaming method on the LLM client. It passes each piece of text on as it arrives, then caches the complete message, as `complete` does (D-020).
+  - A question asked before comes back from the cache in one piece, at no cost.
+- **A POST, read with `fetch`, not `EventSource`.** The browser's `EventSource` only sends GET requests, which would put the question in the URL. URLs end up in logs and browser history.
+- **Synchronous code in a thread pool.** FastAPI runs a synchronous generator in a worker thread.
+  - Retrieval, meaning the embedding model and the one Postgres connection, is serialized with a lock. Model calls run in parallel.
+  - The SQLite call cache becomes safe to share between threads: one connection, with a lock.
+- **Logging:** one line per request, with the timings (retrieval, time to first token, total) and the cost. The question's text isn't logged.
+  - Time to first token on a fresh process will show whether the first-call delay is the client setting up its connection.
+- **Health:** `GET /api/health`.
+
+**Alternatives.**
+- **Django,** with async views and `StreamingHttpResponse`. It would work, but its ORM, admin, templates and settings would sit unused.
+- **Flask.** Simple, but streaming and typed request models are add-ons.
+- **One JSON response.** The simplest option, but the whole wait shows as a spinner.
+- **WebSockets.** Two-way, but a chat answer only flows one way. They're worth it when the browser has to speak during the stream, for example an agent asking a clarifying question, or asking for approval before an action.
+- **An async rewrite,** using the async SDK, psycopg's async connection and the encoder in an executor. It would handle heavy concurrency better, but the service would no longer run the code the evaluation measured.
+
+**Why.**
+- Streaming changes how long the wait feels, without changing what it costs.
+- Running the evaluated functions keeps D-008: the README's numbers describe what the service does.
+
+**Trade-offs.**
+- The thread pool bounds concurrency (40 threads by default), and the retrieval lock queues requests while a question is embedded. That's fine for a demo. A second replica brings back D-049's triggers.
+- There's no authentication. The service listens on 127.0.0.1 only.
+
+**In short.** "The service is FastAPI streaming S1's answer as Server-Sent Events: the sources first, then the text as it's written, then the citations and the cost. It's a POST read with fetch, because EventSource only does GET, and a question doesn't belong in a URL. It runs the exact functions the evaluation measured, in a thread pool, so the README's numbers describe what the service does."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
 
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
-| 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
+| 8 | API framework: FastAPI vs Django | FastAPI (D-050) | Decided |
 | 8 | Redis vs RabbitMQ | Neither, for one process (D-049) | Decided |
-| 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |
+| 8 | Streaming: Server-Sent Events vs WebSockets | SSE over a POST, read with fetch (D-050) | Decided |
 | 9 | Hosting | Docker Compose, locally (D-049) | Decided |
 | 9 | Observability | A timing log per request stage (D-049) | Decided |
