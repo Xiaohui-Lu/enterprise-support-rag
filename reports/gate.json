@@ -1,0 +1,328 @@
+{
+  "src_tree": "b8494b62dfdae8404f02c0635e76515aadc157f0",
+  "commit": "c64321f1823e2095bfaf2aa4238f886f528303c4",
+  "split": "dev_real",
+  "n": 50,
+  "generator": {
+    "model": "claude-haiku-5-5",
+    "effort": "medium",
+    "prompt_version": "answer-v1",
+    "k": 10
+  },
+  "judge": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "prompt_version": "judge-v1"
+  },
+  "changed": [
+    "ew-000",
+    "ew-007",
+    "ew-050",
+    "ew-057",
+    "ew-059",
+    "ew-060",
+    "ew-061",
+    "ew-070",
+    "ew-073",
+    "ew-093",
+    "ew-108",
+    "ew-109",
+    "ew-110",
+    "ew-118",
+    "ew-121",
+    "ew-127",
+    "ew-130",
+    "ew-141",
+    "ew-143",
+    "ew-154",
+    "ew-155",
+    "ew-160",
+    "ew-171",
+    "ew-180",
+    "ew-196",
+    "sim-011",
+    "sim-016",
+    "sim-017",
+    "sim-018",
+    "sim-019",
+    "sim-021",
+    "sim-027",
+    "sim-041",
+    "sim-056",
+    "sim-064",
+    "sim-078",
+    "sim-085",
+    "sim-093",
+    "sim-097",
+    "sim-111",
+    "sim-113",
+    "sim-114",
+    "sim-122",
+    "sim-132",
+    "sim-161",
+    "sim-165",
+    "sim-177",
+    "sim-183",
+    "sim-184",
+    "sim-194"
+  ],
+  "decision": {
+    "passed": true,
+    "reason": "first run: these results are the baseline"
+  },
+  "pct_correct": 90.0,
+  "gold_in_context": 44,
+  "paid_usd": 0.0,
+  "questions": {
+    "ew-000": {
+      "request_key": "f55641582a8a23205e1e67c6b4817231f2d413c37ac65bd3312dffa7db4c605a",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-007": {
+      "request_key": "6742da7acad4fd10975e70e0d51ee72d8d48c4931033ec61be8b435fb527dd93",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-050": {
+      "request_key": "0649c04b9857a2138b2ef1b09941e00a7b519fea2e7ec8d5fe4c74dd02f3f415",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-057": {
+      "request_key": "67a93a88b27e3865d2fd5d61bd67cdcbcd440ae5a8760a9f2619a16cc8de5772",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-059": {
+      "request_key": "4d17c82535473dd6fb9c9b97480bd5ad4247262b019066fbf331351e0cb5be76",
+      "correct": false,
+      "gold_in_context": true
+    },
+    "ew-060": {
+      "request_key": "c9b5d2d62213f2f81373545ce7e015b985bfdcf4edf6a06a43b06f942314e0a8",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-061": {
+      "request_key": "313aeb8331fd93de22724707be32b616dbf421a25e9a0da25d17abb00808fac4",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-070": {
+      "request_key": "9161ceee98fadeb036dbaacbd0a0c204dddf9ae8c7ad6870232325f29d02a33c",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-073": {
+      "request_key": "4ec2d0d35d591348d7b86363e0054149c099de1ee5040c18c470a2d4fa48067d",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-093": {
+      "request_key": "3f7b69f5aa57c4660a47131f42e0ee0f64d33e62e00b8fa5ae538c22b6532b65",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-108": {
+      "request_key": "cd3f91dfb7557f79f44425514243da40f4224c9e94e0b368d19dbd1dbbdef4ed",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-109": {
+      "request_key": "dcbd3cb97b8dfba5cd325f3b643a8e7ef16d929185be367e8e02f3471387ce28",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-110": {
+      "request_key": "bb746f7cfe996fd54e4727cf3d97e6341ac2f8065f126508bebe6135bd9dc0b6",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-118": {
+      "request_key": "032e8fb21c3b208c4c8467d1475d530fc07e830b42ab26a0778171df765f7f40",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-121": {
+      "request_key": "92a5aa3be15cd53454c8d0604982fbf96925aa8eb04f3c445a068e7cf6346a15",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-127": {
+      "request_key": "51afd083327f8974f93ae6e4b4206b9a77974bf5d8da383ee46965508785d155",
+      "correct": true,
+      "gold_in_context": false
+    },
+    "ew-130": {
+      "request_key": "d5dee8e9c4b64bbd828e06fe42816598148cb8aa447f23df9f310e7f4bf88f35",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-141": {
+      "request_key": "cc82a262a5314c34b5abe9ce67bdfc596e87fc4c2043da73f1b116aad56ca283",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-143": {
+      "request_key": "541619a8500c6b5fcca4bc8d8eb03cc971d83ce8ea5ed698002ea04817e6a6f5",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-154": {
+      "request_key": "85988f1988c36484f77ad84aed1a91c4033c4bdfa3b6fc505f982513107de169",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-155": {
+      "request_key": "fb41f5304770c66a548eb9237d34665fd4d40f5ba4347fabe6208da48082f278",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-160": {
+      "request_key": "a633feae7f67974af7620d91f2602222f468995dce3cfe63a452ee0b44119c92",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-171": {
+      "request_key": "e1bd8f3814d5cf140aee10dd7d11cf6aee30ce9e6b54c24b8199b18e6a9588a6",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-180": {
+      "request_key": "34f4d244bc526723dfe9fead9667b6f176076b3f512cfb4a95fa4f42e2d227f2",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "ew-196": {
+      "request_key": "47810447b7760f39ddc8d38cbbdd178a80bed6ff4675c80726dd5fe727b49746",
+      "correct": false,
+      "gold_in_context": true
+    },
+    "sim-011": {
+      "request_key": "c5e8463f5a8897ca0dfeb298fa94a7f0601c743e806c39c6e71eb822038b512e",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-016": {
+      "request_key": "8cf4531e7a205d01d7a09e099079a6e2f69a44a37df66d9565125cd95b7a6138",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-017": {
+      "request_key": "a5c45723da61128584849ea54bd2fb88f3fc495dc7d07b164eee2bd3b4d4357a",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-018": {
+      "request_key": "302b3778789ba87eeba98a1df119fa1a4e4fe9f39c78c594c7b1b1b988b5aa74",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-019": {
+      "request_key": "1f7483fafe2017546111d45b6749d85f1a682495ed22c85f7c7d046b8df4a4b6",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-021": {
+      "request_key": "1392c1beb36b34165e8c5e34d9d1f0c25d26fa99aa74ac012f86985b2cbd9705",
+      "correct": true,
+      "gold_in_context": false
+    },
+    "sim-027": {
+      "request_key": "a2d905988c5838bc2610a752003bbb99b47cd8abcc65327fc28e148529d75fea",
+      "correct": true,
+      "gold_in_context": false
+    },
+    "sim-041": {
+      "request_key": "99f34426dad56c3a21fbbd78fb4041c9112725839da6df5e81c75eb98cbe0100",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-056": {
+      "request_key": "f663fe15660b71011a94b1390b0e7bfd9c1279937cf0ec248abee48662208a6c",
+      "correct": false,
+      "gold_in_context": true
+    },
+    "sim-064": {
+      "request_key": "d5e2607fff131c4318660995ee61729e7b8c4128c7ea71b63366bc3ab4b6bbe6",
+      "correct": true,
+      "gold_in_context": false
+    },
+    "sim-078": {
+      "request_key": "60e278a63c02a14a2cfa14142275ae4562a0c933ca5221700dae42af0d9e8100",
+      "correct": false,
+      "gold_in_context": true
+    },
+    "sim-085": {
+      "request_key": "3867d76b2430050eb1eb97dd9c4c40ab062e0bdbbb1b3ebf8d4905df8fab07bb",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-093": {
+      "request_key": "dd7b0d804c68e16a622abf07466d8b5beb7b2fb2dfc510c3a83f0765128ca08e",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-097": {
+      "request_key": "2391813e18545df9e4811c39108dd92cb034606e27eedd996c38e0a1e0200fa2",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-111": {
+      "request_key": "eda980fb400d48d7354085ab44cbd95136866efe6d3db4273075c1c3ff93f817",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-113": {
+      "request_key": "83bbba6c062eeb5f276a7f680476c34f1804ab28fad87cf826d6a14c8a8f7e0a",
+      "correct": false,
+      "gold_in_context": true
+    },
+    "sim-114": {
+      "request_key": "9e52db69c3c92417e35f93f8fe0aea67db7f3de71c395d9a6e9226ae9a375685",
+      "correct": true,
+      "gold_in_context": false
+    },
+    "sim-122": {
+      "request_key": "72dc72740c34a433e9cbcd3b1ca384d2c1037e9b52fd4e6bd310761295903642",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-132": {
+      "request_key": "2d08dcfabf15294036bfd3946c00e5a3b2f1e955a8989271cf62a77800e70549",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-161": {
+      "request_key": "b2d7d19e347870fce8c3e00189d9c226c3807e4a8d2f3ffaea1b2401587c98e8",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-165": {
+      "request_key": "e66dc9e224c78e080f6ded88cf1b5c69ffadda9dd4a0efdb499ad7dfde38e294",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-177": {
+      "request_key": "56848ef7061aaad1ebb5647526d3afc024046f830e1c5523a3ead2afd013d62e",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-183": {
+      "request_key": "ba6c164752648cf73cdaf39385b976e9231cb2da211535e4333802193adf1a84",
+      "correct": true,
+      "gold_in_context": true
+    },
+    "sim-184": {
+      "request_key": "e3bb43985bee3c175330bc726fbbf47c62d38603711de09841446c247073fa3b",
+      "correct": true,
+      "gold_in_context": false
+    },
+    "sim-194": {
+      "request_key": "ce704f3640ce7f61e5a96900e382126526ea89cba1b6d7667896037239a24181",
+      "correct": true,
+      "gold_in_context": true
+    }
+  }
+}

@@ -436,6 +436,8 @@ def run(args: argparse.Namespace) -> None:
                 return
             result = run_gate(max_usd=args.max_usd, accept=args.accept)
             summary = {k: v for k, v in result.items() if k != "questions"}
+            changed = summary.pop("changed")
+            summary["changed"] = len(changed) if len(changed) > 10 else changed
             print(json.dumps(summary, indent=2))
             if not result["decision"]["passed"]:
                 raise ValueError(f"the gate failed: {result['decision']['reason']}")
