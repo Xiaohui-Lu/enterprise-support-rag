@@ -8,7 +8,7 @@ A support assistant for a 6,221-article help center, built to answer one questio
 
 *A real answer from the Docker Compose stack, at about real speed: the articles it read appear first, then the answer streams in, with each citation linked to its article. First words at 0.6 s, done at 1.3 s, for $0.0006.*
 
-> Steps 0 to 10 are done. What's left for the last milestone, M3, is an architecture diagram and a write-up. See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Steps 0 to 10 are done. What's left for the last milestone, M3, is a write-up. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -113,6 +113,66 @@ M1 ran S0, S1 on BM25 and S\* (commit `eadbd6a`). Retrieval added 30.6 points ov
 - "Correct" means "agrees with WixQA's reference answer", and a reference can itself be incomplete.
 
 ## How it's built
+
+How a question is answered (D-050):
+
+```mermaid
+sequenceDiagram
+    actor U as Browser (React page)
+    participant A as FastAPI service
+    participant P as Postgres + pgvector
+    participant C as Call cache (SQLite)
+    participant H as Claude Haiku 5.5
+    U->>A: POST /api/answer with the question
+    A->>A: embed the question (voyage-4-nano)
+    A->>P: exact search over 6,221 article vectors
+    P-->>A: the top 10 articles
+    A-->>U: event sources: the 10 titles and links
+    A->>C: was this exact request answered before?
+    alt cached
+        C-->>A: the saved answer, free
+        A-->>U: event delta: the whole text at once
+    else new
+        A->>H: S1 prompt: the question and 10 numbered articles
+        H-->>A: the answer, streamed
+        A-->>U: event delta: each piece as it arrives
+        A->>C: save the complete answer
+    end
+    A-->>U: event done: citations, cost, timings
+    A->>A: log one JSON timing line, never the question
+```
+
+Where it runs, and how a change is checked (D-052, D-053):
+
+```mermaid
+flowchart TB
+    subgraph machine["Your machine"]
+        subgraph compose["Docker Compose"]
+            direction LR
+            app["app container<br/>FastAPI service and built page<br/>articles and voyage-4-nano baked in"]
+            db[("db container<br/>Postgres + pgvector")]
+            servicecache[("servicecache volume<br/>the service's call cache")]
+            app --- db
+            app --- servicecache
+        end
+        subgraph study["The study"]
+            direction LR
+            cli["srag CLI<br/>answer, judge, report, gate"]
+            studycache[("cache/<br/>the study's call cache<br/>and article vectors")]
+            cli --- studycache
+        end
+        secrets[".env: keys, never in an image"]
+    end
+    anthropic["Anthropic API<br/>Haiku 5.5 answers, Sonnet 5.5 grades"]
+    ci["GitHub Actions<br/>lint, tests, page build, srag gate --check"]
+
+    secrets -. "at run time" .-> app
+    studycache -. "vectors, read-only" .-> app
+    cli --- db
+    app --> anthropic
+    cli --> anthropic
+    cli -- "reports/gate.json, committed" --> ci
+```
 
 - **One package and one CLI.** Every step is an `srag` command (D-010).
   - The evaluation calls the same functions the service runs, so the numbers above describe what the service does (D-008).
