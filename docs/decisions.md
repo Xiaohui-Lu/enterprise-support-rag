@@ -1840,6 +1840,42 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-049 · A lean M3: a thin streaming service and a local demo, without Kubernetes or Redis (Steps 8 to 10)
+
+**Context.**
+- **Steps 0 to 7 answered RQ1 to RQ6.** What's left on the roadmap is engineering:
+  - Step 8: a service with streaming, a React chat UI, and a Redis cache and rate limit.
+  - Step 9: Docker, Helm on k3s, OpenTelemetry tracing, Prometheus and Grafana.
+  - Step 10: a CI eval gate on pull requests, and the final README.
+  - M3: a live demo, an architecture diagram and a write-up.
+- **None of that can change a finding.** What the findings still need is something to try. D-008 says "evaluate what you ship", and nothing is shipped yet.
+
+**Decision.**
+- **Step 8:** one FastAPI service that answers with the default strategy, S1 on dense search (D-042, D-048), and streams the answer to a small chat UI with citations.
+  - No Redis. The existing SQLite call cache already answers a repeated question, and a single process needs no shared counters.
+- **Step 9:** Docker Compose for the whole stack (Postgres with pgvector, the service and the UI), plus a timing log for each stage of a request.
+  - No Helm, k3s, OpenTelemetry, Prometheus or Grafana.
+- **Step 10:** unchanged: a CI eval gate on pull requests, and the final README.
+- **M3:** the demo runs locally with one command, and the README shows a recording of it.
+  - A public URL is optional. It would need a rate limit and a spending cap first, because every visitor's question costs API money.
+
+**Alternatives.**
+- **The full roadmap.** Kubernetes, tracing and dashboards would give a production-shaped deployment. But they're standard platform work that answers none of the research questions, and they push M3 back by two steps' worth of work.
+- **Stopping at M2, with no service.** The findings would stand, but there'd be nothing to try, and nothing shipped to evaluate.
+- **A hosted public demo now.** It's the most convincing for a reader, but it needs protecting from spend first. It can come after M3.
+
+**Why.**
+- A working demo is what a reader of the repo tries first. A cluster isn't.
+- Each piece that's cut has a clear trigger for bringing it back: Redis and a load balancer at a second replica, tracing when there's more than one service to follow a request through.
+
+**Trade-offs.**
+- There's no evidence of running under load or across replicas.
+- The "Coming up" rows for Step 9's hosting and observability no longer apply.
+
+**In short.** "Once the experiments were done, I cut the deployment work that couldn't change a finding, Kubernetes, Redis and dashboards, and shipped a thin streaming service with a chat UI that runs with Docker Compose. One process doesn't need a shared cache or shared counters. I'd add Redis with a second replica."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
@@ -1847,7 +1883,7 @@ Where each upcoming decision is leaning now. Each becomes a full entry at the st
 | Step | Decision | Leaning | Decided by |
 |---|---|---|---|
 | 8 | API framework: FastAPI vs Django | FastAPI: the service mostly waits on LLM calls and streams tokens, which suits async; typed request and response models and OpenAPI docs come free; Django's admin, ORM and templates aren't needed here | Workload shape |
-| 8 | Redis vs RabbitMQ | Redis for response caching and rate limiting. No message broker: there's no service-to-service messaging, and eval runs are batch jobs | Actual need |
+| 8 | Redis vs RabbitMQ | Neither, for one process (D-049) | Decided |
 | 8 | Streaming: Server-Sent Events vs WebSockets | SSE: one-way, server to browser, over plain HTTP, which is all a chat answer needs | Actual need |
-| 9 | Hosting: k3s on one VM vs managed Kubernetes vs a PaaS | k3s on a small VM: real Kubernetes at hobby cost | Cost |
-| 9 | Observability: OpenTelemetry with the Grafana stack vs an LLM tracing tool (Langfuse, Phoenix) | Open | Step 9 |
+| 9 | Hosting | Docker Compose, locally (D-049) | Decided |
+| 9 | Observability | A timing log per request stage (D-049) | Decided |

@@ -171,10 +171,10 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | Done |
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | Done |
 | 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | Done |
-| 8 | Service: FastAPI with streaming, React chat UI with citations, Redis cache and rate limit | FastAPI vs Django, Redis vs RabbitMQ (or neither), SSE vs WebSockets | |
-| 9 | Deployment: Docker, Helm on k3s, OpenTelemetry tracing, Prometheus/Grafana | k3s vs managed Kubernetes vs PaaS, what to trace | |
+| 8 | Service: FastAPI streaming S1's answer to a small chat UI with citations; no Redis (D-049) | FastAPI vs Django, SSE vs WebSockets, the UI | In progress |
+| 9 | Deployment: Docker Compose for the whole stack, a timing log per request stage (D-049) | What goes in the image, what to log | |
 | 10 | CI eval gate on pull requests, final README | Gate size and thresholds, handling noisy evals | |
-| ✅ M3 | Live demo, architecture diagram, write-up | | |
+| ✅ M3 | Local demo with one command, a recording in the README, architecture diagram, write-up (D-049) | | |
 
 ## 13. Risks
 
