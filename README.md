@@ -8,7 +8,7 @@ A support assistant for a 6,221-article help center, built to answer one questio
 
 *A real answer from the Docker Compose stack, at about real speed: the articles it read appear first, then the answer streams in, with each citation linked to its article. First words at 0.6 s, done at 1.3 s, for $0.0006.*
 
-> Steps 0 to 10 are done. What's left for the last milestone, M3, is a demo recording, an architecture diagram and a write-up. See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Steps 0 to 10 are done. What's left for the last milestone, M3, is an architecture diagram and a write-up. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
