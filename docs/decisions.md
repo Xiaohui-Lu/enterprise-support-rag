@@ -1680,6 +1680,46 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-047 · The router is designed without grades and scored once on test, because dev has one question to learn from (Step 7)
+
+**Context.**
+- **A router can only gain where the default is wrong and another strategy is right.** The default is S1 on dense search, top 10 (D-042). The router's ceiling is the hindsight oracle: for each question, the cheapest strategy that got it right.
+- **On the 50 real dev questions there is one such question.** These are dev's existing runs, counted at no cost:
+  - S1 is right on 45.
+  - Every strategy also misses 4 of its 5 misses: S2, and S3 at K=20, 50 and 100.
+  - Only `sim-113` can be fixed: S2, and S3 at K=50 and 100, get it right.
+  - The oracle over S1, S2 and S3 scores 46.
+- **So nothing can be tuned on dev.** A threshold either catches `sim-113` or it doesn't, and every setting scores 45 or 46.
+- **Test has room.** M2's published report shows S3 at K=100 right on 25 test questions that S1 missed, and wrong on 12 that S1 got right. Dev can't see a gap of that size, as at M1 (D-034).
+- **Section 10's plan** tuned R1's and R2's thresholds on dev, and cross-validated R3, a classifier, over all 400 real questions.
+
+**Decision (committed before any router number on test).**
+- **Thresholds are set by an escalation budget, not by accuracy.** A rule like "escalate the weakest 20%" is fixed from how a signal is spread over the real dev questions. That needs retrieval scores only: no answers and no grades.
+- **The router's rules are written and committed before anything about routing is computed on test (D-048).** Until then, nothing is looked at per question on test: not which questions a router would fix, and not the oracle.
+- **The router is scored once on test, as a milestone run tagged M3,** from a clean commit (D-034).
+  - It runs through the same code the service will use (D-008).
+  - Every request it makes was already made at M2, so the call cache answers it, and the run costs about nothing.
+- **R3 is dropped.** It needed grades to train on, and dev has none to spare.
+
+**Alternatives.**
+- **Skip the router, ship S1 and write it up** (section 10's skip condition, as D-040 did). It's cheap, but it would conclude from the 50 questions that can't see the gap, while test shows S3 at K=100 right on 25 questions S1 missed.
+- **Tune on dev as planned.** Every threshold ties at 45 or 46, so whichever one was picked, chance would have picked it.
+- **5-fold cross-validation over the 400 real questions.** Each question would be scored by a router that never saw it, which is the best use of the data. But test answers would choose the router, D-004's lock would end, and the signals and target would be chosen knowing all 400 questions.
+- **Tune on the 500 synthetic dev questions.** There are more of them, but they're written from single articles in the articles' own wording. Dense search's median top score is 0.708 on them against 0.638 on real questions, so thresholds wouldn't carry over. Grading them would also cost money.
+
+**Why.**
+- A threshold set by budget depends on the signal's spread, not on which answers were right. So it can be fixed on dev without fitting it to one question.
+- It keeps the project's rule: tune on dev, run test once (D-004, D-034).
+
+**Trade-offs.**
+- A budget chosen by reasoning may be far from the best threshold.
+- The escalation target is informed by M2's test results. S3 did best on multi-article questions there, which section 10 anticipated: "S3 joins only if Step 6 finds a question type where it wins". That's a design choice made with test knowledge, and it's stated here.
+- Without R3, RQ6 asks whether cheap signals are enough to route, not whether a learned router is.
+
+**In short.** "My dev set had exactly one question a router could fix, so there was nothing to tune on it. I set the router's threshold by an escalation budget instead, which needs only the spread of retrieval scores, not grades. I wrote the rules down, then scored the router once on the test set, where M2 had shown real room."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

@@ -130,6 +130,8 @@ Output: cost per question against % correct for always-S1, always-S2, R1–R3 an
 
 Skip condition: if S2 doesn't beat S1 on any question type, there is nothing to route. Ship S1 and write that up.
 
+Update for Step 7 (D-047): only one dev question can be fixed by routing, so nothing is tuned on dev. Thresholds are set by an escalation budget instead, R3 is dropped, and the router is scored once on test, tagged M3. D-048 sets the rules.
+
 ## 11. Reproducibility and cost
 
 - Each run records its config (strategy, models, k, prompt version, git commit, dataset revision), per-question outputs, scores, tokens and latency.
@@ -167,7 +169,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | 5 | Agentic search S2 with a hand-written tool loop | Tool design, step budget, stop conditions, prompt caching | Done |
 | 6 | Long context S3, context-rot test, full comparison (RQ3–RQ5) | K sweep, distractor design, cost guardrails | Done |
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | Done |
-| 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | |
+| 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | In progress |
 | 8 | Service: FastAPI with streaming, React chat UI with citations, Redis cache and rate limit | FastAPI vs Django, Redis vs RabbitMQ (or neither), SSE vs WebSockets | |
 | 9 | Deployment: Docker, Helm on k3s, OpenTelemetry tracing, Prometheus/Grafana | k3s vs managed Kubernetes vs PaaS, what to trace | |
 | 10 | CI eval gate on pull requests, final README | Gate size and thresholds, handling noisy evals | |
