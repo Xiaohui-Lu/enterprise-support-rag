@@ -1977,6 +1977,66 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-052 · The image and the timing log: model and articles baked in at their pinned revisions, a separate call cache, secrets at run time, one JSON line per answer (Step 9)
+
+**Context.**
+- **D-049 cut Step 9 to Docker Compose and a timing log.** Postgres already runs in Compose (D-041). This step adds the service and its page.
+- **What the service needs at run time:**
+  - the code and its dependencies, with CPU-only PyTorch, which `pyproject.toml` already picks on Linux;
+  - the built page (D-051);
+  - the 6,221 articles, 58 MB at the pinned dataset revision;
+  - voyage-4-nano, 672 MB at its pinned revision, which runs code from its own repository (D-035);
+  - the Anthropic key, and the database's address.
+- **The call cache, `cache/`, holds every paid call of the study,** about $50 of them (D-020).
+- **The service logs one line of plain text per answer** (D-050). It can be read, but not analyzed without a regex.
+
+**Decision.**
+- **A multi-stage `Dockerfile`.**
+  - A Node 22 stage builds the page with `npm ci`.
+  - A Python 3.12 stage installs the locked dependencies with uv (`uv sync --frozen --no-dev`), runs as a non-root user, and starts `srag serve` on port 8000.
+- **Baked in at build, at their pinned revisions:**
+  - the articles, through `srag download`;
+  - the model, through a Hugging Face snapshot.
+  - At run time `HF_HUB_OFFLINE=1`: the container never contacts Hugging Face, and every build holds the same bytes.
+- **The container's call cache is its own,** on a named volume.
+  - The host's `cache/vectors` is mounted read-only, so `srag db-load` can run inside the container.
+  - The host's `cache/` is never written from the container. SQLite writes through a Docker Desktop bind mount aren't safe, and that file holds the study's paid calls.
+- **Secrets only at run time.**
+  - `.dockerignore` keeps `.env` out of the build.
+  - Compose passes `.env` to the container with `env_file`, so a different key in the shell can't win.
+  - `DATABASE_URL` is set in Compose to the `db` service's address.
+- **The `app` service sits behind a Compose profile.**
+  - `docker compose up -d` still starts only Postgres, as the evaluation needs.
+  - `docker compose --profile app up --build` starts both.
+  - The service waits for Postgres to report healthy, has a health check of its own, and listens on 127.0.0.1:8000 only.
+- **The timing log: one JSON line per answer,** with a time for each stage:
+  - embedding the question;
+  - the SQL search;
+  - first text;
+  - total.
+  - It also records tokens, cost, and whether the answer came from the cache or was a decline. `docker compose logs app` can be piped straight into `jq`. The question's text is never logged.
+- **A fresh clone's database** needs the article vectors: embed the articles once, then run `srag db-load`. Both can run in the container, though embedding is slow on a CPU. On this machine the Postgres volume already holds them.
+
+**Alternatives.**
+- **Mounting the articles and the model from the host.** The image would be about 0.7 GB smaller, but it would only run where the host had prepared both.
+- **Downloading them at first start.** It needs network access on every fresh start, and fetches the model's own code at run time.
+- **Sharing the host's call cache, read-write.** Demo questions would replay for free, at the price of risking the study's cache.
+- **Plain-text log lines.** Fine to read, but awkward to analyze.
+- **OpenTelemetry.** D-049 cut it. It comes back with a second service.
+
+**Why.**
+- Pinned bytes in the image make the container reproducible and keep it independent of any one host.
+- The evaluation's cache is the study's most expensive artifact, so the demo can't be allowed to damage it.
+- JSON lines make "where does the time go" a one-line query.
+
+**Trade-offs.**
+- **Size and build time.** The image is about 2 GB, and the first build downloads PyTorch, the model and the articles.
+- **First questions cost money.** The container's cache starts empty, so its first answer to each question is paid for, about $0.001 each.
+
+**In short.** "The image bakes in the code, the built page, the articles and the embedding model at pinned revisions, so it starts with no network access to Hugging Face and every build is identical. Secrets come in at run time and never enter a layer. The container keeps its own call cache, because the evaluation's cache holds every paid call of the study. Each answer logs one JSON line with the time for each stage, so finding the slow stage is a jq one-liner."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.
