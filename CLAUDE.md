@@ -31,6 +31,9 @@ uv run srag report-rot runs/<S* judge> runs/<arm judge runs>        # % correct 
 uv run srag answer --strategy r2 --split dev_real   # the router: S1, or S3 at K=100 on a weak top score or a decline; replays the cache (D-048)
 uv run srag report-router runs/<R2 judge> runs/<S1 judge> runs/<S3 K=100 judge> runs/<others>   # vs S1 and random escalation, to reports/router_<split>.md
 uv run srag serve       # the assistant at http://127.0.0.1:8000: S1's answers streamed as SSE; needs Postgres (D-050)
+npm --prefix web install    # the chat UI's packages, from web/package-lock.json (D-051)
+npm --prefix web run build  # the UI into web/dist, which srag serve serves at /
+npm --prefix web test       # the UI's tests (Vitest); npm --prefix web run dev serves it with hot reload
 uv run srag answer --strategy s1 --split test --milestone M1   # test set: milestones only, clean tree (D-034)
 uv run srag judge runs/<answers> --effort high --batch   # grade an answer run (paid, cached)
 uv run srag validate-judge runs/<judge runs>      # judge vs labels: kappa, to reports/judge_validation.md
@@ -53,6 +56,7 @@ uv run srag label --adjudicate                    # hand-label only what the pan
 - `runs/`: run records (config, per-question results, summary), git-ignored; reports cite run IDs (D-018).
 - `cache/`: the LLM response cache (SQLite), git-ignored (D-020).
 - `compose.yaml`: Postgres with pgvector for the article vectors, open to this machine only (D-041).
+- `web/`: the chat UI, React and TypeScript built with Vite; `srag serve` serves its build (D-051).
 
 ## Rules
 

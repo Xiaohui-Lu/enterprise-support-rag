@@ -2,7 +2,7 @@
 
 A support assistant for a 6,221-article help center, built to answer one question with data: **when do retrieval, agentic search and long context each pay off?** Closed-book answering, single-pass RAG, agentic search and long-context prompting run on the [WixQA](https://huggingface.co/datasets/Wix/WixQA) benchmark with the model held constant, and are compared on correctness, cost and latency.
 
-> Work in progress: Steps 0 to 7 are done, and the last milestone reached is M2. Next is Step 8, the service. See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Work in progress: Steps 0 to 8 are done, and the last milestone reached is M2. Next is Step 9, packaging the service with Docker Compose. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -134,6 +134,16 @@ uv run srag answer --strategy s1                            # 50 dev questions, 
 uv run srag judge runs/<answer run> --effort high --batch   # grades it through the batch API
 uv run srag report-answers runs/<judge runs>                # one judge run per strategy
 ```
+
+To try the assistant in a browser, build the chat UI once ([Node.js](https://nodejs.org/) 22 or later), then start the service and open http://127.0.0.1:8000:
+
+```bash
+npm --prefix web install
+npm --prefix web run build
+uv run srag serve
+```
+
+It answers with S1 on dense search, streaming the text as it's written, with each citation linked to its help-center article (D-050, D-051). A question asked before comes back from the cache, at no cost.
 
 The dev/test split lives in `data/splits/splits.json`. It was generated once with `srag splits` and is never regenerated, so the test set can't drift. The test set runs only with `--split test --milestone M1` (or M2, M3) from a clean commit.
 

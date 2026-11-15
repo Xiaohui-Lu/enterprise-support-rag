@@ -1931,6 +1931,52 @@ The last row's range assumes each best section is of average size at one end and
 
 ---
 
+## D-051 · The chat UI: one React and TypeScript page, built with Vite and served by the service (Step 8)
+
+**Context.**
+- **The service streams Server-Sent Events:** the sources, then the text, then the citations (D-050).
+- **The page has four jobs:**
+  - show the answer as it arrives;
+  - turn each `[n]` into a link to the help-center article it cites;
+  - list the sources, with the cited ones marked;
+  - say plainly when the assistant declines.
+- **M3's demo is a recording of this page (D-049).** It's the first thing a reader of the repo sees.
+
+**Decision.**
+- **React 19 and TypeScript, built with Vite, in `web/`.** One page with three components (the app, the answer, the sources) and three small modules: the stream parser, the API client and the answer's text splitter.
+- **Reading the stream.** The page sends a POST with `fetch` and reads the body through `TextDecoderStream`.
+  - The parser keeps what has arrived, and an event is complete only once its blank line has arrived. A network chunk can end partway through an event, or hold several.
+  - `TextDecoderStream` keeps a character whole when its bytes are split across two chunks.
+- **The answer's text.**
+  - `[n]` becomes a link to source n, with the article's title on hover.
+  - `**bold**` becomes bold. Nothing else is treated as Markdown.
+  - While streaming, text that could still turn out to be the decline (`NOT_FOUND`) isn't shown.
+  - A decline reads "I couldn't find this in the help center", and the articles it searched stay listed.
+- **Serving.**
+  - `npm run build` writes `web/dist`, and `srag serve` serves it at `/`: one process, one port, no CORS.
+  - During development, `npm run dev` serves the page itself and passes `/api` on to the service.
+- **Tests:** Vitest, for the parser (including a stream cut at every possible point), the event mapping and the text splitter.
+- **What's in git:** `package-lock.json` is committed. `node_modules` and `dist` aren't.
+
+**Alternatives.**
+- **One static page with plain JavaScript.** No build step and nothing new in the repo, but it shows nothing about building a front end, and it grows awkwardly.
+- **Next.js.** Server rendering and routing that a one-page app doesn't need, plus a second server.
+- **A separate front-end server in production.** Two processes and CORS, for no gain here.
+- **`EventSource`.** It only sends GET (D-050).
+- **A Markdown library.** The answers use only bold and numbered lines. Plain text with its line breaks kept already shows both.
+
+**Why.**
+- The demo is the first impression, and typed events catch a mismatch with the service at build time.
+- Serving the build from FastAPI keeps Docker Compose down to the service and Postgres.
+
+**Trade-offs.**
+- There's a Node toolchain in a Python repo. Step 9's image needs a Node build stage, and CI needs Node to build and test the page.
+- The components themselves aren't tested. The logic that could break quietly, parsing and splitting, is.
+
+**In short.** "The UI is one React and TypeScript page built with Vite and served by the FastAPI app itself, so the demo is one process on one port. It reads the SSE stream with fetch, buffering until each blank line, because network chunks don't line up with events. It turns each [n] into a link to the cited help-center article."
+
+---
+
 ## Coming up
 
 Where each upcoming decision is leaning now. Each becomes a full entry at the step where it's made.

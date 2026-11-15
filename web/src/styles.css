@@ -1,0 +1,264 @@
+:root {
+  --surface: #fcfcfb;
+  --panel: #ffffff;
+  --ink: #1d1d1b;
+  --ink-muted: #6b6b66;
+  --line: #e4e3df;
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8f1fc;
+  --warn: #b5482a;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #161615;
+    --panel: #1f1f1d;
+    --ink: #ecebe7;
+    --ink-muted: #a3a29c;
+    --line: #34332f;
+    --accent: #5b9be6;
+    --accent-ink: #0d1a2b;
+    --accent-soft: #1d2b3d;
+    --warn: #ef8a6b;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  line-height: 1.55;
+}
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+}
+
+.header h1 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+}
+
+.lede {
+  margin: 0 0 24px;
+  color: var(--ink-muted);
+}
+
+.ask textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.ask textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.ask-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.button {
+  flex: none;
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: var(--line);
+  color: var(--ink);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.result {
+  margin-top: 32px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.asked {
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+
+.answer {
+  white-space: pre-wrap;
+}
+
+.citation {
+  display: inline-block;
+  min-width: 1.4em;
+  margin: 0 1px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75em;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: super;
+  line-height: 1.4;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 2px;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.muted,
+.meta {
+  color: var(--ink-muted);
+}
+
+.meta {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+}
+
+.tag {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tag.warn,
+.error {
+  color: var(--warn);
+}
+
+.decline {
+  font-style: italic;
+}
+
+.sources {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.sources summary {
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.sources ol {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sources li {
+  display: flex;
+  gap: 10px;
+  padding: 3px 0;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.sources li a {
+  color: inherit;
+}
+
+.sources li.cited {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.sources li.cited .number {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.number {
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 4px;
+  background: var(--line);
+  font-size: 0.8rem;
+  line-height: 1.6em;
+  text-align: center;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 560px) {
+  .ask-row {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}

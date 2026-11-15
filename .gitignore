@@ -23,6 +23,7 @@ cache/
 # Personal Claude Code instructions and settings
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/launch.json
 
 # OS and editors
 .DS_Store
@@ -30,3 +31,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# The chat UI (D-051): installed by npm, built into web/dist
+node_modules/
