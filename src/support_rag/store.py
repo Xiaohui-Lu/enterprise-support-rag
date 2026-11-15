@@ -171,6 +171,7 @@ class PgVectorRetriever:
         self._connection = connection
         self._encoder = encoder
         self.last_search_ms: float | None = None  # the SQL alone, for D-041's bar
+        self.last_encode_ms: float | None = None  # embedding the query, for the log (D-052)
         self.plan = self._checked_plan(index, np.zeros(model.dimensions, dtype=np.float32))
 
     @staticmethod
@@ -203,8 +204,11 @@ class PgVectorRetriever:
         return " > ".join(nodes)
 
     def search(self, query: str, k: int = 10) -> list[Hit]:
-        """The top k articles for a query, best first."""
+        """The top k articles for a query, best first. Times its two stages, embedding the
+        query and the SQL search, for the service's log (D-052)."""
+        start = time.perf_counter()
         (vector,) = self._encoder.encode_queries([query])
+        self.last_encode_ms = (time.perf_counter() - start) * 1000
         start = time.perf_counter()
         rows = self._connection.execute(self._sql, {"query": vector, "k": k}).fetchall()
         self.last_search_ms = (time.perf_counter() - start) * 1000

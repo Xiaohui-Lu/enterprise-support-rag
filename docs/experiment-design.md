@@ -172,7 +172,7 @@ Each step ends with something runnable and a commit. ✅ marks a checkpoint wher
 | ✅ M2 | Cost-vs-correctness and context-rot charts in the README | | Done |
 | 7 | Router: cascade (plus optional classifier) against the oracle (RQ6) | Signals, thresholds, cascade vs classifier | Done |
 | 8 | Service: FastAPI streaming S1's answer to a small chat UI with citations; no Redis (D-049) | FastAPI vs Django, SSE vs WebSockets, the UI (D-050, D-051) | Done |
-| 9 | Deployment: Docker Compose for the whole stack, a timing log per request stage (D-049) | What goes in the image, what to log | |
+| 9 | Deployment: Docker Compose for the whole stack, a timing log per request stage (D-049) | What goes in the image, what to log (D-052) | Done |
 | 10 | CI eval gate on pull requests, final README | Gate size and thresholds, handling noisy evals | |
 | ✅ M3 | Local demo with one command, a recording in the README, architecture diagram, write-up (D-049) | | |
 

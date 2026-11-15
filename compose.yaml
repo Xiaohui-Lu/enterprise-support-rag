@@ -1,5 +1,10 @@
-# Postgres with pgvector for the article vectors (D-041). Start it with `docker compose up -d`.
-# The password comes from POSTGRES_PASSWORD in .env, and the port is open to this machine only.
+# Postgres with pgvector for the article vectors (D-041), and the assistant itself (D-052).
+#
+#   docker compose up -d                       Postgres only, for the evaluation
+#   docker compose --profile app up --build    Postgres and the assistant at http://127.0.0.1:8000
+#
+# Secrets come from .env at run time and never enter an image. Both ports are open to this
+# machine only.
 services:
   db:
     image: pgvector/pgvector:0.8.6-pg17
@@ -19,5 +24,32 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    profiles: ["app"]
+    build: .
+    image: support-rag:latest
+    # .env's values go straight to the container, so a different key in the shell can't win.
+    env_file: .env
+    environment:
+      # Inside Compose, Postgres is the db service, not 127.0.0.1.
+      DATABASE_URL: postgresql://srag:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/srag
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # The container's own call cache. The study's cache on the host is never written (D-052).
+      - servicecache:/app/cache
+      # The stored article vectors, read-only, for `docker compose run --rm app srag db-load`.
+      - ./cache/vectors:/app/cache/vectors:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
 volumes:
   pgdata:
+  servicecache:

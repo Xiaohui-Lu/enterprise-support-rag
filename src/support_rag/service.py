@@ -25,6 +25,7 @@ import time
 from collections.abc import AsyncIterator, Generator, Iterator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any, Protocol
 
@@ -35,11 +36,13 @@ from pydantic import BaseModel, StringConstraints
 
 from support_rag.answer import build_request, parse_answer
 from support_rag.answer_eval import DEFAULT_EFFORT, DEFAULT_K, DEFAULT_RETRIEVER, context_for
-from support_rag.llm import LLMResult, cost_usd
+from support_rag.llm import LLMResult, cost_usd, prompt_tokens
 from support_rag.records import Article, Question
 from support_rag.retrieval_eval import Retriever
 
 log = logging.getLogger("support_rag.service")
+# One JSON line per answer, with the time for each stage (D-052). Never the question.
+timing_log = logging.getLogger("support_rag.timing")
 
 # Long enough for the longest real question in WixQA, a customer's email.
 MAX_QUESTION_CHARS = 8_000
@@ -77,6 +80,9 @@ class Answerer:
                 retriever=self.retriever,
                 k=self.k,
             )
+            # The Postgres retriever times its two stages; other retrievers don't (D-052).
+            embed_ms = getattr(self.retriever, "last_encode_ms", None)
+            search_ms = getattr(self.retriever, "last_search_ms", None)
         retrieval_ms = since_start()
         yield (
             "sources",
@@ -110,7 +116,13 @@ class Answerer:
                 "complete": result.complete,
                 "cached": result.cached,
                 "cost_usd": round(cost_usd(result.model, result.usage, batch=result.batch), 6),
+                "tokens": {
+                    "input": prompt_tokens(result.usage),
+                    "output": result.usage.get("output_tokens", 0),
+                },
                 "timings_ms": {
+                    "embed": None if embed_ms is None else round(embed_ms, 1),
+                    "search": None if search_ms is None else round(search_ms, 1),
                     "retrieval": retrieval_ms,
                     "first_text": first_text_ms,
                     "total": since_start(),
@@ -124,25 +136,42 @@ def sse(event: str, data: Mapping[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
+def timing_line(done: Mapping[str, Any]) -> str:
+    """The timing log's line for one answer: JSON, flat, without the question (D-052).
+
+    {"event": "answered", "embed_ms": 41.2, "search_ms": 8.3, ..., "declined": false}
+    """
+    record: dict[str, Any] = {
+        "ts": datetime.now(UTC).isoformat(timespec="milliseconds"),
+        "event": "answered",
+    }
+    record |= {f"{stage}_ms": ms for stage, ms in done["timings_ms"].items()}
+    record |= {f"{kind}_tokens": n for kind, n in done["tokens"].items()}
+    record |= {key: done[key] for key in ("cost_usd", "cached", "declined", "complete")}
+    return json.dumps(record)
+
+
 def _stream(answerer: Answerer, text: str) -> Iterator[str]:
-    """The events as SSE text, with one log line per answer. The question isn't logged."""
+    """The events as SSE text, and the timing log's line for each answer."""
     try:
         for event, data in answerer.events(text):
             if event == "done":
-                timings = data["timings_ms"]
-                log.info(
-                    "answered: retrieval %s ms, first text %s ms, total %s ms, cost $%.6f%s%s",
-                    timings["retrieval"],
-                    timings["first_text"],
-                    timings["total"],
-                    data["cost_usd"],
-                    " (cached)" if data["cached"] else "",
-                    " (declined)" if data["declined"] else "",
-                )
+                timing_log.info(timing_line(data))
             yield sse(event, data)
     except Exception:
         log.exception("answer failed")
         yield sse("error", {"message": ERROR_MESSAGE})
+
+
+def configure_logging() -> None:
+    """Plain lines for uvicorn and errors; bare JSON lines for the timing log, so
+    `docker compose logs app` can be piped into jq (D-052)."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    timing_log.addHandler(handler)
+    timing_log.setLevel(logging.INFO)
+    timing_log.propagate = False
 
 
 class AnswerRequest(BaseModel):

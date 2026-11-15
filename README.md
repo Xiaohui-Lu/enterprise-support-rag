@@ -2,7 +2,7 @@
 
 A support assistant for a 6,221-article help center, built to answer one question with data: **when do retrieval, agentic search and long context each pay off?** Closed-book answering, single-pass RAG, agentic search and long-context prompting run on the [WixQA](https://huggingface.co/datasets/Wix/WixQA) benchmark with the model held constant, and are compared on correctness, cost and latency.
 
-> Work in progress: Steps 0 to 8 are done, and the last milestone reached is M2. Next is Step 9, packaging the service with Docker Compose. See the [roadmap](docs/experiment-design.md#12-roadmap).
+> Work in progress: Steps 0 to 9 are done, and the last milestone reached is M2. Next is Step 10, a CI eval gate and the final README. See the [roadmap](docs/experiment-design.md#12-roadmap).
 
 ## Results (M2)
 
@@ -144,6 +144,14 @@ uv run srag serve
 ```
 
 It answers with S1 on dense search, streaming the text as it's written, with each citation linked to its help-center article (D-050, D-051). A question asked before comes back from the cache, at no cost.
+
+Or run the whole thing in Docker, once Postgres holds the vectors (the `db-load` step above). The image bakes in the built page, the articles and the embedding model at their pinned revisions, so it never contacts Hugging Face once built. The first build downloads about 2 GB.
+
+```bash
+docker compose --profile app up --build
+```
+
+Each answer logs one JSON line with the time for each stage: embedding the question, the SQL search, the first text and the total. `docker compose logs app` shows them (D-052).
 
 The dev/test split lives in `data/splits/splits.json`. It was generated once with `srag splits` and is never regenerated, so the test set can't drift. The test set runs only with `--split test --milestone M1` (or M2, M3) from a clean commit.
 

@@ -77,7 +77,8 @@ def test_done_gives_the_cited_numbers_in_the_order_cited():
     assert done["cited"] == [2, 1]
     assert done["declined"] is False
     assert done["cost_usd"] > 0
-    assert set(done["timings_ms"]) == {"retrieval", "first_text", "total"}
+    assert set(done["timings_ms"]) == {"embed", "search", "retrieval", "first_text", "total"}
+    assert set(done["tokens"]) == {"input", "output"}
 
 
 def test_a_decline_is_marked_in_done():
@@ -116,10 +117,39 @@ def test_surrounding_whitespace_is_dropped_before_answering():
     assert f"  {QUESTION}" not in json.dumps(llm.requests[0])
 
 
+class TimedRetriever(FixedRetriever):
+    """Times its stages the way the Postgres retriever does."""
+
+    last_encode_ms = 41.25
+    last_search_ms = 8.31
+
+
+def _logged(caplog, question, retriever=None):
+    answerer = Answerer(ARTICLES, retriever or TimedRetriever(), FakeLLM())
+    with caplog.at_level(logging.INFO, logger="support_rag.timing"):
+        TestClient(create_app(answerer)).post("/api/answer", json={"question": question})
+    return [r.getMessage() for r in caplog.records if r.name == "support_rag.timing"]
+
+
+def test_each_answer_logs_one_json_line_with_its_stage_timings(caplog):
+    (line,) = _logged(caplog, QUESTION)
+    record = json.loads(line)
+    assert record["event"] == "answered"
+    assert (record["embed_ms"], record["search_ms"]) == (41.2, 8.3)
+    assert {"retrieval_ms", "first_text_ms", "total_ms", "input_tokens", "output_tokens"} <= set(
+        record
+    )
+    assert (record["cached"], record["declined"]) == (False, False)
+
+
+def test_a_retriever_that_doesnt_time_its_stages_logs_none_for_them(caplog):
+    (line,) = _logged(caplog, QUESTION, FixedRetriever())
+    assert json.loads(line)["embed_ms"] is None
+
+
 def test_the_question_is_never_logged(caplog):
-    with caplog.at_level(logging.INFO, logger="support_rag.service"):
-        _client().post("/api/answer", json={"question": "my secret domain question"})
-    assert "answered" in caplog.text
+    (line,) = _logged(caplog, "my secret domain question")
+    assert "secret" not in line
     assert "secret" not in caplog.text
 
 

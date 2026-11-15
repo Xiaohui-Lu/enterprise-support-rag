@@ -1,0 +1,27 @@
+# Only what the image needs goes into the build (D-052).
+
+# Secrets never enter an image: a layer keeps a file even if a later layer deletes it.
+.env
+.env.*
+!.env.example
+
+# Built or fetched inside the image instead.
+.venv
+web/node_modules
+web/dist
+data/raw
+
+# Local state: the study's call cache and stored vectors, run records, tool settings.
+cache
+runs
+.claude
+.git
+**/__pycache__
+.pytest_cache
+.ruff_cache
+
+# Not needed to serve answers.
+data/labels
+docs
+reports
+tests

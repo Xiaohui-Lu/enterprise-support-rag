@@ -2035,6 +2035,20 @@ The last row's range assumes each best section is of average size at one end and
 
 **In short.** "The image bakes in the code, the built page, the articles and the embedding model at pinned revisions, so it starts with no network access to Hugging Face and every build is identical. Secrets come in at run time and never enter a layer. The container keeps its own call cache, because the evaluation's cache holds every paid call of the study. Each answer logs one JSON line with the time for each stage, so finding the slow stage is a jq one-liner."
 
+**Outcome (2026-11-14): the stack runs with one command.** `docker compose --profile app up --build` builds the image, waits for Postgres, and serves the page at http://127.0.0.1:8000.
+- **The image's size.** Its layers add up to about 2.5 GB:
+  - 1.55 GB of Python packages. PyTorch alone is 0.8 GB, and it's the CPU build.
+  - 0.7 GB for the model, 60 MB of articles and 45 MB for uv.
+  - Docker Desktop lists 3.5 GB, apparently because its image store also keeps a compressed copy of each layer.
+- **A fix to the first build.** It left uv's download cache in the dependency layer, which added 1.3 GB. A build cache mount now keeps the cache out of the image.
+- **The build checks itself.** It loads the model once, offline and as the service's user, and embeds a test question. A build that can't do that fails.
+- **One question through the container.**
+  - The key arrived through `env_file`. The answer came back in 28 pieces of text and cost $0.00087.
+  - Its log line: embedding 162 ms, search 369 ms, first text 2.2 s, total 2.8 s.
+  - The search time was a cold first query. Asked again (answered from the container's cache), embedding took 125 to 133 ms on the CPU, the search 11 to 12 ms, and the whole answer 0.14 s.
+- **A correction to the decision above.** The vectors mount is read-only, so a fresh clone embeds the articles on the host (`srag eval-retrieval --retriever dense --model voyage-4-nano`). `srag db-load` can then run on the host or in the container.
+- **Tests.** Three guard tests check that `.env` and the study's cache stay out of the build, and that both ports stay on 127.0.0.1.
+
 ---
 
 ## Coming up

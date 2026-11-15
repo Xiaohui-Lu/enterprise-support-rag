@@ -19,6 +19,7 @@ uv run srag eval-retrieval --retriever hybrid --fusion rrf --model voyage-4-nano
 uv run srag eval-retrieval --retriever rerank --reranker minilm-l6 --model voyage-4-nano   # or qwen3-reranker-0.6b; add --candidates both (D-038)
 uv run srag eval-retrieval --retriever dense --model voyage-4-nano --unit h2   # or headings, window; add --no-title; rerank takes --unit too (D-039)
 docker compose up -d   # Postgres with pgvector (compose.yaml; needs .env, see .env.example)
+docker compose --profile app up --build   # Postgres and the assistant at http://127.0.0.1:8000; JSON timing lines in `docker compose logs app` (D-052)
 uv run srag db-load    # load the articles and their stored vectors into Postgres (D-041)
 uv run srag eval-retrieval --retriever dense --model voyage-4-nano --store postgres --index exact   # or hnsw (D-041)
 uv run srag report-retrieval --name dense runs/<a> runs/<b>   # reports/retrieval_<name>.md, compared by D-036

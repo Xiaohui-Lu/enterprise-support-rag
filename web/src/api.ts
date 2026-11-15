@@ -14,7 +14,14 @@ export interface Done {
   complete: boolean;
   cached: boolean;
   cost_usd: number;
-  timings_ms: { retrieval: number; first_text: number | null; total: number };
+  tokens: { input: number; output: number };
+  timings_ms: {
+    embed: number | null;
+    search: number | null;
+    retrieval: number;
+    first_text: number | null;
+    total: number;
+  };
 }
 
 export type AnswerEvent =

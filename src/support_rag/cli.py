@@ -412,14 +412,12 @@ def run(args: argparse.Namespace) -> None:
             path = write_router_report(args.runs, name=args.name)
             print(path.read_text(encoding="utf-8"))
         case "serve":
-            import logging
-
             import uvicorn
 
             from support_rag import config
-            from support_rag.service import create_app
+            from support_rag.service import configure_logging, create_app
 
-            logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+            configure_logging()
             app = create_app(static_dir=config.ROOT / "web" / "dist")
             uvicorn.run(app, host=args.host, port=args.port)
         case "report-tuning":
